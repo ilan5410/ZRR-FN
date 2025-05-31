@@ -14,11 +14,16 @@ knitr::opts_chunk$set(echo = FALSE)
 # Define the paths
 ```{r }
 rm(list=ls())
-path_data <- "/Users/ilanpargamin/Desktop/ECONOMICS/thesis/THESIS_REPRO/DATA/"
-path_out <- "/Users/ilanpargamin/Desktop/ECONOMICS/thesis/THESIS_REPRO/OUTPUT/"
+path_data <- "/Users/ilanpargamin/Desktop/ECONOMICS/thesis/THESIS_REPRO copy/DATA/"
+path_out <- "/Users/ilanpargamin/Desktop/ECONOMICS/thesis/THESIS_REPRO copy/OUTPUT/"
 path_figures <- paste0(path_out, "figures/")
 path_tables <- paste0(path_out, "tables/")
 keep_vars<- c(path_data, path_out, path_figures, path_tables)
+
+main_path <- "/Users/ilanpargamin/Desktop/ECONOMICS/thesis/THESIS_REPRO copy/"
+raw_data_path <- paste0(path_data, "raw data/")
+processed_data_path <-  paste0(path_data,  "processed data/")
+
 
 # To print the latex table in a specific way
 options("modelsummary_format_numeric_latex" = "plain")
@@ -99,8 +104,8 @@ if (nrow(canton_check) == 0) {
 ## Figure 1: Evolution of FN Vote Share (1988-2022) - Presidential/Legislative Elections in France
 
 ```{r }
-if (file.exists(paste0(path_data, "thesis_intro.RData"))) {
-  load(paste0(path_data, "thesis_intro.RData"))
+if (file.exists(paste0(processed_data_path, "main.RData"))) {
+  load(paste0(processed_data_path, "main.RData"))
 } else {
   message("Data environment does not exist")
 }
@@ -108,9 +113,9 @@ if (file.exists(paste0(path_data, "thesis_intro.RData"))) {
 
 ```{r }
 # Prepare presidential vote share
-df_pres <- df_merged %>%
-  filter(year == 2000) %>%
-  select(codecommune, starts_with("FN")) %>%
+df_pres <- dfZRR %>%
+  filter(year == 2005) %>%
+  select(codecommune, FN1988, FN1995, FN2002, FN2007, FN2012, FN2017, FN2022) %>%
   distinct() %>%
   mutate(across(everything(), as.numeric)) %>%
   pivot_longer(cols = starts_with("FN"), names_to = "year", values_to = "vote_share") %>%
@@ -137,13 +142,6 @@ df_summary_combined <- bind_rows(df_pres_summary, df_leg_summary)
 plot <- ggplot(df_summary_combined, aes(x = year, y = mean_vote_share, color = type, linetype = type)) +
   geom_line(size = 1.2) +
   geom_point(size = 2) +
-  geom_ribbon(
-    data = df_summary_combined %>% filter(type == "Presidential"),
-    aes(ymin = mean_vote_share - sd_vote_share,
-        ymax = mean_vote_share + sd_vote_share,
-        fill = type),
-    alpha = 0.2, color = NA
-  ) +
   scale_x_continuous(breaks = sort(unique(df_summary_combined$year))) +
   scale_y_continuous(labels = scales::percent_format(accuracy = 1)) +
   scale_color_manual(values = c("Presidential" = "blue", "Legislative" = "red")) +
@@ -2687,8 +2685,8 @@ rm(list = setdiff(ls(), keep_vars))
 
 ```{r}
 
-if (file.exists(paste0(path_data, "borders_pair.RData"))) {
-  load(paste0(path_data, "borders_pair.RData"))
+if (file.exists(paste0(processed_data_path, "borders_pair.RData"))) {
+  load(paste0(processed_data_path, "borders_pair.RData"))
 } else {
   message("Data environment does not exist")
 }
@@ -2696,9 +2694,9 @@ if (file.exists(paste0(path_data, "borders_pair.RData"))) {
 
 controls <- setdiff(controls, c("typologie", "x"))
 
-df_rct <- dfZRR1995Controls %>%
+df_rct <- dfZRRControls %>%
   select(-x, -typologie) %>%
-  select(c("y", "z", "canton", "dep",  "border_pair", controls)) %>%
+  select(all_of(c("y", "z", "canton", "dep",  "border_pair", controls))) %>%
   rename(treatmentZRR=z)  
 
 my_data <- df_rct[complete.cases(df_rct), ]
@@ -2789,8 +2787,41 @@ sl_post_lasso <- SuperLearner(Y = Y1,
                                    family = gaussian(),
                                    SL.library = "SL.lm", 
                                    cvControl = list(V=0))
-postlasso_pred_0s <- predict(sl_post_lasso, data.frame(X=zeros(nrow(W2)), W2, W2*zeros(nrow(W2)))[, c(kept_variables, kept_variables2)], onlySL = T)
-postlasso_pred_1s <- predict(sl_post_lasso, data.frame(X=ones(nrow(W2)), W2, W2*ones(nrow(W2)))[, c(kept_variables, kept_variables2)], onlySL = T)
+
+
+postlasso_pred_0s <- predict(
+  sl_post_lasso, 
+  data.frame(
+    X=zeros(nrow(W2)), 
+    W2, 
+    W2*zeros(nrow(W2))
+                                        )[, c(kept_variables, kept_variables2)], onlySL = T)
+
+postlasso_pred_0s <- predict(
+  sl_post_lasso,
+  newdata = data.frame(treatmentZRR = rep(0, nrow(W2)), W2, W2 * 0)[, c(kept_variables, kept_variables2)],
+  onlySL = TRUE
+)
+
+
+postlasso_pred_1s <- predict(
+  sl_post_lasso,
+  newdata = data.frame(
+    treatmentZRR = rep(1, nrow(W2)),
+    W2,
+    W2 * 1
+  )[, c(kept_variables, kept_variables2)],
+  onlySL = TRUE
+)
+
+postlasso_pred_1s <- predict(
+  sl_post_lasso, 
+  data.frame(
+    treatmentZRR = rep(0, nrow(W2)), 
+    W2, W2 * 0
+    )[, c(kept_variables, kept_variables2)], 
+  onlySL = T)
+
 
 cate_postlasso <- postlasso_pred_1s$pred - postlasso_pred_0s$pred
 
@@ -2900,56 +2931,6 @@ rm(list = setdiff(ls(), keep_vars))
 
 ```
 
-
-## Figure B1: Bartik variable 1990-1999 and FN vote share evolution 1988-2002
-```{r }
-if (file.exists(paste0(path_data, "bartik.RData"))) {
-  load(paste0(path_data, "bartik.RData"))
-} else {
-  message("Data environment does not exist")
-}
-rm(path_bartik)
-
-if (file.exists(paste0(path_data, "election.RData"))) {
-  load(paste0(path_data, "election.RData"))
-} else {
-  message("Data environment does not exist")
-}
-
-df <- left_join(dfBartik, df_elec, by = c("codecommune")) %>%
-  distinct(codecommune, .keep_all = TRUE) # Step 1: Remove duplicate observations in the codecommune column
-
-df$delta_FN_2002_1988 <- (as.numeric(df$FN2002) - as.numeric(df$FN1988)) / as.numeric(df$FN1988)
-df$bartik_1999_1990 <- as.numeric(df$bartik_1999_1990)
-
-df <- df %>% select(delta_FN_2002_1988, bartik_1999_1990) 
-df <- df[complete.cases(df) & !is.infinite(rowSums(df)), ]
-
-
-  
-# Calculate correlation coefficient
-correlation <- cor(df$bartik_1999_1990, df$delta_FN_2002_1988, use = "complete.obs")
-
-
-plot <- ggplot(df, aes(x = `bartik_1999_1990`, y = `delta_FN_2002_1988`)) +
-  stat_summary_bin(aes(group = "bartik_1999_1990"),
-                   fun = "mean",  # Adjust this function as needed (mean, median, etc.)
-                   bins = 10,     # Adjust the number of bins
-                   geom = "point", size = 1.5, alpha = 1) +
-      geom_smooth(method = "lm", formula = y ~ poly(x, 1), se = TRUE,color = "black") +
-    annotate("text", x = Inf, y = Inf, label = paste0("r = ", round(correlation, 2)),
-       hjust = 1.1, vjust = 1.5, size = 3, color = "black") +
-  
-  labs(x = "Bartik 1990-1999", y = "Change in FN vote share, 1988-2002") 
-
-
-
-# Save the plot
-ggsave(filename = paste0(path_figures, "bartik_vs_FN.png"), plot = plot, width = 8, height = 6, dpi = 300)
-
-
-rm(df,df_elec, dfBartik, plot, correlation)
-```
 
 ## Figure D1: Map and distribution of the running variable (no epicenter)
 
