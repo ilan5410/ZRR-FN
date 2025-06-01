@@ -22,6 +22,7 @@ readxl, dplyr, tidyr, ggplot2, sf, stargazer, AER, broom, ggrepel, sf, viridis, 
 main_path <- "/Users/ilanpargamin/Desktop/ECONOMICS/thesis/THESIS_REPRO copy/"
 raw_data_path <- "/Users/ilanpargamin/Desktop/ECONOMICS/thesis/THESIS_REPRO copy/DATA/raw data/"
 processed_data_path <- "/Users/ilanpargamin/Desktop/ECONOMICS/thesis/THESIS_REPRO copy/DATA/processed data/"
+
 ```
 
 # Help functions
@@ -82,6 +83,9 @@ interpolate_variable <- function(df, vars) {
   
   Run file "distAgglo.py" 
 
+  ## dataGeoRDD_canton_random
+  
+  Run file "defineBorders_randomZRR_more.py"
 
 # main.RData
 
@@ -436,8 +440,13 @@ save.image(file = file.path(processed_data_path, "main.RData"))
 ```
 
 
-## border pair
+# borders_pair.RData
 ```{r }
+
+load(paste0(processed_data_path, "main.RData"))
+
+
+year_control <- 1990
 
 # merge with relevant distance matrix
 dfDistance <- read_excel(paste0(processed_data_path, "border_pair.xlsx")) %>% # filter(border==1) %>%
@@ -490,14 +499,22 @@ dfZRRControls <- dfZRRControls %>%
   mutate(z = as.logical(z)) %>%
   mutate(RPR2002 = as.numeric(RPR2002))
 
+dfZRRControls <- filter(dfZRRControls, year == year_control)
+
+rm(dfZRR_raw, df_merged, dfZRR, var, variables_to_clean)
 ## Save
 save.image(file = file.path(processed_data_path, "borders_pair.RData"))
 
 ```
 
 
-## FN_growth.RData
+# FN_growth.RData
 ```{r }
+
+rm(list = setdiff(ls(envir = globalenv()), c("processed_data_path", "raw_data_path", "main_path")), envir = globalenv())
+load(paste0(processed_data_path, "main.RData"))
+
+
 # Import distance to border data from 1995 treatment
 
 dfDistance <- read_excel(paste0(processed_data_path, "dataGeoRDD1.xlsx")) %>%
@@ -507,13 +524,14 @@ dfDistance <- read_excel(paste0(processed_data_path, "dataGeoRDD1.xlsx")) %>%
 dfZRR <- left_join(dfZRR_raw, dfDistance, by = c("codecommune"))
 
 
-dfZRR1995 <- dfZRR %>%
+dfZRR <- dfZRR %>%
   filter(year==1995) %>%
-  select("codecommune", "distance_to_border", "treatment", "canton", "border", starts_with("FN")) %>%
-  mutate(across(starts_with("FN"), as.numeric))
+  select("codecommune", "distance_to_border", "treatment", "canton", starts_with("FN")) %>% # missing "border"
+  mutate(across(starts_with("FN"), as.numeric)) %>%
+  select(-FN2019, -FN2014, -FN2004, -FN1999, -FN1994)
 
 # Pivot
-dfZRR1995 <- dfZRR1995 %>%
+dfZRR <- dfZRR %>%
   pivot_longer(
     cols = starts_with("FN"), 
     names_to = "year",        
@@ -531,7 +549,7 @@ df_merged <- df_merged %>%
   mutate(year = ifelse(year == 2020, 2022, year))
 
 # merge dfZRR with controls
-dfZRRControls <- left_join(dfZRR1995, df_merged, by = c("codecommune", "year"))
+dfZRRControls <- left_join(dfZRR, df_merged, by = c("codecommune", "year"), relationship = "many-to-many")
 dfZRRControls <- dfZRRControls %>%
   select(-nomcommune, -FN1995, -FN1988, -popYoungOld, -revenuPerK)
 
@@ -549,6 +567,79 @@ dfZRRControls$treatment <- as.logical(dfZRRControls$treatment)
 
 # treatYears <- c(2017, 2005, 1995, 2013, 2010, 2014, 2006, 2018, 2007, 2009)
 
-save.image(file='.RData')
+rm(dfZRR_raw, dfDistance, df_merged, var, variables_to_clean)
+save.image(file = file.path(processed_data_path, "FN_growth.RData"))
 
 ```
+
+
+# script_sharp.RData
+```{r }
+
+rm(list = setdiff(ls(envir = globalenv()), c("processed_data_path", "raw_data_path", "main_path")), envir = globalenv())
+load(paste0(processed_data_path, "main.RData"))
+
+
+# Import distance to border data from 1995 treatment
+
+dfDistance <- read_excel(paste0(processed_data_path, "dataGeoRDD1.xlsx")) %>%
+  select(-year) %>%
+  mutate(codecommune = sub("^0+", "", as.character(codecommune)))
+
+dfZRR <- dfZRR_raw %>%
+  filter(year==1995) %>%
+  mutate(across(starts_with("FN"), as.numeric)) %>%
+  select(-FN2019, -FN2014, -FN2004, -FN1999, -FN1994)
+
+dfZRR <- left_join(dfZRR, dfDistance, by = c("codecommune"), relationship = "many-to-many") %>%
+  filter(!is.na(codecommune))  %>%
+  filter(year == 1995) %>%
+  select(-year) %>%
+  mutate(
+    FN1988 = as.numeric(FN1988),
+    FN2002 = as.numeric(FN2002),
+    deltaFN = FN2002 - FN1988,
+    y = FN2002,
+  )  %>%
+  select("codecommune", "distance_to_border", "treatment", "canton", "deltaFN", starts_with("FN"))
+
+
+
+df_merged <- df_merged %>%
+  mutate(codecommune = sub("^0+", "", as.character(codecommune))) %>%
+  # filter year_control
+  filter(year == 1990) %>%
+  select(-year, -FN1995, -FN1988)
+
+# merge dfZRR with controls
+dfZRRControls <- left_join(dfZRR, df_merged, by = c("codecommune"), relationship = "many-to-many") 
+
+controls <- names(df_merged)
+controls <- setdiff(controls, c("codecommune", "year", "reg", "nomcommune", "dep", "FN1995", "popYoungOld", "revenuPerK"))
+
+# Clean data
+variables_to_clean <- setdiff(names(dfZRRControls), c( "popYoungOld", "revenuPerK"))
+for(var in variables_to_clean) {
+  # Remove rows with NA values in the current variable
+  dfZRRControls <- dfZRRControls[!is.na(dfZRRControls[[var]]), ]
+  
+  # Remove rows with Inf or -Inf values in the current variable
+  dfZRRControls <- dfZRRControls[!is.infinite(dfZRRControls[[var]]), ]
+}
+
+dfZRRControls$treatment <- as.logical(dfZRRControls$treatment)
+
+# treatYears <- c(2017, 2005, 1995, 2013, 2010, 2014, 2006, 2018, 2007, 2009)
+
+rm(dfZRR_raw, df_merged, var, variables_to_clean)
+
+dfZRRControls$x <- dfZRRControls$distance_to_border
+dfZRRControls$z <- dfZRRControls$treatment
+
+save.image(file = file.path(processed_data_path, "script_sharp.RData"))
+
+```
+
+
+
+
