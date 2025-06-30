@@ -19,6 +19,8 @@ readxl, dplyr, tidyr, ggplot2, sf, stargazer, AER, broom, ggrepel, sf, viridis, 
 
 # Paths 
 ```{r}
+rm(list=ls())
+
 main_path <- "/Users/ilanpargamin/Desktop/ECONOMICS/thesis/THESIS_REPRO copy/"
 raw_data_path <- "/Users/ilanpargamin/Desktop/ECONOMICS/thesis/THESIS_REPRO copy/DATA/raw data/"
 processed_data_path <- "/Users/ilanpargamin/Desktop/ECONOMICS/thesis/THESIS_REPRO copy/DATA/processed data/"
@@ -101,10 +103,20 @@ dfZRR_raw <- read.csv(paste0(raw_data_path,"ZRR.csv")) %>%
 
 ## Add canton code
 
-df <- read_csv(paste0(raw_data_path,"codescommunescantons1999.csv"), show_col_types = FALSE) %>% 
-  select(codecommune, canton, dep) %>% 
-  filter(!is.na(canton) & !is.na(codecommune))  %>%
+df <- st_read(paste0(raw_data_path, "france1999.dbf")) %>%
+  mutate(
+    codecommune = paste0(as.character(DEP), as.character(COM))
+  ) %>%
+  mutate(
+    canton = paste0(as.character(DEP), as.character(CT))
+  ) %>%
+  select(codecommune, canton)  %>%
   mutate(codecommune = sub("^0+", "", as.character(codecommune)))
+
+# df <- read_csv(paste0(raw_data_path,"codescommunescantons1999.csv"), show_col_types = FALSE) %>% 
+#   select(codecommune, canton, dep) %>% 
+#   filter(!is.na(canton) & !is.na(codecommune))  %>%
+#   mutate(codecommune = sub("^0+", "", as.character(codecommune)))
 
 dfZRR_raw <- merge(dfZRR_raw, df, on="codecommune")
 dfZRR_raw$canton <- as.character(dfZRR_raw$canton)
@@ -434,6 +446,7 @@ df_merged <- df_merged %>%
   filter(!is.na(codecommune))
 rm(dfPop, dfPopLong, interpolate_variable)
 
+
 ## Save
 save.image(file = file.path(processed_data_path, "main.RData"))
 
@@ -479,7 +492,7 @@ print(length(unique(dfZRR$codecommune))) ## 7331 (weird...?)
 dfZRRControls <- left_join(dfZRR, df_merged, by = c("codecommune"), relationship = "many-to-many")
 
 controls <- names(df_merged)
-controls <- setdiff(controls, c("codecommune", "year", "reg", "nomcommune", "dep", "FN1995", "popYoungOld", "revenuPerK"))
+controls <- setdiff(controls, c("codecommune", "year", "reg", "nomcommune", "dep", "FN1995", "popYoungOld", "revenuPerK", "vigne", "haie"))
 
 variables_to_clean <- c("x", "y", "z", controls, "year",  "border_pair",  "canton", "dep", "reg", "deltaFN", "RPR2002", "turnout_2002", "FN2007", "FN2012", "FN2017", "FN2022", "same_department")
 
@@ -502,6 +515,8 @@ dfZRRControls <- dfZRRControls %>%
 dfZRRControls <- filter(dfZRRControls, year == year_control)
 
 rm(dfZRR_raw, df_merged, dfZRR, var, variables_to_clean)
+
+
 ## Save
 save.image(file = file.path(processed_data_path, "borders_pair.RData"))
 
@@ -601,7 +616,7 @@ dfZRR <- left_join(dfZRR, dfDistance, by = c("codecommune"), relationship = "man
     deltaFN = FN2002 - FN1988,
     y = FN2002,
   )  %>%
-  select("codecommune", "distance_to_border", "treatment", "canton", "deltaFN", starts_with("FN"))
+  select("codecommune", "distance_to_border", "treatment", "canton", "deltaFN", starts_with("FN"), starts_with("RPR"), starts_with("turnout"))
 
 
 
@@ -615,7 +630,7 @@ df_merged <- df_merged %>%
 dfZRRControls <- left_join(dfZRR, df_merged, by = c("codecommune"), relationship = "many-to-many") 
 
 controls <- names(df_merged)
-controls <- setdiff(controls, c("codecommune", "year", "reg", "nomcommune", "dep", "FN1995", "popYoungOld", "revenuPerK"))
+controls <- setdiff(controls, c("codecommune", "year", "reg", "nomcommune", "dep", "FN1995", "popYoungOld", "revenuPerK", "haie", "vigne"))
 
 # Clean data
 variables_to_clean <- setdiff(names(dfZRRControls), c( "popYoungOld", "revenuPerK"))
@@ -636,9 +651,216 @@ rm(dfZRR_raw, df_merged, var, variables_to_clean)
 dfZRRControls$x <- dfZRRControls$distance_to_border
 dfZRRControls$z <- dfZRRControls$treatment
 
+
+# Remove haie (fence) and vigne (vines)
+dfZRRControls <- dfZRRControls %>%
+  select(-haie, -vigne)
+
 save.image(file = file.path(processed_data_path, "script_sharp.RData"))
 
 ```
+
+# script_sharp_noEpicenter.RData
+```{r }
+
+rm(list = setdiff(ls(envir = globalenv()), c("processed_data_path", "raw_data_path", "main_path")), envir = globalenv())
+load(paste0(processed_data_path, "main.RData"))
+
+
+# Import distance to border data from 1995 treatment
+
+dfDistance <- read_excel(paste0(processed_data_path, "dataGeoRDDnoEpicenter1.xlsx")) %>%
+  select(-year) %>%
+  mutate(codecommune = sub("^0+", "", as.character(codecommune)))
+
+
+dfZRR <- dfZRR_raw %>%
+  filter(year==1995) %>%
+  mutate(across(starts_with("FN"), as.numeric)) %>%
+  select(-FN2019, -FN2014, -FN2004, -FN1999, -FN1994)
+
+dfZRR <- left_join(dfZRR, dfDistance, by = c("codecommune"), relationship = "many-to-many") %>%
+  filter(!is.na(codecommune))  %>%
+  filter(year == 1995) %>%
+  select(-year) %>%
+  mutate(
+    FN1988 = as.numeric(FN1988),
+    FN2002 = as.numeric(FN2002),
+    deltaFN = FN2002 - FN1988,
+    y = FN2002,
+  )  %>%
+  select("codecommune", "distance_to_border", "treatment", "canton", "deltaFN", starts_with("FN"), starts_with("RPR"), starts_with("turnout"))
+
+
+
+df_merged <- df_merged %>%
+  mutate(codecommune = sub("^0+", "", as.character(codecommune))) %>%
+  # filter year_control
+  filter(year == 1990) %>%
+  select(-year, -FN1995, -FN1988)
+
+# merge dfZRR with controls
+dfZRRControls <- left_join(dfZRR, df_merged, by = c("codecommune"), relationship = "many-to-many") 
+
+controls <- names(df_merged)
+controls <- setdiff(controls, c("codecommune", "year", "reg", "nomcommune", "dep", "FN1995", "popYoungOld", "revenuPerK", "haie", "vigne"))
+
+# Clean data
+variables_to_clean <- setdiff(names(dfZRRControls), c( "popYoungOld", "revenuPerK"))
+for(var in variables_to_clean) {
+  # Remove rows with NA values in the current variable
+  dfZRRControls <- dfZRRControls[!is.na(dfZRRControls[[var]]), ]
+  
+  # Remove rows with Inf or -Inf values in the current variable
+  dfZRRControls <- dfZRRControls[!is.infinite(dfZRRControls[[var]]), ]
+}
+
+dfZRRControls$treatment <- as.logical(dfZRRControls$treatment)
+
+# treatYears <- c(2017, 2005, 1995, 2013, 2010, 2014, 2006, 2018, 2007, 2009)
+
+rm(dfZRR_raw, df_merged, var, variables_to_clean)
+
+dfZRRControls$x <- dfZRRControls$distance_to_border
+dfZRRControls$z <- dfZRRControls$treatment
+
+
+# Remove haie (fence) and vigne (vines)
+dfZRRControls <- dfZRRControls %>%
+  select(-haie, -vigne)
+
+
+save.image(file = file.path(processed_data_path, "script_sharp_noEpicenter.RData"))
+
+```
+
+# dataDes.RData
+```{r }
+
+# rm(list = setdiff(ls(envir = globalenv()), c("processed_data_path", "raw_data_path", "main_path")), envir = globalenv())
+# 
+# load(paste0(processed_data_path, "main.RData"))
+# 
+# 
+# dfZRR <- merge(dfZRR_raw, read.csv(paste0(raw_data_path,"ZRR.csv")) %>% mutate(codecommune = sub("^0+", "", as.character(codecommune))) %>% 
+#   select(codecommune, nom, treatment, year) , by = c("codecommune", "year")) %>%
+# 
+#   # Group by city code
+#   group_by(codecommune) %>%
+#   
+#   # Create the year_treat column
+#   mutate(year_treat1 = ifelse(treatment == 1 & !is.na(year), min(year[treatment == 1 & !is.na(year)], na.rm = TRUE), NA_real_)) %>%
+#   mutate(year_treat0 = ifelse(treatment == 0 & !is.na(year), min(year_treat1[treatment == 1 & !is.na(year)], na.rm = TRUE), NA_real_)) %>%
+#   ungroup() %>%
+#   mutate(
+#     year_treat = ifelse(!is.na(year_treat0), year_treat0, year_treat1)
+#   ) %>%
+#   select(-year_treat0, -year_treat1) %>%
+#   mutate(year_treat = ifelse(is.infinite(year_treat), NA, year_treat)) %>%
+#   select(-FN2019, -FN2014, -FN2004, -FN1999, -FN1994)
+# 
+# rm(dfZRR_raw)
+# 
+# # process
+# dfZRR <- dfZRR %>%
+#   filter(year==1995) %>%
+#   select(-year) %>%
+#   mutate(across(matches("^FN|^RPR"), as.numeric)) %>%
+#   mutate(deltaFN = FN2002 - FN1988) %>%
+#   mutate(treatment_in_1995 = treatment)
+# 
+# 
+# dfZRRlong <- dfZRR %>%
+#   mutate(across(matches("^FN|^RPR"), as.numeric)) %>%
+#   pivot_longer(
+#     cols = matches("^FN|^RPR"), 
+#     names_to = c(".value", "year"), 
+#     names_pattern = "(FN|RPR)(\\d+)"
+#   ) %>%
+#   arrange(nom)  %>%
+#   mutate(year_treat = ifelse(is.na(year_treat), 0, year_treat)) %>%
+#   mutate(year = as.numeric(year))
+# 
+# 
+# 
+# dfZRRControls <- left_join(df_merged , dfZRRlong, by = c("codecommune", "year")) %>%
+#   distinct() %>% filter(year < 2021) %>%
+#   mutate(across(where(is.numeric), as.double)) %>%
+#   mutate(across(where(is.numeric), ~ na_if(., Inf))) %>%
+#   group_by(codecommune) %>%
+#   mutate(year_treat = ifelse(is.na(year_treat), max(year_treat, na.rm = TRUE), year_treat)) %>%
+#   ungroup()
+# 
+# save.image(file=paste0(processed_data_path, 'dataDes.RData'))
+
+```
+
+
+# 
+```{r }
+
+rm(list = setdiff(ls(envir = globalenv()), c("processed_data_path", "raw_data_path", "main_path")), envir = globalenv())
+load(paste0(processed_data_path, "main.RData"))
+
+
+dfZRR <- merge(dfZRR_raw, read.csv(paste0(raw_data_path,"ZRR.csv")) %>% mutate(codecommune = sub("^0+", "", as.character(codecommune))) %>% 
+  select(codecommune, nom, treatment, year) , by = c("codecommune", "year")) %>%
+
+  # Group by city code
+  group_by(codecommune) %>%
+  
+  # Create the year_treat column
+  mutate(year_treat1 = ifelse(treatment == 1 & !is.na(year), min(year[treatment == 1 & !is.na(year)], na.rm = TRUE), NA_real_)) %>%
+  mutate(year_treat0 = ifelse(treatment == 0 & !is.na(year), min(year_treat1[treatment == 1 & !is.na(year)], na.rm = TRUE), NA_real_)) %>%
+  ungroup() %>%
+  mutate(
+    year_treat = ifelse(!is.na(year_treat0), year_treat0, year_treat1)
+  ) %>%
+  select(-year_treat0, -year_treat1) %>%
+  mutate(year_treat = ifelse(is.infinite(year_treat), NA, year_treat)) %>%
+  select(-FN2019, -FN2014, -FN2004, -FN1999, -FN1994)
+
+rm(dfZRR_raw)
+
+# process
+dfZRR <- dfZRR %>%
+  filter(year==1995) %>%
+  select(-year) %>%
+  mutate(across(matches("^FN|^RPR"), as.numeric)) %>%
+  mutate(deltaFN = FN2002 - FN1988) %>%
+  mutate(treatment_in_1995 = treatment)
+
+
+dfZRRlong <- dfZRR %>%
+  mutate(across(matches("^FN|^RPR"), as.numeric)) %>%
+  pivot_longer(
+    cols = matches("^FN|^RPR"), 
+    names_to = c(".value", "year"), 
+    names_pattern = "(FN|RPR)(\\d+)"
+  ) %>%
+  arrange(nom)  %>%
+  mutate(year_treat = ifelse(is.na(year_treat), 0, year_treat)) %>%
+  mutate(year = as.numeric(year))
+
+
+
+dfZRRControls <- left_join(df_merged , dfZRRlong, by = c("codecommune", "year")) %>%
+  distinct() %>% filter(year < 2021) %>%
+  mutate(across(where(is.numeric), as.double)) %>%
+  mutate(across(where(is.numeric), ~ na_if(., Inf))) %>%
+  group_by(codecommune) %>%
+  mutate(year_treat = ifelse(is.na(year_treat), max(year_treat, na.rm = TRUE), year_treat)) %>%
+  ungroup()
+
+# Remove haie (fence) and vigne (vines)
+dfZRRControls <- dfZRRControls %>%
+  select(-haie, -vigne)
+
+save.image(file=paste0(processed_data_path, 'dataDes.RData'))
+
+```
+
+
 
 
 

@@ -29,12 +29,10 @@ processed_data_path <-  paste0(path_data,  "processed data/")
 # To print the latex table in a specific way
 options("modelsummary_format_numeric_latex" = "plain")
 
-```
 
 # Labels
-```{r }
-
-labels <- c("FN2002" = "FN vote share in 2002",
+labels <- c("FN1995" = "FN vote share in 1995",
+            "FN2002" = "FN vote share in 2002",
             "RPR2002" = "RPR vote share in 2002",
             "turnout_2002" = "Turnout in 2002",
             "FN2007" = "FN vote share in 2007",
@@ -64,7 +62,9 @@ labels <- c("FN2002" = "FN vote share in 2002",
             "revenuPerK" = "Taxable income per capita",
             "delta_pop_1982_1990" = "Population change in p.p. 1982-1990", 
             "delta_emp_1982_1990" = "Change in p.p. in the labor force 1982-1990", 
-            "min_distance_to_agglo" = "Distance to closest agglomeration (meters)")
+            "min_distance_to_agglo" = "Distance to closest agglomeration (meters)",
+            "delta_pop_1980_1995" = "Population change in p.p. 1980-1990",
+            "popDensity" = "Population density")
 ```
 
 
@@ -80,35 +80,27 @@ readxl, dplyr, tidyr, ggplot2, sf, stargazer, AER, broom, ggrepel, sf, viridis, 
 
 ## Check that the canton and treatment overlap
 ```{r }
-if (file.exists(paste0(processed_data_path, "script_sharp.RData"))) {
-  load(paste0(processed_data_path, "script_sharp.RData"))
-} else {
-  message("Data environment does not exist")
-}
+dfZRR_raw  <- read.csv(paste0(raw_data_path,"ZRR.csv"))
 
-# Define bandwidth and threshold
-bandwidth <- 20000  # Distance in meters
-threshold <- 0
-
-# Filter the data within the specified bandwidth
-df_rdd <- dfZRRControls %>%
-  filter(x >= (threshold - bandwidth) & x <= (threshold + bandwidth)) %>%
+df <- st_read(paste0(raw_data_path, "france1999.dbf")) %>%
   mutate(
-    dist = x,                     # Create a distance variable
-    treatmentZRR = z,              # Define treatment indicator
-    pop = log(pop)                 # Log-transform population
+    codecommune = paste0(as.character(DEP), as.character(COM))
   ) %>%
-  distinct(codecommune, .keep_all = TRUE)  # Remove duplicate communes
+  mutate(
+    codecanton = paste0(as.character(DEP), as.character(CT))
+  ) %>%
+  select(codecommune, codecanton, NCC, DEP, REG) 
 
-```
+df1 <- left_join(dfZRR_raw, df, by = c("codecommune"), relationship = "many-to-many")  %>%
+  filter(year == 1995)
 
-```{r }
 print("Number of cantons:")
-print(length(unique(df_rdd$canton)))
+print(length(unique(df1$codecanton)))
 
 # Check if each canton has only one unique value for `z`
-canton_check <- df_rdd %>%
-  group_by(canton) %>%
+canton_check <- df1 %>%
+  rename(z = treatment) %>%
+  group_by(codecanton) %>%
   summarize(unique_z_values = n_distinct(z)) %>%
   filter(unique_z_values > 1)
 
@@ -119,6 +111,20 @@ if (nrow(canton_check) == 0) {
   print("Overlap detected: some cantons have both treated and non-treated municipalities.")
   print(canton_check)
 }
+
+
+# Get the list of problematic cantons
+problematic_cantons <- canton_check$codecanton
+
+# Filter and display the codecommune of municipalities in those cantons
+problematic_municipalities <- df1 %>%
+  filter(codecanton %in% problematic_cantons) %>%
+  select(codecommune, codecanton, treatment, DEP, REG) %>%
+  arrange(REG, DEP, codecanton)
+
+# There is some overlap, but it corresponds to the exceptions and can be manually check following this link:
+# https://www.legifrance.gouv.fr/jorf/id/JORFTEXT000000191822
+# ctrl + f "seules les communes de"
 
 rm(list = setdiff(ls(envir = globalenv()), c("processed_data_path", "raw_data_path", "main_path", "path_figures", "path_tables", "path_out", "path_data", "labels")), envir = globalenv())
 
@@ -137,7 +143,7 @@ if (file.exists(paste0(processed_data_path, "main.RData"))) {
 
 ```{r }
 # Prepare presidential vote share
-df_pres <- dfZRR %>%
+df_pres <- dfZRR_raw %>%
   filter(year == 2005) %>%
   select(codecommune, FN1988, FN1995, FN2002, FN2007, FN2012, FN2017, FN2022) %>%
   distinct() %>%
@@ -252,7 +258,24 @@ plot <- df_summary %>%
   )
 
 
-plot <- ggplot(df_summary, aes(x = year, y = mean_FN, color = typologie_group)) +
+# plot <- ggplot(df_summary, aes(x = year, y = mean_FN, color = typologie_group)) +
+#   geom_line(size = 1.2) +
+#   geom_point(size = 2) +
+#   labs(
+#     title = "Mean FN Vote Share by Typologie Group",
+#     x = "Year",
+#     y = "Mean FN Vote Share",
+#     color = "Typologie Group"
+#   ) +
+#   theme_minimal() +
+#   # scale_x_continuous(breaks = unique(df_summary$year)) +
+#   theme(
+#     plot.title = element_text(hjust = 0.5, face = "bold"),
+#     legend.position = "top"
+#   )
+
+
+plot <- ggplot(df_summary, aes(x = year, y = mean_FN, color = typologie_group, group = typologie_group)) +
   geom_line(size = 1.2) +
   geom_point(size = 2) +
   labs(
@@ -262,798 +285,31 @@ plot <- ggplot(df_summary, aes(x = year, y = mean_FN, color = typologie_group)) 
     color = "Typologie Group"
   ) +
   theme_minimal() +
-  # scale_x_continuous(breaks = unique(df_summary$year)) +
   theme(
     plot.title = element_text(hjust = 0.5, face = "bold"),
     legend.position = "top"
   )
 
 
+
 print(plot)
 
 # Save plot
-ggsave(filename = file.path(path_figures, "FN_typology.png"), plot = plot, width = 10, height = 6)
+ggsave(filename = file.path(path_figures, "figure2.png"), plot = plot, width = 10, height = 6)
 
 ```
 
 ```{r }
-rm(list=ls())
-path_data <- "/Users/ilanpargamin/Desktop/ECONOMICS/thesis/THESIS_REPRO/DATA/"
-path_out <- "/Users/ilanpargamin/Desktop/ECONOMICS/thesis/THESIS_REPRO/OUTPUT/"
-path_figures <- paste0(path_out, "figures/")
-path_tables <- paste0(path_out, "tables/")
-
+rm(list = setdiff(ls(envir = globalenv()), c("processed_data_path", "raw_data_path", "main_path", "path_figures", "path_tables", "path_out", "path_data", "labels")), envir = globalenv())
 
 ```
 
-
-## Figure 2_quint:  FN vs. variable of choice
-```{r }
-if (file.exists(paste0(path_data, "dataDes.RData"))) {
-  load(paste0(path_data, "dataDes.RData"))
-} else {
-  message("Data environment does not exist")
-}
-```
-
-```{r }
-
-create_plotsFN <- function(dfReg, x_var, var_lab, years, num_bins = 50, delta = TRUE) {
-  
-  # Filter and select relevant data
-  dfReg_filtered <- dfReg %>%
-    filter(year %in% years) %>%
-    select(codecommune, year, x = {{x_var}}, FN) %>%
-    distinct()  # Removes duplicates
-  
-  # Pivot x and FN values to wide format by year
-  dfReg_wide <- dfReg_filtered %>%
-    pivot_wider(names_from = year, values_from = c(x, FN), names_sep = "")
-  
-  
-  # Calculate deltas for x and FN across consecutive years if delta is TRUE
-  sorted_years <- sort(as.numeric(years))
-  if (delta) {
-    for (i in 2:length(sorted_years)) {
-      current_year <- sorted_years[i]
-      previous_year <- sorted_years[i - 1]
-      
-      dfReg_wide[[paste0("Delta_x_", current_year)]] <- dfReg_wide[[paste0("x", current_year)]] - dfReg_wide[[paste0("x", previous_year)]]
-      dfReg_wide[[paste0("Delta_FN_", current_year)]] <- dfReg_wide[[paste0("FN", current_year)]] - dfReg_wide[[paste0("FN", previous_year)]]
-    }
-  }
-
-  # Update variable prefixes for delta or non-delta conditions
-  x_var_prefix <- if (delta) "Delta_x_" else "x"
-  y_var_prefix <- if (delta) "Delta_FN_" else "FN"
-  years_to_plot <- if (delta) sorted_years[-1] else sorted_years
-
-  dfReg_wide <- dfReg_wide %>% 
-  filter_if(~is.numeric(.), all_vars(!is.infinite(.)))
-  
-  # Initialize plot list and panel labels
-  plots <- list()
-  panel_labels <- paste0("Panel ", LETTERS[1:length(years_to_plot)], ": ")
-  
-  # Generate plots
-  for (i in seq_along(years_to_plot)) {
-    year <- years_to_plot[i]
-    xVar <- paste0(x_var_prefix, year)
-    yVar <- paste0(y_var_prefix, year)
-    
-    # Ensure numeric conversion
-    dfReg_wide[[xVar]] <- as.numeric(dfReg_wide[[xVar]])
-    dfReg_wide[[yVar]] <- as.numeric(dfReg_wide[[yVar]])
-    
-    # Calculate correlation coefficient
-    correlation <- cor(dfReg_wide[[xVar]], dfReg_wide[[yVar]], use = "complete.obs", method = "pearson")
-    
-    # Create bins and calculate bin centers and means
-    bin_var <- paste0(xVar, "_bins")
-    df_plot <- dfReg_wide %>%
-      mutate(!!bin_var := cut(!!sym(xVar), breaks = num_bins, labels = FALSE)) %>%
-      group_by(!!sym(bin_var)) %>%
-      summarise(
-        bin_center = mean(!!sym(xVar), na.rm = TRUE),
-        mean_y = mean(!!sym(yVar), na.rm = TRUE),
-        count = n(),
-        .groups = 'drop'
-      )
-    
-    # Plot for the current year or year pair
-    t <- if (delta) "FN Vote Share (Delta)" else "FN Vote Share"
-    p <- ggplot(df_plot, aes(x = bin_center, y = mean_y)) +
-      geom_point(alpha = 0.5) +
-      geom_smooth(method = "lm", formula = y ~ poly(x, 2), se = FALSE, color = "black") +
-      labs(title = paste0(panel_labels[i], year, " - ", " (r = ", round(correlation, 2), ")")) +
-      theme_minimal() +
-      theme(axis.title = element_blank())
-    
-    plots[[i]] <- p
-  }
-
-  # Arrange plots in a grid with centered axis labels
-  n_cols <- ceiling(sqrt(length(plots)))
-  n_rows <- ceiling(length(plots) / n_cols)
-  
-  grid.arrange(
-    arrangeGrob(grobs = plots, nrow = n_rows, ncol = n_cols),
-    bottom = textGrob(var_lab, gp = gpar(fontsize = 14)),
-    left = textGrob(t, rot = 90, gp = gpar(fontsize = 14))
-  )
-}
-
-```
-
-```{r }
-df <- dfZRRControls %>% 
-  mutate(codecommune = sub("^0+", "", as.character(codecommune))) %>%
-  left_join(dfOutcomeLong %>% 
-              mutate(codecommune = sub("^0+", "", as.character(codecommune))) %>% 
-              unique(), by=c("codecommune", "year")
-            ) %>%
-  select(codecommune, year, pop, FN) %>% # choose variable here. ---- min_distance_to_agglo, 
-  drop_na() %>% 
-  filter_all(all_vars(!is.infinite(.)))
-
-
-df$logpop <- log(df$pop+1)
-
-
-create_plotsFN(
-  df, 
-  x_var = "logpop", 
-  var_lab = "Population size (log)",
-  years = c("1988", "1995", "2007", "2012"),
-  num_bins = 20,
-  delta=FALSE
-)
-
-
-# Export the combined plot
-# file_path <- paste0(path_figures, "deltaRev_vs_deltaFN.png")
-# ggsave(file_path, combined_plot, width = 10, height = 8)
-
-
-
-rm(list=ls())
-path_data <- "/Users/ilanpargamin/Desktop/ECONOMICS/thesis/THESIS_REPRO/DATA/"
-path_out <- "/Users/ilanpargamin/Desktop/ECONOMICS/thesis/THESIS_REPRO/OUTPUT/"
-path_figures <- paste0(path_out, "figures/")
-path_tables <- paste0(path_out, "tables/")
-
-
-```
-
-
-
-
-
-## Figure 2_sixt:  delta FN vs. variable of choice
-```{r }
-if (file.exists(paste0(path_data, "dataDes.RData"))) {
-  load(paste0(path_data, "dataDes.RData"))
-} else {
-  message("Data environment does not exist")
-}
-```
-
-```{r }
-
-create_plotsFN <- function(dfReg, x_var, var_lab, years, num_bins = 50, delta = TRUE) {
-  
-  # Filter and select relevant data
-  dfReg_filtered <- dfReg %>%
-    filter(year %in% years) %>%
-    select(codecommune, year, x = {{x_var}}, FN) %>%
-    distinct()  # Removes duplicates
-  
-  # Pivot x and FN values to wide format by year
-  dfReg_wide <- dfReg_filtered %>%
-    pivot_wider(names_from = year, values_from = c(x, FN), names_sep = "")
-  
-  # Calculate deltas for FN across consecutive years 
-  sorted_years <- sort(as.numeric(years))
-  
-  for (i in 2:length(sorted_years)) {
-    current_year <- sorted_years[i]
-    previous_year <- sorted_years[i - 1]
-    
-    dfReg_wide[[paste0("Delta_FN_", current_year)]] <- dfReg_wide[[paste0("FN", current_year)]] - dfReg_wide[[paste0("FN", previous_year)]]
-  }
-
-  # Filter infinite values
-  dfReg_wide <- dfReg_wide %>% 
-    filter_if(is.numeric, all_vars(!is.infinite(.)))
-
-  # Initialize plot list and panel labels
-  plots <- list()
-  panel_labels <- paste0("Panel ", LETTERS[1:(length(sorted_years) - 1)], ": ")
-  
-  # Generate plots for each year interval
-  for (i in 1:(length(sorted_years) - 1)) {
-    previous_year <- sorted_years[i]
-    current_year <- sorted_years[i + 1]
-    
-    xVar <- paste0("x", previous_year)  # x corresponds to the previous year
-    yVar <- paste0("Delta_FN_", current_year)  # Delta_FN corresponds to the current year
-    
-    # Ensure numeric conversion
-    dfReg_wide[[xVar]] <- as.numeric(dfReg_wide[[xVar]])
-    dfReg_wide[[yVar]] <- as.numeric(dfReg_wide[[yVar]])
-    
-    # Calculate correlation coefficient
-    correlation <- cor(dfReg_wide[[xVar]], dfReg_wide[[yVar]], use = "complete.obs", method = "pearson")
-    
-    # Create bins and calculate bin centers and means
-    bin_var <- paste0(xVar, "_bins")
-    df_plot <- dfReg_wide %>%
-      mutate(!!bin_var := cut(!!sym(xVar), breaks = num_bins, labels = FALSE)) %>%
-      group_by(!!sym(bin_var)) %>%
-      summarise(
-        bin_center = mean(!!sym(xVar), na.rm = TRUE),
-        mean_y = mean(!!sym(yVar), na.rm = TRUE),
-        count = n(),
-        .groups = 'drop'
-      )
-    
-    # Plot for the current year pair
-    t <- "FN Vote Share (Delta)"
-    p <- ggplot(df_plot, aes(x = bin_center, y = mean_y)) +
-      geom_point(alpha = 0.5) +
-      geom_smooth(method = "lm", formula = y ~ poly(x, 2), se = FALSE, color = "black") +
-      labs(title = paste0(panel_labels[i], previous_year, "->", current_year, " (r = ", round(correlation, 2), ")")) +
-      theme_minimal() +
-      theme(axis.title = element_blank())
-    
-    plots[[i]] <- p
-  }
-
-  # Arrange plots in a grid with centered axis labels
-  n_cols <- ceiling(sqrt(length(plots)))
-  n_rows <- ceiling(length(plots) / n_cols)
-  
-  grid.arrange(
-    arrangeGrob(grobs = plots, nrow = n_rows, ncol = n_cols),
-    bottom = textGrob(var_lab, gp = gpar(fontsize = 14)),
-    left = textGrob(t, rot = 90, gp = gpar(fontsize = 14))
-  )
-}
-
-```
-
-```{r }
-df <- dfZRRControls %>% 
-  mutate(codecommune = sub("^0+", "", as.character(codecommune))) %>%
-  left_join(dfOutcomeLong %>% 
-              mutate(codecommune = sub("^0+", "", as.character(codecommune))) %>% 
-              unique(), by=c("codecommune", "year")
-            ) %>%
-  select(codecommune, year, pop, FN) %>% # choose variable here. ---- min_distance_to_agglo, 
-  drop_na() %>% 
-  filter_all(all_vars(!is.infinite(.)))
-
-
-df$logpop <- log(df$pop+1)
-
-
-create_plotsFN(
-  df, 
-  x_var = "logpop", 
-  var_lab = "Population size (log) of the start year",
-  years = c("1988", "2017"),
-  num_bins = 20,
-  delta=FALSE
-)
-
-
-# Export the combined plot
-# file_path <- paste0(path_figures, "deltaRev_vs_deltaFN.png")
-# ggsave(file_path, combined_plot, width = 10, height = 8)
-
-
-
-rm(list=ls())
-path_data <- "/Users/ilanpargamin/Desktop/ECONOMICS/thesis/THESIS_REPRO/DATA/"
-path_out <- "/Users/ilanpargamin/Desktop/ECONOMICS/thesis/THESIS_REPRO/OUTPUT/"
-path_figures <- paste0(path_out, "figures/")
-path_tables <- paste0(path_out, "tables/")
-
-
-```
-
-## Figure 2_sept:  treatment and pop size
-```{r }
-if (file.exists(paste0(path_data, "dataDes.RData"))) {
-  load(paste0(path_data, "dataDes.RData"))
-} else {
-  message("Data environment does not exist")
-}
-```
-
-```{r }
-
-df <- dfZRRControls %>% 
-  mutate(codecommune = sub("^0+", "", as.character(codecommune))) %>%
-  select(codecommune, year, pop, treatment) %>%
-  filter(year==1988) %>% 
-  drop_na() %>% 
-  filter_all(all_vars(!is.infinite(.)))
-
-df$logpop <- log(df$pop+1)
-
-# Create density plot
-ggplot(df, aes(x = logpop, fill = as.factor(treatment))) +
-  geom_density(alpha = 0.5) +
-  scale_fill_manual(values = c("0" = "blue", "1" = "red"), labels = c("Control", "Treatment")) +
-  labs(
-    title = "Population Distribution by Treatment Status",
-    x = "Population (log)",
-    y = "Density",
-    fill = "Treatment"
-  ) +
-  theme_minimal()
-
-
-```
-
-```{r }
-
-# Export the  plot
-# file_path <- paste0(path_figures, "deltaRev_vs_deltaFN.png")
-# ggsave(file_path, combined_plot, width = 10, height = 8)
-
-
-
-rm(list=ls())
-path_data <- "/Users/ilanpargamin/Desktop/ECONOMICS/thesis/THESIS_REPRO/DATA/"
-path_out <- "/Users/ilanpargamin/Desktop/ECONOMICS/thesis/THESIS_REPRO/OUTPUT/"
-path_figures <- paste0(path_out, "figures/")
-path_tables <- paste0(path_out, "tables/")
-
-
-```
-
-## Figure 2_eight:  delta FN, pop and treatment density
-```{r }
-if (file.exists(paste0(path_data, "dataDes.RData"))) {
-  load(paste0(path_data, "dataDes.RData"))
-} else {
-  message("Data environment does not exist")
-}
-```
-
-```{r }
-
-create_plotsFN_with_density <- function(dfReg, x_var, var_lab, years, num_bins = 50, delta = TRUE) {
-  
-  # Filter and select relevant data
-  dfReg_filtered <- dfReg %>%
-    filter(year %in% years) %>%
-    select(codecommune, year, x = {{x_var}}, FN, treatment) %>%
-    distinct()  # Removes duplicates
-  
-  # Pivot x, FN, and treatment values to wide format by year
-  dfReg_wide <- dfReg_filtered %>%
-    pivot_wider(names_from = year, values_from = c(x, FN, treatment), names_sep = "")
-  
-  # Calculate deltas for FN across consecutive years 
-  sorted_years <- sort(as.numeric(years))
-  
-  for (i in 2:length(sorted_years)) {
-    current_year <- sorted_years[i]
-    previous_year <- sorted_years[i - 1]
-    
-    dfReg_wide[[paste0("Delta_FN_", current_year)]] <- dfReg_wide[[paste0("FN", current_year)]] - dfReg_wide[[paste0("FN", previous_year)]]
-  }
-
-  # Filter infinite values
-  dfReg_wide <- dfReg_wide %>% 
-    filter_if(is.numeric, all_vars(!is.infinite(.)))
-
-  # Initialize plot list and panel labels
-  plots <- list()
-  panel_labels <- paste0("Panel ", LETTERS[1:(length(sorted_years) - 1)], ": ")
-  
-  # Generate plots for each year interval
-  for (i in 1:(length(sorted_years) - 1)) {
-    previous_year <- sorted_years[i]
-    current_year <- sorted_years[i + 1]
-    
-    xVar <- paste0("x", previous_year)  # x corresponds to the previous year
-    yVar <- paste0("Delta_FN_", current_year)  # Delta_FN corresponds to the current year
-    treatmentVar <- paste0("treatment", previous_year)  # Treatment corresponds to the start year of the interval
-    
-    # Ensure numeric conversion
-    dfReg_wide[[xVar]] <- as.numeric(dfReg_wide[[xVar]])
-    dfReg_wide[[yVar]] <- as.numeric(dfReg_wide[[yVar]])
-    
-    # Calculate correlation coefficient
-    correlation <- cor(dfReg_wide[[xVar]], dfReg_wide[[yVar]], use = "complete.obs", method = "pearson")
-    
-    # Create bins and calculate bin centers, means, and treatment density
-    bin_var <- paste0(xVar, "_bins")
-    df_plot <- dfReg_wide %>%
-      mutate(!!bin_var := cut(!!sym(xVar), breaks = num_bins, labels = FALSE)) %>%
-      group_by(!!sym(bin_var)) %>%
-      summarise(
-        bin_center = mean(!!sym(xVar), na.rm = TRUE),
-        mean_y = mean(!!sym(yVar), na.rm = TRUE),
-        count = n(),
-        treatment_density = mean(!!sym(treatmentVar), na.rm = TRUE),
-        .groups = 'drop'
-      )
-    
-    # Plot for the current year pair
-    t <- "FN Vote Share (Delta)"
-    p <- ggplot(df_plot, aes(x = bin_center)) +
-      geom_point(aes(y = mean_y), alpha = 0.5, color = "blue") +
-      geom_smooth(aes(y = mean_y), method = "lm", formula = y ~ poly(x, 2), se = FALSE, color = "black") +
-      geom_line(aes(y = treatment_density * max(mean_y, na.rm = TRUE)), color = "red", linetype = "dashed") +
-      labs(title = paste0(panel_labels[i], previous_year, "->", current_year, " (r = ", round(correlation, 2), ")")) +
-      theme_minimal() +
-      theme(axis.title = element_blank())
-    
-    plots[[i]] <- p
-  }
-
-  # Arrange plots in a grid with centered axis labels
-  n_cols <- ceiling(sqrt(length(plots)))
-  n_rows <- ceiling(length(plots) / n_cols)
-  
-  grid.arrange(
-    arrangeGrob(grobs = plots, nrow = n_rows, ncol = n_cols),
-    bottom = textGrob(var_lab, gp = gpar(fontsize = 14)),
-    left = textGrob(t, rot = 90, gp = gpar(fontsize = 14))
-  )
-}
-
-```
-
-```{r }
-df <- dfZRRControls %>% 
-  mutate(codecommune = sub("^0+", "", as.character(codecommune))) %>%
-  left_join(dfOutcomeLong %>% 
-              mutate(codecommune = sub("^0+", "", as.character(codecommune))) %>% 
-              unique(), by=c("codecommune", "year")
-            ) %>%
-  select(codecommune, year, year_treat, treatment, pop, FN) %>% # choose variable here. ---- min_distance_to_agglo, 
-  drop_na() %>% 
-  filter_all(all_vars(!is.infinite(.)))
-
-
-df$logpop <- log(df$pop+1)
-
-
-create_plotsFN_with_density(
-  df, 
-  x_var = "logpop", 
-  var_lab = "Population size (log) of the start year",
-  years = c("1988", "2017"),
-  num_bins = 20,
-  delta=FALSE
-)
-
-
-# Export the combined plot
-# file_path <- paste0(path_figures, "deltaRev_vs_deltaFN.png")
-# ggsave(file_path, combined_plot, width = 10, height = 8)
-
-
-
-rm(list=ls())
-path_data <- "/Users/ilanpargamin/Desktop/ECONOMICS/thesis/THESIS_REPRO/DATA/"
-path_out <- "/Users/ilanpargamin/Desktop/ECONOMICS/thesis/THESIS_REPRO/OUTPUT/"
-path_figures <- paste0(path_out, "figures/")
-path_tables <- paste0(path_out, "tables/")
-
-
-```
-
-
-
-```{r }
-
-plot_treatment_density <- function(dfReg, x_var, var_lab, num_bins = 50, start_year) {
-
-  # Filter the data for the start year
-  df_filtered <- dfReg %>%
-    filter(year == start_year) %>%
-    select(codecommune, x = {{x_var}}, treatment) %>%
-    distinct()  # Remove duplicates
-  
-  # Create bins and calculate the proportion of treated municipalities
-  bin_var <- "x_bins"
-  df_plot <- df_filtered %>%
-    mutate(!!bin_var := cut(x, breaks = num_bins, labels = FALSE)) %>%
-    group_by(!!sym(bin_var)) %>%
-    summarise(
-      bin_center = mean(x, na.rm = TRUE),
-      treatment_proportion = mean(treatment, na.rm = TRUE),
-      count = n(),
-      .groups = 'drop'
-    )
-  
-  # Plot the proportion of treatment
-  ggplot(df_plot, aes(x = bin_center, y = treatment_proportion)) +
-    geom_bar(stat = "identity", alpha = 0.7) +
-    labs(
-      title = paste0("Proportion of Treated Municipalities (", start_year, ")"),
-      x = var_lab,
-      y = "Proportion Treated"
-    ) +
-    theme_minimal()
-}
-
-plot_treatment_density(
-  df, 
-  x_var = "logpop", 
-  var_lab = "Population size (log)",
-  start_year = "1988"
-)
-
-#hist(df$logpop)
-
-```
-
-
-```{r }
-
-create_plotsFN_with_density <- function(dfReg, x_var, var_lab, years, num_bins = 50, delta = TRUE) {
-  
-  # Filter and select relevant data
-  dfReg_filtered <- dfReg %>%
-    filter(year %in% years) %>%
-    select(codecommune, year, x = {{x_var}}, FN, treatment) %>%
-    distinct()  # Removes duplicates
-  
-  # Pivot x, FN, and treatment values to wide format by year
-  dfReg_wide <- dfReg_filtered %>%
-    pivot_wider(names_from = year, values_from = c(x, FN, treatment), names_sep = "")
-  
-  # Calculate deltas for FN across consecutive years 
-  sorted_years <- sort(as.numeric(years))
-  
-  for (i in 2:length(sorted_years)) {
-    current_year <- sorted_years[i]
-    previous_year <- sorted_years[i - 1]
-    
-    dfReg_wide[[paste0("Delta_FN_", current_year)]] <- dfReg_wide[[paste0("FN", current_year)]] - dfReg_wide[[paste0("FN", previous_year)]]
-  }
-
-  # Filter infinite values
-  dfReg_wide <- dfReg_wide %>% 
-    filter_if(is.numeric, all_vars(!is.infinite(.)))
-
-  # Initialize plot list and panel labels
-  plots <- list()
-  panel_labels <- paste0("Panel ", LETTERS[1:(length(sorted_years) - 1)], ": ")
-  
-  # Generate plots for each year interval
-  for (i in 1:(length(sorted_years) - 1)) {
-    previous_year <- sorted_years[i]
-    current_year <- sorted_years[i + 1]
-    
-    xVar <- paste0("x", previous_year)  # x corresponds to the previous year
-    yVar <- paste0("Delta_FN_", current_year)  # Delta_FN corresponds to the current year
-    treatmentVar <- paste0("treatment", previous_year)  # Treatment corresponds to the start year of the interval
-    
-    # Ensure numeric conversion
-    dfReg_wide[[xVar]] <- as.numeric(dfReg_wide[[xVar]])
-    dfReg_wide[[yVar]] <- as.numeric(dfReg_wide[[yVar]])
-    
-    # Calculate correlation coefficient
-    correlation <- cor(dfReg_wide[[xVar]], dfReg_wide[[yVar]], use = "complete.obs", method = "pearson")
-    
-    # Create bins and calculate bin centers, means, and treatment density
-    bin_var <- paste0(xVar, "_bins")
-    df_plot <- dfReg_wide %>%
-      mutate(!!bin_var := cut(!!sym(xVar), breaks = num_bins, labels = FALSE)) %>%
-      group_by(!!sym(bin_var)) %>%
-      summarise(
-        bin_center = mean(!!sym(xVar), na.rm = TRUE),
-        mean_y = mean(!!sym(yVar), na.rm = TRUE),
-        count = n(),
-        treatment_proportion = mean(!!sym(treatmentVar), na.rm = TRUE),
-        .groups = 'drop'
-      )
-    
-    # Scale the treatment proportion to match the secondary y-axis
-    max_y <- max(df_plot$mean_y, na.rm = TRUE)
-    df_plot <- df_plot %>%
-      mutate(treatment_scaled = treatment_proportion * max_y)
-    
-    # Plot for the current year pair
-    t <- "FN Vote Share (Delta)"
-    p <- ggplot(df_plot, aes(x = bin_center)) +
-      geom_point(aes(y = mean_y), alpha = 0.5, color = "blue") +
-      geom_smooth(aes(y = mean_y), method = "lm", formula = y ~ poly(x, 2), se = FALSE, color = "black") +
-      geom_line(aes(y = treatment_scaled), color = "red", linetype = "dashed") +
-      scale_y_continuous(
-        name = "FN Vote Share (Delta)",
-        sec.axis = sec_axis(~ . / max_y, name = "Proportion Treated", labels = scales::percent)
-      ) +
-      labs(title = paste0(panel_labels[i], previous_year, "->", current_year, " (r = ", round(correlation, 2), ")")) +
-      theme_minimal() +
-      theme(axis.title.x = element_blank())
-    
-    plots[[i]] <- p
-  }
-
-  # Arrange plots in a grid with centered axis labels
-  n_cols <- ceiling(sqrt(length(plots)))
-  n_rows <- ceiling(length(plots) / n_cols)
-  
-  grid.arrange(
-    arrangeGrob(grobs = plots, nrow = n_rows, ncol = n_cols),
-    bottom = textGrob(var_lab, gp = gpar(fontsize = 14)),
-    left = textGrob(t, rot = 90, gp = gpar(fontsize = 14))
-  )
-}
-
-create_plotsFN_with_density(
-  df, 
-  x_var = "logpop", 
-  var_lab = "Population size (log) of the start year",
-  years = c("1988", "2017"),
-  num_bins = 20,
-  delta=FALSE
-)
-
-```
-```{r }
-rm(list=ls())
-path_data <- "/Users/ilanpargamin/Desktop/ECONOMICS/thesis/THESIS_REPRO/DATA/"
-path_out <- "/Users/ilanpargamin/Desktop/ECONOMICS/thesis/THESIS_REPRO/OUTPUT/"
-path_figures <- paste0(path_out, "figures/")
-path_tables <- paste0(path_out, "tables/")
-
-```
-
-## Figure 2_nine:  same with colored bins
-```{r }
-if (file.exists(paste0(path_data, "dataDes.RData"))) {
-  load(paste0(path_data, "dataDes.RData"))
-} else {
-  message("Data environment does not exist")
-}
-
-df <- dfZRRControls %>% 
-  mutate(codecommune = sub("^0+", "", as.character(codecommune))) %>%
-  left_join(dfOutcomeLong %>% 
-              mutate(codecommune = sub("^0+", "", as.character(codecommune))) %>% 
-              unique(), by=c("codecommune", "year")
-            ) %>%
-  select(codecommune, year, year_treat, treatment, pop, FN) %>% # choose variable here. ---- min_distance_to_agglo, 
-  drop_na() %>% 
-  filter_all(all_vars(!is.infinite(.))) %>%
-  mutate(logpop = log(df$pop+1))
-
-
-
-# Filter for data in the year 1988 and 2017
-df_filtered <- df %>%
-  filter(year %in% c(1988, 2017)) %>%
-  group_by(codecommune) %>%
-  summarise(
-    logpop_1988 = logpop[year == 1988],
-    delta_FN = FN[year == 2017] - FN[year == 1988],
-    year_treat = unique(year_treat)
-  ) %>%
-  filter(!is.na(logpop_1988), !is.na(delta_FN)) # Remove NAs
-
-# Create bins for logpop_1988
-df_binned <- df_filtered %>%
-  mutate(bin = cut(logpop_1988, breaks = 30, labels = FALSE))
-
-# Assign colors based on year_treat
-df_binned <- df_binned %>%
-  mutate(color_group = case_when(
-    year_treat == 1995 ~ "1995",
-    year_treat > 2003 ~ "After 2003",
-    TRUE ~ "Other"
-  ))
-
-# Plot the scatterplot
-ggplot(df_binned, aes(x = logpop_1988, y = delta_FN, color = color_group)) +
-  geom_point(alpha = 0.7) +  # Scatter points
-  scale_color_manual(values = c("1995" = "red", "After 2003" = "blue", "Other" = "gray")) +
-  labs(
-    title = "Change in FN Support vs Log of Population (1988)",
-    x = "Log(Population in 1988)",
-    y = "Change in FN Support (1988 to 2017)",
-    color = "Year Treat Group"
-  ) +
-  theme_minimal()
-```
-
-```{r }
-# Define parameters
-xVar <- "logpop_1988"
-yVar <- "delta_FN"
-treatmentVar <- "year_treat"
-bin_var <- "bin"
-num_bins <- 20
-
-# Filter and prepare the data
-df_filtered <- df %>%
-  filter(year %in% c(1988, 2017)) %>%
-  group_by(codecommune) %>%
-  summarise(
-    logpop_1988 = logpop[year == 1988],
-    delta_FN = FN[year == 2017] - FN[year == 1988],
-    year_treat = unique(year_treat),
-    .groups = 'drop'
-  ) %>%
-  filter(!is.na(logpop_1988), !is.na(delta_FN)) # Remove NAs
-
-# Add a treatment group identifier
-df_filtered <- df_filtered %>%
-  mutate(treatment_group = case_when(
-    year_treat == 1995 ~ "Year Treat = 1995",
-    year_treat > 2003 ~ "Year Treat > 2003",
-    TRUE ~ "Never treated"
-  ))
-
-
-
-# Bin the data and calculate averages for each group
-df_binned <- df_filtered %>%
-  mutate(!!bin_var := cut(!!sym(xVar), breaks = num_bins, labels = FALSE)) %>%
-  group_by(!!sym(bin_var), treatment_group) %>%
-  summarise(
-    bin_center = mean(!!sym(xVar), na.rm = TRUE),
-    mean_y = mean(!!sym(yVar), na.rm = TRUE),
-    count = n(),
-    .groups = 'drop'
-  )
-
-
-# Plot all groups on the same graph
-ggplot(df_binned, aes(x = bin_center, y = mean_y, color = treatment_group)) +
-  geom_point(size = 2, alpha = 0.8) +
-  # geom_line(aes(group = treatment_group), linewidth = 1) +  # Add lines connecting points for each group
-  scale_color_manual(
-    values = c(
-      "Year Treat = 1995" = "#E63946",  # Red
-      "Year Treat > 2003" = "#457B9D",  # Blue
-      "Never treated" = "#A8A8A8"  # Gray
-    )
-  ) +
-  labs(
-    title = "Binned Average Change in FN Support vs Log of Population (1988)",
-    subtitle = "Combined groups with treatment year differentiation",
-    x = "Log(Population in 1988) - Bin Center",
-    y = "Average Change in FN Support (1988 to 2017)",
-    color = "Treatment Group"
-  ) +
-  theme_minimal(base_size = 14) +
-  theme(
-    plot.title = element_text(face = "bold", size = 16, hjust = 0.5),
-    plot.subtitle = element_text(size = 12, hjust = 0.5),
-    legend.position = "top",
-    legend.title = element_text(size = 12),
-    legend.text = element_text(size = 10),
-    axis.title = element_text(size = 12),
-    axis.text = element_text(size = 10),
-    panel.grid.major = element_line(color = "gray80", linewidth = 0.5),
-    panel.grid.minor = element_blank()
-  )
-```
-```{r }
-rm(list=ls())
-path_data <- "/Users/ilanpargamin/Desktop/ECONOMICS/thesis/THESIS_REPRO/DATA/"
-path_out <- "/Users/ilanpargamin/Desktop/ECONOMICS/thesis/THESIS_REPRO/OUTPUT/"
-path_figures <- paste0(path_out, "figures/")
-path_tables <- paste0(path_out, "tables/")
-
-```
 
 ## Figure 3: Map of the municipalities in the ZRR program
 
 ```{r }
-if (file.exists(paste0(path_data, "dataDes.RData"))) {
-  load(paste0(path_data, "dataDes.RData"))
+if (file.exists(paste0(processed_data_path, "dataDes.RData"))) {
+  load(paste0(processed_data_path, "dataDes.RData"))
 } else {
   message("Data environment does not exist")
 }
@@ -1070,7 +326,7 @@ dfMap <- dfZRRControls  %>%
 
 
 # Load the shape file into a dataframe
-dfShape <- st_read(paste0(path_data, "communes-20220101-shp/communes-20220101.shp")) %>%
+dfShape <- st_read(paste0(raw_data_path, "communes-20220101-shp/communes-20220101.shp")) %>%
   select(geometry, insee) %>%
   mutate(codecommune = sub("^0+", "", as.character(insee))) %>% select(-insee)
 
@@ -1106,11 +362,11 @@ p <- ggplot(dfMap) +
     plot.title = element_text(hjust = 0.5, size = 16)
   )
 
-file_path <- paste0(path_figures, "treatmentMap.png")
+file_path <- paste0(path_figures, "figure3.png")
 ggsave(file_path, plot = p, device = "png", width = 10, height = 8)
 
 
-rm(list = setdiff(ls(), keep_vars))
+rm(list = setdiff(ls(envir = globalenv()), c("processed_data_path", "raw_data_path", "main_path", "path_figures", "path_tables", "path_out", "path_data", "labels")), envir = globalenv())
 
 ```
 
@@ -1126,12 +382,10 @@ preprocess_data <- function(df, dfShape, var) {
   df <- df %>%
     rename(insee = codecommune) %>%
     select(var, "insee") %>%
-    mutate(insee = as.character(insee)) %>%
-    mutate(insee = sub("^0+", "", insee))
+    mutate(insee = sub("^0+", "", as.character(insee)))
   
   dfShape <- dfShape %>%
-    mutate(insee = as.character(insee)) %>%
-    mutate(insee = sub("^0+", "", insee))
+    mutate(insee = sub("^0+", "", as.character(insee)))
   
   merged_df <- df %>%
     inner_join(dfShape, by = "insee") %>%
@@ -1144,26 +398,22 @@ preprocess_data <- function(df, dfShape, var) {
 }
 
 
-# Load the shape file into a dataframe
-pathshp <- paste0(path_data, "communes-20220101-shp/communes-20220101.shp")
-dfShape <- st_read(pathshp)
-dfShape$codecommune <- as.character(dfShape$insee)
-dfShape <- dfShape %>%
-  # select(geometry, codecommune) %>%
-  mutate(codecommune = as.character(codecommune)) %>%
-  mutate(codecommune = sub("^0+", "", codecommune))
-
 # Load election data
-if (file.exists(paste0(path_data, "election.RData"))) {
-  load(paste0(path_data, "election.RData"))
+if (file.exists(paste0(processed_data_path, "dataDes.RData"))) {
+  load(paste0(processed_data_path, "dataDes.RData"))
 } else {
   message("Data environment does not exist")
 }
 
+# Load the shape file into a dataframe
+dfShape <- dfShape %>%
+  mutate(codecommune = as.character(insee)) %>%
+  # select(geometry, codecommune) %>%
+  mutate(codecommune = sub("^0+", "", codecommune))
 
 # Create the combined dataset to determine the common scale
-df1988 <- preprocess_data(df_elec, dfShape, "FN1988")
-df2002 <- preprocess_data(df_elec, dfShape, "FN2002")
+df1988 <- preprocess_data(dfZRR, dfShape, "FN1988")
+df2002 <- preprocess_data(dfZRR, dfShape, "FN2002")
 
 colnames(df1988)[colnames(df1988) == "FN1988"] <- "FN"
 colnames(df2002)[colnames(df2002) == "FN2002"] <- "FN"
@@ -1194,12 +444,12 @@ combined_plot <- plot_grid(p1, p2, ncol = 1, labels = c("Panel A: FN vote share 
                                                         "Panel B: FN vote share in 2002"))
 
 # Define the file path for saving the combined plot
-file_path <- paste0(path_figures, "FN1988_FN2002_combined.png")
+file_path <- paste0(path_figures, "figure4.png")
 
 # Save the combined plot as a PNG file
 ggsave(file_path, plot = combined_plot, device = "png", width = 10, height = 16)
 
-rm(combined_df, combined_plot, df_elec, df1988, df2002, dfShape, p1, p2, common_scale_limits, file_path, pathshp, create_map_plot, preprocess_data)
+rm(list = setdiff(ls(envir = globalenv()), c("processed_data_path", "raw_data_path", "main_path", "path_figures", "path_tables", "path_out", "path_data", "labels")), envir = globalenv())
 ```
 
 ## Figure 5: Nonparametric Effect of several Locality Characteristics, as of 2002 on Support for FN over Time
@@ -1305,11 +555,11 @@ combined_plot <- grid.arrange(grobs = plots, ncol = 2,
                               bottom = textGrob("Years", gp = gpar(fontsize = 15)))
 
 # Export the combined plot
-file_path <- paste0(path_figures, "FE_figures.png")
+file_path <- paste0(path_figures, "figure5.png")
 ggsave(file_path, combined_plot, width = 10, height = 8)
 
 
-rm(list = setdiff(ls(), keep_vars))
+rm(list = setdiff(ls(envir = globalenv()), c("processed_data_path", "raw_data_path", "main_path", "path_figures", "path_tables", "path_out", "path_data", "labels")), envir = globalenv())
 
 ```
 
@@ -1322,9 +572,7 @@ if (file.exists(file.path(processed_data_path, "FN_growth.RData"))) {
 } else {
   message("Data environment does not exist")
 }
-```
 
-```{r }
 
 create_plotsFN <- function(dfReg, x_var, var_lab, years, num_bins = 50, min_pop = 70000000) {
   
@@ -1419,9 +667,7 @@ p <- ggplot(df_plot, aes(x = bin_center, y = mean_y)) +
   )
 }
 
-```
 
-```{r }
 dfZRRControls[["logpop"]] <- log(dfZRRControls[["pop"]])
 
 
@@ -1436,12 +682,12 @@ combined_plot <- create_plotsFN(dfZRRControls,
 
 
 # Export the combined plot
-file_path <- paste0(path_figures, "pop_vs_FN.png")
+file_path <- paste0(path_figures, "figure6.png")
 ggsave(file_path, combined_plot, width = 10, height = 8)
 
 
 
-rm(list = setdiff(ls(), keep_vars))
+rm(list = setdiff(ls(envir = globalenv()), c("processed_data_path", "raw_data_path", "main_path", "path_figures", "path_tables", "path_out", "path_data", "labels")), envir = globalenv())
 
 ```
 
@@ -1456,95 +702,107 @@ rm(list = setdiff(ls(), keep_vars))
 ## Figure 7: Comparison of FN vote share between 1988 and 2002 by Treatment Status
 
 ```{r }
-if (file.exists(paste0(path_data, "dataDes.RData"))) {
-  load(paste0(path_data, "dataDes.RData"))
+if (file.exists(paste0(processed_data_path, "dataDes.RData"))) {
+  load(paste0(processed_data_path, "dataDes.RData"))
 } else {
   message("Data environment does not exist")
 }
 
-dfZRRControls <- dfZRRControls %>% filter(year_treat > 0)
-dfZRRControls <- dfZRRControls %>%
-    filter(!is.na(FN) ) %>%
-  filter(!is.na(treatment) )
-
-dfZRRControls <- dfZRRControls %>%
-  # Calculate the time since treatment
-  mutate(time_since_open = year - year_treat) 
-
-# We keep the years 1988 and 2002 when we have elections results
-dfSpe <- dfZRRControls  %>%
-  filter(year %in% list(1988,2002) )
-
-# create treated var
-dfSpe$treated = ifelse( dfSpe$year_treat == 1995, 1, 0)
-# Create a dummy variable to indicate the time when the treatment started. Lets assume that treatment started in 1995. In this case, years before 1995 will have a value of 0 and 1995+ a 1. 
-
-dfSpe$post = ifelse(dfSpe$year >= 1995, 1, 0)
-
-controls <- names(dfSpe)
-controls <- setdiff(controls, c("codecommune", "nomcommune", "dep", "year", "reg", "nom", "codecommune", "time_since_open", "year_treat", "post", "FN_log", "treated", "FN", "treatment", "FN1995", "RPR", "deltaFN", "turnout_2002", "canton"))
-
-variables_to_clean <- c("codecommune", "FN", "year", controls, "post", "treated",  "year_treat", "time_since_open",  "dep")
-
-# Loop through each variable in the list
-for(var in variables_to_clean) {
-  # Remove rows with NA values in the current variable
-  dfSpe <- dfSpe[!is.na(dfSpe[[var]]), ]
-  
-  # Remove rows with Inf or -Inf values in the current variable
-  dfSpe <- dfSpe[!is.infinite(dfSpe[[var]]), ]
+# Helper function to clean NA and Inf
+clean_df <- function(df, vars) {
+  for (var in vars) {
+    df <- df[!is.na(df[[var]]) & !is.infinite(df[[var]]), ]
+  }
+  return(df)
 }
 
-dfSpe <- dfSpe %>%
-  select(all_of(variables_to_clean))
+# Prepare and clean dfSpe
+dfZRRControls <- dfZRRControls %>%
+  mutate(time_since_open = year - year_treat) %>%
+  mutate(
+    treated = ifelse(year_treat == 1995, 1, 0),
+    post = ifelse(year >= 1995, 1, 0),
+    did = post * treated,
+    logpop = log(pop)
+  ) 
+  
 
-dfSpe$did <- dfSpe$post * dfSpe$treated
+dfSpe <- dfZRRControls %>% 
+  filter(year_treat > 0, year %in% c(1988, 2002), !is.na(FN), !is.na(treatment)) 
 
-dfSpe <- dfSpe %>%
-  distinct()
+controls <- c("pchom",
+              "logpop",
+              "ratEmp",
+              "ratForeigners",
+              "asso",
+              "educNoDiplomaPerK",
+              "educSUPPerK",
+              "educBACPerK",
+              "educCAPBEPPerK",
+              "poph",
+              "popf",
+              "pagri",
+              "pindp",
+              "ppint",
+              "pempl",
+              "pouvr",
+              "altitude",
+              "superficie",
+              "logVac",
+              # "delta_pop_1982_1990",
+              # "delta_emp_1982_1990",
+              "min_distance_to_agglo")
 
 
-## Plot 1
-df_spread <- dfSpe[dfSpe$year %in% c(1988, 2002), ] %>% 
+variables_to_clean <- c("codecommune", "FN", "year", controls, "post", "treated", "year_treat", "time_since_open", "dep")
+dfSpe <- dfSpe %>% select(all_of(variables_to_clean))
+dfSpe <- clean_df(dfSpe, variables_to_clean)
+dfSpe <- dfSpe %>% distinct()
+
+# Plot 1
+plot_df <- dfSpe %>%
+  filter(year %in% c(1988, 2002)) %>%
   select(codecommune, FN, year, year_treat) %>%
-  pivot_wider(
-    names_from = year,
-    values_from = FN,
-    values_fill = list(FN = NA),
-    values_fn = list(FN = mean)
-  ) %>%
-  group_by(codecommune) %>%
-  mutate(year_treat = max(year_treat, na.rm = TRUE)) %>%
-  ungroup() %>%
+  pivot_wider(names_from = year, values_from = FN, values_fn = mean) %>%
   rename(FN1988 = `1988`, FN2002 = `2002`) %>%
-  drop_na(FN1988, FN2002)
+  drop_na(FN1988, FN2002) %>%
+  mutate(zrr_1995 = factor(year_treat == 1995, levels = c(TRUE, FALSE), labels = c("1995", "after 2004")))
 
-common_aes <- aes(shape = as.factor(year_treat == 1995))
 
-plot1 <- ggplot(df_spread %>% filter(FN1988 < 0.3), aes(x = FN1988, y = FN2002, shape = as.factor(year_treat == 1995), color = as.factor(year_treat == 1995))) +
-  stat_summary_bin(
-    aes(group = as.factor(year_treat == 1995)),
-    fun = "mean",
-    bins = 50,  # Adjust the number of bins as needed
-    geom = "point", 
-    size = 1.5, 
-    #alpha = 0.5
+
+
+
+
+df_binned_summary <- plot_df %>%
+  filter(FN1988 < 0.3) %>%
+  mutate(bin = ntile(FN1988, 50)) %>% # 50 bins with equal count
+  group_by(bin, zrr_1995) %>%
+  summarize(
+    mean_FN1988 = mean(FN1988, na.rm = TRUE),
+    mean_FN2002 = mean(FN2002, na.rm = TRUE),
+    .groups = "drop"
+  )
+
+plot1 <- ggplot(df_binned_summary, aes(x = mean_FN1988, y = mean_FN2002, shape = zrr_1995, color = zrr_1995)) +
+  geom_point(size = 1.5) +
+  scale_shape_manual(values = c("1995" = 17, "after 2004" = 15)) +
+  scale_color_manual(values = c("1995" = "black", "after 2004" = "grey")) +
+  labs(
+    x = "Vote share for FN in 1988 (binned)",
+    y = "Vote share for FN in 2002",
+    title = "Panel A: no control",
+    shape = "ZRR Year",
+    color = "ZRR Year"
   ) +
-  scale_shape_manual(
-    values = c("TRUE" = 17, "FALSE" = 15),  # Use triangles and squares
-    labels = c("after 2004", "1995"),  # Corrected label order
-    name = "Year of admission to the ZRR"  # Updated title
-  ) +
-  scale_color_manual(
-    values = c("TRUE" = "black", "FALSE" = "grey"),  # Set colors for TRUE and FALSE points
-    labels = c("after 2004", "1995"),  # Corrected label order
-    name = "Year of admission to the ZRR"
-  ) +
-  labs(x = "Vote share for FN in 1988", y = "Vote share for FN in 2002", title = "Panel A: no control") +
   theme_minimal() +
-  theme(legend.position = "bottom")  # Position the legend at the bottom
+  theme(legend.position = "bottom")
 
-## Plot 2
+
+
+
+
+
+# Plot 2 — with controls
 df_filtered <- dfZRRControls %>%
   filter(year %in% c(1988, 2002)) %>%
   mutate(
@@ -1552,336 +810,81 @@ df_filtered <- dfZRRControls %>%
     post = ifelse(year >= 1995, 1, 0)
   ) %>%
   select(codecommune, FN, post, treated, year_treat, time_since_open, dep, all_of(controls)) %>%
-  filter(across(everything(), ~ !is.na(.))) %>%
+  drop_na() %>%
   arrange(codecommune)
 
+df_filtered <- clean_df(df_filtered, setdiff(variables_to_clean, "year"))
 
-for(var in setdiff(variables_to_clean, "year")) {
-  # Remove rows with NA values in the current variable
-  df_filtered <- df_filtered[!is.na(df_filtered[[var]]), ]
-  
-  # Remove rows with Inf or -Inf values in the current variable
-  df_filtered <- df_filtered[!is.infinite(df_filtered[[var]]), ]
-}
-
-# Count occurrences of each codecommune
-commune_counts <- df_filtered %>%
-  count(codecommune) %>%
-  filter(n == 2)
-
-# Filter the original dataframe to keep only those with exactly 2 occurrences
-df_filtered <- df_filtered %>%
-  filter(codecommune %in% commune_counts$codecommune)
-
-duplicates <- df_filtered %>%
-  group_by(codecommune, year_treat, post) %>%
-  filter(n() > 1) %>%
-  arrange(codecommune, year_treat, post)
-rm(duplicates)
-
-df_filtered <- df_filtered %>%
+# Keep only communes with both years
+communes_keep <- df_filtered %>% count(codecommune) %>% filter(n == 2) %>% pull(codecommune)
+df_filtered <- df_filtered %>% filter(codecommune %in% communes_keep) %>%
   group_by(codecommune, year_treat, post) %>%
   filter(row_number() == 1) %>%
   ungroup()
 
-
-# Reshape the data so that each commune has both years' FN values in the same row
 df_spread <- df_filtered %>%
-  pivot_wider(
-    names_from = post, 
-    values_from = c(FN, controls),
-    values_fill = list(FN = NA)
-  ) %>%
-  ungroup()
-
-
-# Create control variables for regression
-create_controls <- function(postfix) {
-  paste0(controls, "_", postfix)
-}
-
-controls_0 <- create_controls("0")
-controls_1 <- create_controls("1")
-
-
-# Create the formulas
-formula_0 <- as.formula(paste("FN_0 ~", paste(controls_0, collapse = " + "), "+dep"))
-formula_1 <- as.formula(paste("FN_1 ~", paste(controls_0, collapse = " + "), "+dep")) # we regress on pre-treatment controls
-
-df_spread_0 <- df_spread %>% select(c("codecommune", "FN_0", "year_treat", controls_0, "dep"))
-df_spread_1 <- df_spread %>% select(c("codecommune", "FN_1", "dep"))
-
-df_spread_0 <- df_spread_0 %>%
-  group_by(codecommune) %>%
-  fill(FN_0, dep, matches("_0$"), .direction = "downup") %>%
+  pivot_wider(names_from = post, values_from = c(FN, all_of(controls))) %>%
   ungroup() %>%
-  distinct()  # Remove duplicate rows
+  mutate(zrr_1995 = factor(year_treat == 1995, levels = c(TRUE, FALSE), labels = c("1995", "after 2004")))
+
+
+df_spread <- inner_join(
+  clean_df(
+    df_spread %>% select(c("codecommune", "FN_0", "year_treat", paste0(controls, "_0"), "dep", "zrr_1995")),
+    c("codecommune", "FN_0", paste0(controls, "_0"), "dep", "zrr_1995")
+    ),
+  clean_df(
+    df_spread %>% select(c("codecommune", "FN_1", "dep")),
+    c("codecommune", "FN_1", "dep")), 
+  by = c("codecommune",  "dep"))
 
 
 
-for(var in names(df_spread_0)) {
-  # Remove rows with NA values in the current variable
-  df_spread_0 <- df_spread_0[!is.na(df_spread_0[[var]]), ]
-    df_spread_0 <- df_spread_0[!is.infinite(df_spread_0[[var]]), ]
-}
-for(var in names(df_spread_1)) {
-  # Remove rows with NA values in the current variable
-  df_spread_1 <- df_spread_1[!is.na(df_spread_1[[var]]), ]
-    df_spread_1 <- df_spread_1[!is.infinite(df_spread_1[[var]]), ]
-}
+regression_0 <- lm(as.formula(paste("FN_0 ~", paste(paste0(controls, "_0"), collapse = " + "), "+ dep")), data = df_spread)
+regression_1 <- lm(as.formula(paste("FN_1 ~", paste(paste0(controls, "_0"), collapse = " + "), "+ dep")), data = df_spread)
 
-
-
-df_spread <- inner_join(df_spread_0, df_spread_1, by = c("codecommune",  "dep"))
-
-
-# Run the regressions
-regression_0 <- lm(formula_0, data = df_spread)
-regression_1 <- lm(formula_1, data = df_spread)
-
-
-# Extract residuals from each regression
-residuals_0 <- residuals(regression_0)
-residuals_1 <- residuals(regression_1)
-
-
-# Combine residuals into a data frame
-residuals_df <- data.frame(
-  year_treat = df_spread$year_treat,
-  residuals_0 = residuals_0,
-  residuals_1 = residuals_1
-)
-
-
-
-plot2 <- ggplot(residuals_df, aes(x = residuals_0, y = residuals_1, shape = as.factor(year_treat == 1995), color = as.factor(year_treat == 1995))) +
-  stat_summary_bin(
-    aes(group = as.factor(year_treat == 1995)),
-    fun = "mean",
-    bins = 50,  # Adjust the number of bins as needed
-    geom = "point", 
-    size = 1, 
-    #alpha = 0.5
-  ) +
-  scale_shape_manual(
-    values = c("TRUE" = 17, "FALSE" = 15),  # Use triangles and squares
-    labels = c("1995", "after 2004"),  # Updated labels
-    name = "Year of admission to the ZRR"  # Updated title
-  ) +
-  scale_color_manual(
-    values = c("TRUE" = "black", "FALSE" = "grey"),  # Set colors for TRUE and FALSE points
-    labels = c("1995", "after 2004"),
-    name = "Year of admission to the ZRR"
-  ) +
-  labs(x = "Vote share for FN in 1988 (residuals)", y = "Vote share for FN in 2002 (residuals)", title = "Panel B: with controls") +
-  theme_minimal() +
-  theme(legend.position = "none")  # Hide legend
-
-
-
-## Combine plot1 and plot2
-
-combined_plot <- plot1 / plot2 
-
-# Define the path where the combined plot will be saved
-path <- paste0(path_figures, "combined_plot_FN1988_FN2002.png")
-
-# Save the combined plot as a PNG file
-ggsave(filename = path, plot = combined_plot, width = 12, height = 12, dpi = 300)
-
-
-rm(list = setdiff(ls(), keep_vars))
-
-```
-
-## Figure 7-bis: Comparison of FN vote share between 1988 and 2002 by Treatment Status, all population vs. 1995
-
-```{r }
-if (file.exists(paste0(path_data, "dataDes.RData"))) {
-  load(paste0(path_data, "dataDes.RData"))
-} else {
-  message("Data environment does not exist")
-}
-
-dfZRRControls <- dfZRRControls %>%
-    filter(!is.na(FN) ) %>%
-  filter(!is.na(treatment) )
-
-# We keep the years 1988 and 2002 when we have elections results
-dfSpe <- dfZRRControls  %>%
-  filter(year %in% list(1988,2002) )
-
-# create treated var
-dfSpe$treated = ifelse( dfSpe$year_treat == 1995, 1, 0)
-# Create a dummy variable to indicate the time when the treatment started. Lets assume that treatment started in 1995. In this case, years before 1995 will have a value of 0 and 1995+ a 1. 
-
-dfSpe$post = ifelse(dfSpe$year >= 1995, 1, 0)
-
-controls <- names(dfSpe)
-controls <- setdiff(controls, c("codecommune", "nomcommune", "dep", "year", "reg", "nom", "codecommune",  "post", "FN_log", "treated", "FN", "treatment", "FN1995", "RPR", "deltaFN", "turnout_2002", "canton"))
-
-variables_to_clean <- c("codecommune", "FN", "year", controls, "post", "treated",   "dep")
-
-# Loop through each variable in the list
-for(var in variables_to_clean) {
-  # Remove rows with NA values in the current variable
-  dfSpe <- dfSpe[!is.na(dfSpe[[var]]), ]
-  
-  # Remove rows with Inf or -Inf values in the current variable
-  dfSpe <- dfSpe[!is.infinite(dfSpe[[var]]), ]
-}
-
-dfSpe <- dfSpe %>%
-  select(all_of(variables_to_clean))
-
-dfSpe$did <- dfSpe$post * dfSpe$treated
-
-dfSpe <- dfSpe %>%
-  distinct()
-
-
-## Plot 1
-df_spread <- dfSpe[dfSpe$year %in% c(1988, 2002), ] %>% 
-  select(codecommune, FN, year, treated) %>%
-  pivot_wider(
-    names_from = year,
-    values_from = FN,
-    values_fill = list(FN = NA),
-    values_fn = list(FN = mean)
-  ) %>%
-  rename(FN1988 = `1988`, FN2002 = `2002`) %>%
-  drop_na(FN1988, FN2002)
-
-common_aes <- aes(shape = as.factor(treated == TRUE))
-
-plot1 <- ggplot(df_spread %>% filter(FN1988 < 0.3), aes(x = FN1988, y = FN2002, shape = as.factor(treated == TRUE), color = as.factor(treated == TRUE))) +
-  stat_summary_bin(
-    aes(group = as.factor(treated == TRUE)),
-    fun = "mean",
-    bins = 50,  # Adjust the number of bins as needed
-    geom = "point", 
-    size = 1.5, 
-    #alpha = 0.5
-  ) +
-  scale_shape_manual(
-    values = c("TRUE" = 17, "FALSE" = 15),  # Use triangles and squares
-    labels = c("Never treated or treated after 2004", "Treated in 1995"),  # Corrected label order
-    name = "Treatment Status"  
-  ) +
-  scale_color_manual(
-    values = c("TRUE" = "black", "FALSE" = "grey"),  # Set colors for TRUE and FALSE points
-    labels = c("Never treated or treated after 2004", "Treated in 1995"),  # Corrected label order
-    name = "Treatment Status"  
-  ) +
-  labs(x = "Vote share for FN in 1988", y = "Vote share for FN in 2002", title = "Panel A: no control") +
-  theme_minimal() +
-  theme(legend.position = "bottom")  # Position the legend at the bottom
-
-## Plot 2
-df_filtered <- dfZRRControls %>%
-  filter(year %in% c(1988, 2002)) %>%
+df_spread <- df_spread %>%
   mutate(
-    treated = ifelse(year_treat == 1995, 1, 0),
-    post = ifelse(year >= 1995, 1, 0)
-  ) %>%
-  select(codecommune, FN, post, treated, dep, all_of(controls)) %>%
-  filter(across(everything(), ~ !is.na(.))) %>%
-  arrange(codecommune)
+    residuals_0 = residuals(regression_0),
+    residuals_1 = residuals(regression_1)
+  )
 
 
-# Create 2 dataframes: one with the data when post=0 (FN and controls), one with FN and codecommune when post=1
-df_0 <- df_filtered %>%
-  filter(post==0) %>%
-  group_by(codecommune) %>%
-  filter(row_number() == 1) %>%
-  ungroup()
+df_binned_summary <- df_spread %>%
+  mutate(bin = ntile(residuals_0, 50)) %>% # 50 bins with equal count
+  group_by(bin, zrr_1995) %>%
+  summarize(
+    mean_FN1988 = mean(residuals_0, na.rm = TRUE),
+    mean_FN2002 = mean(residuals_1, na.rm = TRUE),
+    .groups = "drop"
+  )
 
-
-df_1 <- df_filtered %>%
-  filter(post==1) %>%
-  select(FN, codecommune) %>%
-  rename(FN_post = FN) %>%
-  group_by(codecommune) %>%
-  filter(row_number() == 1) %>%
-  ungroup()
-
-df_spread <- inner_join(df_0, df_1, by = c("codecommune"))
-
-
-for(var in setdiff(variables_to_clean, "year")) {
-  # Remove rows with NA values in the current variable
-  df_spread <- df_spread[!is.na(df_spread[[var]]), ]
-  
-  # Remove rows with Inf or -Inf values in the current variable
-  df_spread <- df_spread[!is.infinite(df_spread[[var]]), ]
-}
-
-
-# Create the formulas
-formula_0 <- as.formula(paste("FN ~", paste(setdiff(controls, "year_treat"), collapse = " + "), "+dep"))
-formula_1 <- as.formula(paste("FN_post ~", paste(setdiff(controls, "year_treat"), collapse = " + "), "+dep")) # we regress on pre-treatment controls
-
-
-# Run the regressions
-regression_0 <- lm(formula_0, data = df_spread)
-regression_1 <- lm(formula_1, data = df_spread)
-
-
-# Extract residuals from each regression
-residuals_0 <- residuals(regression_0)
-residuals_1 <- residuals(regression_1)
-
-
-# Combine residuals into a data frame
-residuals_df <- data.frame(
-  treated = df_spread$treated,
-  residuals_0 = residuals_0,
-  residuals_1 = residuals_1
-)
-
-
-
-plot2 <- ggplot(residuals_df, aes(x = residuals_0, y = residuals_1, shape = as.factor(treated == TRUE), color = as.factor(treated == TRUE))) +
-  stat_summary_bin(
-    aes(group = as.factor(treated == TRUE)),
-    fun = "mean",
-    bins = 50,  # Adjust the number of bins as needed
-    geom = "point", 
-    size = 1, 
-    #alpha = 0.5
+plot2 <- ggplot(df_binned_summary, aes(x = mean_FN1988, y = mean_FN2002, shape = zrr_1995, color = zrr_1995)) +
+  geom_point(size = 1.5) +
+  scale_shape_manual(values = c("1995" = 17, "after 2004" = 15)) +
+  scale_color_manual(values = c("1995" = "black", "after 2004" = "grey")) +
+  labs(
+    x = "Vote share for FN in 1988 (residuals)", 
+    y = "Vote share for FN in 2002 (residuals)", 
+    title = "Panel B: with controls",
+    shape = "ZRR Year",
+    color = "ZRR Year"
   ) +
-  scale_shape_manual(
-    values = c("TRUE" = 17, "FALSE" = 15),  # Use triangles and squares
-    labels = c("Never treated or treated after 2004", "Treated in 1995"),  # Corrected label order
-    name = "Treatment Status"  
-  ) +
-  scale_color_manual(
-    values = c("TRUE" = "black", "FALSE" = "grey"),  # Set colors for TRUE and FALSE points
-    labels = c("Never treated or treated after 2004", "Treated in 1995"),  # Corrected label order
-    name = "Treatment Status"  
-  ) +
-  labs(x = "Vote share for FN in 1988 (residuals)", y = "Vote share for FN in 2002 (residuals)", title = "Panel B: with controls") +
   theme_minimal() +
-  theme(legend.position = "none")  
+  theme(legend.position = "none")
 
 
 
-## Combine plot1 and plot2
 
-combined_plot <- plot1 / plot2 
+# Combine and save
+combined_plot <- plot1 / plot2
 
-# Define the path where the combined plot will be saved
-path <- paste0(path_figures, "combined_plot_FN1988_FN2002_all_pop.png")
-
-# Save the combined plot as a PNG file
-ggsave(filename = path, plot = combined_plot, width = 12, height = 12, dpi = 300)
+ggsave(filename = paste0(path_figures, "figure7.png"), plot = combined_plot, width = 12, height = 12, dpi = 300)
 
 
-rm(list = setdiff(ls(), keep_vars))
+rm(list = setdiff(ls(envir = globalenv()), c("processed_data_path", "raw_data_path", "main_path", "path_figures", "path_tables", "path_out", "path_data", "labels")), envir = globalenv())
 
 ```
-
-
 
 ## Figure 8: Map and distribution of the running variable
 ```{r}
@@ -1901,12 +904,12 @@ dfShape <- dfShape %>%
 dfMap <- dfDistance  %>%
   select(codecommune, treatment, distance_to_border)
 
-dfMap <- merge(dfMap, dfShape, on="codecommune")
+dfMap <- merge(dfMap, dfShape, on="codecommune") 
 
 dfMap <- st_as_sf(dfMap)
 
 
-# Filter areas where treatment = 1 and aggregate
+# Filter areas where treatment = 1 
 treatment_areas <- dfMap %>%
   filter(treatment == 1)
 
@@ -1948,7 +951,6 @@ df_rdd <- subset(dfZRRControls, x >= lower_bound & x <= upper_bound)
 rm(lower_bound, bandwidth)
 
 df_rdd$dist <- df_rdd$x
-# df_rdd$deltaFN2002_1988 <- df_rdd$y # voteShareFN2002 or deltaFN2002_1988 or voteShareFN1988
 df_rdd$treatmentZRR <- df_rdd$z
 df_rdd$pop <- log(df_rdd$pop)
 
@@ -1974,12 +976,12 @@ p_dis <- ggplot(df_rdd,
 
 combined_plot <- map / p_dis + plot_layout(ncol = 1)
 
-file_path <- paste0(path_figures, "distanceMapAndDistribution_test.png")
+file_path <- paste0(path_figures, "figure8.png")
 
 # Save the plot as a PNG file
 ggsave(file_path, plot = combined_plot, device = "png", width = 10, height = 12)
 
-rm(list = setdiff(ls(envir = globalenv()), c("processed_data_path", "raw_data_path", "main_path")), envir = globalenv())
+rm(list = setdiff(ls(envir = globalenv()), c("processed_data_path", "raw_data_path", "main_path", "path_figures", "path_tables", "path_out", "path_data", "labels")), envir = globalenv())
 ```
 
 
@@ -1995,19 +997,14 @@ if (file.exists(paste0(processed_data_path, "script_sharp.RData"))) {
 bandwidth <- 20000 # it corresponds to the distance (in meters)
 threshold <- 0
 
-lower_bound <- threshold - bandwidth
-upper_bound <- threshold + bandwidth
+df_rdd <- subset(dfZRRControls, 
+                 x >= threshold - bandwidth & x <= threshold + bandwidth) %>%
+  mutate(dist = x,
+         treatmentZRR = z,
+         pop = log(pop))
 
-df_rdd <- subset(dfZRRControls, x >= lower_bound & x <= upper_bound)
-rm(lower_bound, bandwidth)
 
-df_rdd$dist <- df_rdd$x
-# df_rdd$deltaFN2002_1988 <- df_rdd$y # voteShareFN2002 or deltaFN2002_1988 or voteShareFN1988
-df_rdd$treatmentZRR <- df_rdd$z
-df_rdd$pop <- log(df_rdd$pop)
-
-df_rdd <- df_rdd[!duplicated(df_rdd$codecommune), ]
-
+df_rdd <- df_rdd[!duplicated(df_rdd$codecommune), ] # keep the first instance, which is fine because only the codecanton differs across those municipalities, not the other vars
 ```
 
 ```{r }
@@ -2048,25 +1045,54 @@ annotation_text <- paste0(
 )
 
 # Create plot with residuals
-p <- ggplot(df_filtered, aes(x = x, 
-                             y = residuals)) +
-  stat_summary_bin(aes(group = ifelse(x <= 0, "Inside Program", "Outside Program")),
-                   fun = "mean",  # Calculates the mean for each bin
-                   bins = 15,     # Adjust the number of bins as needed
-                   geom = "point", size = 2, color = "black") +
-  geom_smooth(aes(group = ifelse(x <= 0, "Inside Program", "Outside Program")),
+# p <- ggplot(df_filtered, aes(x = x, 
+#                              y = residuals)) +
+#   stat_summary_bin(aes(group = ifelse(x <= 0, "Inside Program", "Outside Program")),
+#                    fun = "mean",  # Calculates the mean for each bin
+#                    bins = 15,     # Adjust the number of bins as needed
+#                    geom = "point", size = 2, color = "black") +
+#   geom_smooth(aes(group = ifelse(x <= 0, "Inside Program", "Outside Program")),
+#               method = "lm", formula = y ~ x, size = 1, color = "black") +
+#   geom_vline(xintercept = 0, color = "black") +
+#   theme_minimal() +
+#   theme(legend.position = "bottom",
+#         plot.title = element_text(size = 30, hjust = 0.5),
+#         axis.title.x = element_blank(),  # Remove x-axis title
+#         axis.title.y = element_blank()) + # Remove y-axis title
+#   annotate("text", x = Inf, y = Inf, label = annotation_text, 
+#            hjust = 1.1, vjust = 1.5, size = 6, color = "black", parse = FALSE)
+
+df_binned <- df_filtered %>%
+  mutate(bin = ntile(x, 15)) %>%
+  group_by(bin) %>%
+  mutate(
+    bin_center = mean(x, na.rm = TRUE),
+    group = ifelse(mean(x, na.rm = TRUE) <= 0, "Inside Program", "Outside Program")
+  ) %>%
+  summarize(
+    bin_center = mean(x, na.rm = TRUE),
+    residuals_mean = mean(residuals, na.rm = TRUE),
+    group = first(group),
+    .groups = "drop"
+  )
+
+p <- ggplot(df_binned, aes(x = bin_center, y = residuals_mean)) +
+  geom_point(aes(shape = group), size = 2, color = "black") +
+  geom_smooth(data = df_filtered, aes(x = x, y = residuals, group = ifelse(x <= 0, "Inside Program", "Outside Program")),
               method = "lm", formula = y ~ x, size = 1, color = "black") +
   geom_vline(xintercept = 0, color = "black") +
   theme_minimal() +
-  theme(legend.position = "bottom",
-        plot.title = element_text(size = 30, hjust = 0.5),
-        axis.title.x = element_blank(),  # Remove x-axis title
-        axis.title.y = element_blank()) + # Remove y-axis title
-  annotate("text", x = Inf, y = Inf, label = annotation_text, 
+  theme(
+    legend.position = "bottom",
+    plot.title = element_text(size = 30, hjust = 0.5),
+    axis.title.x = element_blank(),
+    axis.title.y = element_blank()
+  ) +
+  annotate("text", x = Inf, y = Inf, label = annotation_text,
            hjust = 1.1, vjust = 1.5, size = 6, color = "black", parse = FALSE)
 
 # Combine plots into one figure with unique x and y labels
-file_path <- paste0(path_figures, "RDD_plots_conditional_FN1988.png")
+file_path <- paste0(path_figures, "figure9.png")
 
 png(file_path, width = 800, height = 900)
 
@@ -2076,44 +1102,8 @@ combined_plot <- grid.arrange(p, ncol = 1,
 
 dev.off()
 
-rm(combined_plot, df_rdd, dfDistance, dfZRR1995Controls, controls, file_path, pattern, threshold, upper_bound, y, model, p, df_filtered, b, formula, conditional_on)
 
 
-
-
-
-# Bin and compute means + standard errors
-binned <- df_filtered %>%
-  mutate(bin = cut(x, breaks = 15)) %>%  # 15 bins
-  group_by(bin) %>%
-  summarise(
-    x_center = mean(x, na.rm = TRUE),
-    y_mean = mean(residuals, na.rm = TRUE),
-    se = sd(residuals, na.rm = TRUE) / sqrt(n()),
-    .groups = "drop"
-  )
-
-# Plot with error bars
-ggplot(binned, aes(x = x_center, y = y_mean)) +
-  geom_point(color = "black", size = 2) +
-  geom_errorbar(aes(ymin = y_mean - se, ymax = y_mean + se), width = 500, color = "black") +
-  geom_vline(xintercept = 0, color = "black") +
-  theme_minimal() +
-  theme(
-    legend.position = "none",
-    plot.title = element_text(size = 30, hjust = 0.5),
-    axis.title.x = element_blank(),
-    axis.title.y = element_blank()
-  ) +
-  annotate(
-    "text",
-    x = Inf, y = Inf,
-    label = annotation_text,
-    hjust = 1.1, vjust = 1.5,
-    size = 6,
-    color = "black",
-    parse = FALSE
-  )
 
 rm(list = setdiff(ls(envir = globalenv()), c("processed_data_path", "raw_data_path", "main_path", "path_figures", "path_tables", "path_out", "path_data", "labels")), envir = globalenv())
 
@@ -2163,7 +1153,7 @@ df_rdd_nor <- df_rdd %>%
   mutate(across(all_of(controls_part1), ~ scale(.) %>% as.vector)) %>%
   mutate(across(all_of(controls_part2), ~ scale(.) %>% as.vector))
 
-create_plots_cond <- function(controls_subset, file_name, b) {
+create_plots_cond <- function(controls_subset, file_name, b, df_rdd_nor) {
   plots <- list()
   df_filtered <- filter(df_rdd_nor, x >= -b & x <= b)
   
@@ -2190,23 +1180,43 @@ create_plots_cond <- function(controls_subset, file_name, b) {
     annotation_text <- paste0("Coef. Treatment: ", round(z_coeff, 3), " (", round(z_se, 3), ") ", significance)
     
     
+# Binning step 
+df_bins <- df_filtered %>% 
+  mutate(bin = ntile(x, 15)) %>%
+  group_by(bin) %>%
+  mutate(
+    bin_center = mean(x, na.rm = TRUE),
+    group = ifelse(mean(x, na.rm = TRUE) <= 0, "Inside Program", "Outside Program")
+  ) %>%
+  summarize(
+    bin_center = mean(x, na.rm = TRUE),
+    residuals_mean = mean(residuals, na.rm = TRUE),
+    group = first(group),
+    .groups = "drop"
+  )
+
     # Create plot with residuals
-    p <- ggplot(df_filtered, aes(x = x, y = residuals)) +
-      stat_summary_bin(aes(group = ifelse(x <= 0, "Inside Program", "Outside Program")),
-                       fun = "mean",  # Calculates the mean for each bin
-                       bins = 15,     # Adjust the number of bins as needed
-                       geom = "point", size = 2, color = "black") +
-      geom_smooth(aes(group = ifelse(x <= 0, "Inside Program", "Outside Program")),
-                  method = "lm", formula = y ~ poly(x, 1), size = 1, color = "black") +
-      geom_vline(xintercept = 0, color = "black") +
-      labs(title = labels[y]) +  # Use the label as the title
-      theme_minimal() +
-    theme(legend.position = "none",
-          plot.title = element_text(size = 50, hjust = 0.5),
-          axis.title.x = element_blank(),  # Remove x-axis title
-          axis.title.y = element_blank()) +  # Remove y-axis title
-    annotate("text", x = Inf, y = Inf, label = annotation_text, hjust = 1.1, vjust = 1.5, size = 6, color = "black", parse = FALSE)
-  
+
+p <- ggplot(df_bins, aes(x = bin_center, y = residuals_mean)) +
+  geom_point(aes(shape = group), size = 2, color = "black") +
+  geom_smooth(
+    data = df_filtered, 
+    aes(x = x, y = residuals, group = ifelse(x <= 0, "Inside Program", "Outside Program")), 
+    method = "lm", formula = y ~ poly(x, 1), size = 1, color = "black"
+  ) +
+  geom_vline(xintercept = 0, color = "black") +
+  labs(title = labels[y]) +
+  theme_minimal() +
+  theme(
+    legend.position = "none",
+    plot.title = element_text(size = 50, hjust = 0.5),
+    axis.title.x = element_blank(),
+    axis.title.y = element_blank()
+  ) +
+  annotate("text", x = Inf, y = Inf, label = annotation_text, 
+           hjust = 1.1, vjust = 1.5, size = 6, color = "black", parse = FALSE)
+    
+    
     plots[[y]] <- p
   }
   
@@ -2222,8 +1232,8 @@ create_plots_cond <- function(controls_subset, file_name, b) {
 
 
 # Create and save the plots for each part
-create_plots_cond(controls_part1, paste0(path_figures, "RDD_plots_conditional_part1.png"), 10000)
-create_plots_cond(controls_part2, paste0(path_figures, "RDD_plots_conditional_part2.png"), 10000)
+create_plots_cond(controls_part1, paste0(path_figures, "figure10_1.png"), 10000, df_rdd_nor)
+create_plots_cond(controls_part2, paste0(path_figures, "figure10_2.png"), 10000, df_rdd_nor)
 
 
 
@@ -2262,14 +1272,13 @@ df_rdd <- df_rdd[!duplicated(df_rdd$codecommune), ]
 ```
 
 ```{r }
-df_rdd$FN2002 <- df_rdd$y
 
 
 conditional_on <- c(controls, "dep")
 
-create_plots_cond <- function(controls_subset, file_name, b) {
+create_plots_cond <- function(df, controls_subset, file_name, b) {
   plots <- list()
-  df_filtered <- filter(df_rdd, x >= -b & x <= b)
+  df_filtered <- filter(df, x >= -b & x <= b)
   
   for (y in controls_subset) {
     # Fit regression model and extract residuals
@@ -2307,8 +1316,10 @@ create_plots_cond <- function(controls_subset, file_name, b) {
 }
 
 # Example usage
-create_plots_cond(c("FN2002", "RPR2002", "turnout_2002", "FN2007", "FN2012"), paste0(path_figures, "RDD_plots_conditional_outcomes 20000 .png"), 10000)
-create_plots_cond(c("FN2002", "RPR2002", "turnout_2002", "FN2007", "FN2012"), paste0(path_figures, "RDD_plots_conditional_outcomes 10000 .png"), 20000)
+create_plots_cond(df_rdd, c("FN2002", "RPR2002", "turnout_2002", "FN2007", "FN2012"), 
+                  paste0(path_figures, "figure11_1.png"), 10000)
+create_plots_cond(df_rdd, c("FN2002", "RPR2002", "turnout_2002", "FN2007", "FN2012"), 
+                  paste0(path_figures, "figure11_2.png"), 20000)
 
 rm(list = setdiff(ls(envir = globalenv()), c("processed_data_path", "raw_data_path", "main_path", "path_figures", "path_tables", "path_out", "path_data", "labels")), envir = globalenv())
 
@@ -2347,19 +1358,13 @@ df_long <- df %>%
 
 
 # Export the combined plot
-file_path <- paste0(path_figures, "later_elections.png")
+file_path <- paste0(path_figures, "figure12_later_elections.png")
 ggsave(file_path, p, width = 10, height = 8)
 
-rm(list=ls())
-path_data <- "/Users/ilanpargamin/Desktop/ECONOMICS/thesis/THESIS_REPRO/DATA/"
-path_out <- "/Users/ilanpargamin/Desktop/ECONOMICS/thesis/THESIS_REPRO/OUTPUT/"
-path_figures <- paste0(path_out, "figures/")
-path_tables <- paste0(path_out, "tables/")
-keep_vars<- c(path_data, path_out, path_figures, path_tables)
+rm(list = setdiff(ls(envir = globalenv()), c("processed_data_path", "raw_data_path", "main_path", "path_figures", "path_tables", "path_out", "path_data", "labels")), envir = globalenv())
+
 
 ```
-
-
 
 
 ## Figure 13: Local Linear Regressions with varying bandwidth: FN Share of vote in 2002
@@ -2437,7 +1442,7 @@ plot <- ggplot(results, aes(x = Bandwidth, y = Coefficient)) +
        y = "Estimated Coefficient of LATE") +
   theme_minimal()
 
-ggsave(paste0(path_figures, "bandwidth_effect_plot.png"), plot = plot, width = 8, height = 6)
+ggsave(paste0(path_figures, "figure13.png"), plot = plot, width = 8, height = 6)
 
 
 rm(list = setdiff(ls(envir = globalenv()), c("processed_data_path", "raw_data_path", "main_path", "path_figures", "path_tables", "path_out", "path_data", "labels")), envir = globalenv())
@@ -2596,10 +1601,7 @@ ones <- function(n) {
   return(integer(n)+1)
 }
 
-```
 
-
-```{r}
 # Cate OLS
 sl_lm = SuperLearner(Y = Y1, 
                      X = data.frame(X=X1, W1, W1*X1), 
@@ -2716,9 +1718,7 @@ causalforest <- causalForest(tree_fml,
                              ncolx = ncol(W1))
 cate_causalforest <- predict(causalforest, newdata = data.frame(Y=Y2, W2), type = "vector")
 
-```
 
-```{r}
 ## Compare Heterogeneity
 het_effects <- data.frame(ols = cate_ols, 
                      post_selec_lasso = cate_postlasso, 
@@ -2768,25 +1768,25 @@ p <- ggplot(het_effects_long, aes(x = Heterogeneity_Effect, fill = Method)) +
 print(p)
 
 # Save the plot to a file
-ggsave(paste0(path_figures, "heterogeneity_effects.png"), p, width = 10, height = 6)
+ggsave(paste0(path_figures, "figure15.png"), p, width = 10, height = 6)
 
 rm(list = setdiff(ls(envir = globalenv()), c("processed_data_path", "raw_data_path", "main_path", "path_figures", "path_tables", "path_out", "path_data", "labels")), envir = globalenv())
 
 ```
 
 
-## Figure D1: Map and distribution of the running variable (no epicenter)
+## Figure Annex 1: Map and distribution of the running variable (no epicenter)
 
 ```{r}
 
 # Load the shape file into a dataframe
-dfShape <- st_read("/Users/ilanpargamin/Desktop/thesis/THESIS_REPRO/DATA/communes-20220101-shp/communes-20220101.shp") %>%
+dfShape <- st_read(file.path(raw_data_path, "communes-20220101-shp/communes-20220101.shp")) %>%
   select(geometry, insee) %>%
   mutate(codecommune = sub("^0+", "", as.character(insee))) %>%
   select(-insee)
 
 # Load the no-epicenter data
-dfMap <- read_excel(paste0(path_data, "dataGeoRDDnoEpicenter1.xlsx")) %>%
+dfMap <- read_excel(paste0(processed_data_path, "dataGeoRDDnoEpicenter1.xlsx")) %>%
   select(codecommune, treatment, distance_to_border) %>%
   mutate(codecommune = sub("^0+", "", codecommune))
 
@@ -2840,7 +1840,7 @@ p_dis <- ggplot(df_rdd,
 
 combined_plot <- map / p_dis + plot_layout(ncol = 1)
 
-file_path <- paste0(path_figures, "distanceMapAndDistribution_epi.png")
+file_path <- paste0(path_figures, "Annex1.png")
 
 # Save the plot as a PNG file
 ggsave(file_path, plot = combined_plot, device = "png", width = 10, height = 12)
@@ -2851,10 +1851,10 @@ ggsave(file_path, plot = combined_plot, device = "png", width = 10, height = 12)
 rm(list = setdiff(ls(envir = globalenv()), c("processed_data_path", "raw_data_path", "main_path", "path_figures", "path_tables", "path_out", "path_data", "labels")), envir = globalenv())
 ```
 
-## Figure D2: RDD: balancing checks with alternative distance measure
+## Figure Annex 2: RDD: balancing checks with alternative distance measure
 ```{r}
-if (file.exists(paste0(path_data, "script_sharp_noEpicenter.RData"))) {
-  load(paste0(path_data, "script_sharp_noEpicenter.RData"))
+if (file.exists(paste0(processed_data_path, "script_sharp_noEpicenter.RData"))) {
+  load(paste0(processed_data_path, "script_sharp_noEpicenter.RData"))
 } else {
   message("Data environment does not exist")
 }
@@ -2865,7 +1865,7 @@ threshold <- 0
 lower_bound <- threshold - bandwidth
 upper_bound <- threshold + bandwidth
 
-df_rdd <- subset(dfZRR1995Controls, x >= lower_bound & x <= upper_bound)
+df_rdd <- subset(dfZRRControls, x >= lower_bound & x <= upper_bound)
 rm(lower_bound, bandwidth)
 
 df_rdd$dist <- df_rdd$x
@@ -2876,32 +1876,6 @@ df_rdd <- df_rdd[!duplicated(df_rdd$codecommune), ]
 ```
 
 ```{r}
-labels <- c("FN1988"= "Vote share for FN in 1988",
-            "pchom" = "Unemployed (%)", 
-            "pop" = "Population", 
-            "ratEmp" = "In the labor force (%)", 
-            "ratForeigners" = "Foreigners (%)", 
-            "asso" = "OPI per 1000 inhabitants", 
-            "educNoDiplomaPerK" = "No diploma (%)", 
-            "educSUPPerK" = "Academic (%)", 
-            "educBACPerK" = "Highschool (%)", 
-            "educCAPBEPPerK" = "Technical (%)", 
-            "poph" = "Ages 20-40, men", 
-            "popf" = "Ages 20-40, women", 
-            "pagri" = "Agriculture (%)", 
-            "pindp" = "Independant (%)", 
-            "ppint" = "Intermediate occupations (%)", 
-            "pempl" = "Clerical (%)", 
-            "pouvr" = "Manual (%)", 
-            "altitude" = "Altitude", 
-            "superficie" = "Area", 
-            "logVac" = "Vacant housing (%)", 
-            "haie" = "Fences per squared km", 
-            "vigne" = "Vines per squared km", 
-            "revenuPerK" = "Taxable income per capita",
-            "delta_pop_1982_1990" = "Population change in p.p. 1982-1990", 
-            "delta_emp_1982_1990" = "Change in p.p. in the labor force 1982-1990", 
-            "min_distance_to_agglo" = "Distance to closest agglomeration (meters)")
 
 # Split controls into two parts
 controls_part1 <- controls[1:ceiling(length(controls)/2)]
@@ -2978,8 +1952,8 @@ create_plots_cond <- function(controls_subset, file_name, b) {
 
 
 # Create and save the plots for each part
-create_plots_cond(controls_part1, paste0(path_figures, "RDD_plots_conditional_part1_noEpi.png"), 10000)
-create_plots_cond(controls_part2, paste0(path_figures, "RDD_plots_conditional_part2_noEpi.png"), 10000)
+create_plots_cond(controls_part1, paste0(path_figures, "Annex2_1.png"), 10000)
+create_plots_cond(controls_part2, paste0(path_figures, "Annex2_2.png"), 10000)
 
 ```
 
@@ -2992,10 +1966,10 @@ rm(list = setdiff(ls(envir = globalenv()), c("processed_data_path", "raw_data_pa
 ```
 
 
-## Figure D3: Vote Share for FN in 1988 (placebo test)
+## Figure Annex 3: Vote Share for FN in 1988 (placebo test)
 ```{r}
-if (file.exists(paste0(path_data, "script_sharp_noEpicenter.RData"))) {
-  load(paste0(path_data, "script_sharp_noEpicenter.RData"))
+if (file.exists(paste0(processed_data_path, "script_sharp_noEpicenter.RData"))) {
+  load(paste0(processed_data_path, "script_sharp_noEpicenter.RData"))
 } else {
   message("Data environment does not exist")
 }
@@ -3006,7 +1980,7 @@ threshold <- 0
 lower_bound <- threshold - bandwidth
 upper_bound <- threshold + bandwidth
 
-df_rdd <- subset(dfZRR1995Controls, x >= lower_bound & x <= upper_bound)
+df_rdd <- subset(dfZRRControls, x >= lower_bound & x <= upper_bound)
 rm(lower_bound, bandwidth)
 
 df_rdd$dist <- df_rdd$x
@@ -3068,7 +2042,7 @@ p <- ggplot(df_filtered, aes(x = x, y = residuals)) +
 
 
 # Combine plots into one figure with unique x and y labels
-file_path <- paste0(path_figures, "RDD_plots_conditional_FN1988_noEpi.png")
+file_path <- paste0(path_figures, "Annex3.png")
 
 png(file_path, width = 800, height = 900)
 
@@ -3087,10 +2061,10 @@ rm(list = setdiff(ls(envir = globalenv()), c("processed_data_path", "raw_data_pa
 
 
 
-## Figure D4: RDD: main outcomes
+## Figure Annex 4: RDD: main outcomes
 ```{r}
-if (file.exists(paste0(path_data, "script_sharp.RData"))) {
-  load(paste0(path_data, "script_sharp.RData"))
+if (file.exists(paste0(processed_data_path, "script_sharp.RData"))) {
+  load(paste0(processed_data_path, "script_sharp.RData"))
 } else {
   message("Data environment does not exist")
 }
@@ -3101,25 +2075,18 @@ threshold <- 0
 lower_bound <- threshold - bandwidth
 upper_bound <- threshold + bandwidth
 
-df_rdd <- subset(dfZRR1995Controls, x >= lower_bound & x <= upper_bound)
+df_rdd <- subset(dfZRRControls, x >= lower_bound & x <= upper_bound)
 rm(lower_bound, bandwidth)
 
 df_rdd$dist <- df_rdd$x
-# df_rdd$deltaFN2002_1988 <- df_rdd$y # voteShareFN2002 or deltaFN2002_1988 or voteShareFN1988
 df_rdd$treatmentZRR <- df_rdd$z
 df_rdd$pop <- log(df_rdd$pop)
 
 ```
 
 ```{r }
-df_rdd$FN2002 <- df_rdd$y
 
 # Define the labels
-labels <- c("FN2002" = "FN vote share in 2002",
-            "RPR2002" = "RPR vote share in 2002",
-            "turnout_2002" = "Turnout in 2002",
-            "FN2007" = "FN vote share in 2007",
-            "FN2012" = "FN vote share in 2012")
 
 conditional_on <- c(controls, "dep")
 
@@ -3163,20 +2130,20 @@ create_plots_cond <- function(controls_subset, file_name, b) {
 }
 
 # Example usage
-create_plots_cond(c("FN2002", "RPR2002", "turnout_2002", "FN2007", "FN2012"), paste0(path_figures, "RDD_plots_conditional_outcomes 20000 _noEpi.png"), 10000)
-create_plots_cond(c("FN2002", "RPR2002", "turnout_2002", "FN2007", "FN2012"), paste0(path_figures, "RDD_plots_conditional_outcomes 10000 _noEpi.png"), 20000)
+create_plots_cond(c("FN2002", "RPR2002", "turnout_2002", "FN2007", "FN2012"), paste0(path_figures, "Annex4_1.png"), 10000)
+create_plots_cond(c("FN2002", "RPR2002", "turnout_2002", "FN2007", "FN2012"), paste0(path_figures, "Annex4_2.png"), 20000)
 
 rm(list = setdiff(ls(envir = globalenv()), c("processed_data_path", "raw_data_path", "main_path", "path_figures", "path_tables", "path_out", "path_data", "labels")), envir = globalenv())
 
 ```
 
 
-## Figure F1: RDD: ZRR effect on 1995 FN Vote share
+## Figure Annex 5: RDD: ZRR effect on 1995 FN Vote share
 
 
 ```{r }
-if (file.exists(paste0(path_data, "script_sharp_1995.RData"))) {
-  load(paste0(path_data, "script_sharp_1995.RData"))
+if (file.exists(paste0(processed_data_path, "script_sharp.RData"))) {
+  load(paste0(processed_data_path, "script_sharp.RData"))
 } else {
   message("Data environment does not exist")
 }
@@ -3187,7 +2154,7 @@ threshold <- 0
 lower_bound <- threshold - bandwidth
 upper_bound <- threshold + bandwidth
 
-df_rdd <- subset(dfZRR1995Controls, x >= lower_bound & x <= upper_bound)
+df_rdd <- subset(dfZRRControls, x >= lower_bound & x <= upper_bound)
 rm(lower_bound, bandwidth)
 
 df_rdd$dist <- df_rdd$x
@@ -3196,11 +2163,6 @@ df_rdd$pop <- log(df_rdd$pop)
 
 
 b_values <- c(20000, 10000, 5000)
-
-df_rdd$FN1995 <- df_rdd$y
-
-# Define the labels
-labels <- c("FN1995" = "FN vote share in 1995")
 
 conditional_on <- c(controls, "dep")
 letters <- c(`20000`="A", `10000`="B", `5000`="C")
@@ -3239,7 +2201,7 @@ create_plots_cond <- function(controls_subset, file_name_prefix, b_values) {
   }
   
   # Save combined plots
-  png(paste0(file_name_prefix, ".png"), width = 800 * 3, height = 900 * ceiling(length(plots) / 3))
+  png(paste0(file_name_prefix), width = 800 * 3, height = 900 * ceiling(length(plots) / 3))
   
   combined_plot <- grid.arrange(grobs = plots, ncol = 3, 
                                 bottom = textGrob("Distance to Program Frontier", gp = gpar(fontsize = 20)),
@@ -3249,7 +2211,7 @@ create_plots_cond <- function(controls_subset, file_name_prefix, b_values) {
 }
 
 
-create_plots_cond(c("FN1995"), paste0(path_figures, "RDD_plots_conditional_outcomes1995.png"), b_values)
+create_plots_cond(c("FN1995"), paste0(path_figures, "Annex5.png"), b_values)
 
 
 
@@ -3257,11 +2219,155 @@ rm(list = setdiff(ls(envir = globalenv()), c("processed_data_path", "raw_data_pa
 
 ```
 
+
+
+## Figure 2_nine:  same with colored bins
+```{r }
+if (file.exists(paste0(processed_data_path, "dataDes.RData"))) {
+  load(paste0(processed_data_path, "dataDes.RData"))
+} else {
+  message("Data environment does not exist")
+}
+
+df <- dfZRRControls %>% 
+  mutate(codecommune = sub("^0+", "", as.character(codecommune))) %>%
+  left_join(dfZRRlong %>% 
+              mutate(codecommune = sub("^0+", "", as.character(codecommune))) %>% 
+              unique(), by=c("codecommune", "year")
+            ) %>%
+  select(codecommune, year, year_treat, treatment, pop, FN) %>% # choose variable here. ---- min_distance_to_agglo, 
+  drop_na() %>% 
+  filter_all(all_vars(!is.infinite(.))) %>%
+  mutate(logpop = log(df$pop+1))
+
+
+
+# Filter for data in the year 1988 and 2017
+df_filtered <- df %>%
+  filter(year %in% c(1988, 2017)) %>%
+  group_by(codecommune) %>%
+  summarise(
+    logpop_1988 = logpop[year == 1988],
+    delta_FN = FN[year == 2017] - FN[year == 1988],
+    year_treat = unique(year_treat)
+  ) %>%
+  filter(!is.na(logpop_1988), !is.na(delta_FN)) # Remove NAs
+
+# Create bins for logpop_1988
+df_binned <- df_filtered %>%
+  mutate(bin = cut(logpop_1988, breaks = 30, labels = FALSE))
+
+# Assign colors based on year_treat
+df_binned <- df_binned %>%
+  mutate(color_group = case_when(
+    year_treat == 1995 ~ "1995",
+    year_treat > 2003 ~ "After 2003",
+    TRUE ~ "Other"
+  ))
+
+# Plot the scatterplot
+ggplot(df_binned, aes(x = logpop_1988, y = delta_FN, color = color_group)) +
+  geom_point(alpha = 0.7) +  # Scatter points
+  scale_color_manual(values = c("1995" = "red", "After 2003" = "blue", "Other" = "gray")) +
+  labs(
+    title = "Change in FN Support vs Log of Population (1988)",
+    x = "Log(Population in 1988)",
+    y = "Change in FN Support (1988 to 2017)",
+    color = "Year Treat Group"
+  ) +
+  theme_minimal()
+```
+
+```{r }
+# Define parameters
+xVar <- "logpop_1988"
+yVar <- "delta_FN"
+treatmentVar <- "year_treat"
+bin_var <- "bin"
+num_bins <- 20
+
+# Filter and prepare the data
+df_filtered <- df %>%
+  filter(year %in% c(1988, 2017)) %>%
+  group_by(codecommune) %>%
+  summarise(
+    logpop_1988 = logpop[year == 1988],
+    delta_FN = FN[year == 2017] - FN[year == 1988],
+    year_treat = unique(year_treat),
+    .groups = 'drop'
+  ) %>%
+  filter(!is.na(logpop_1988), !is.na(delta_FN)) # Remove NAs
+
+# Add a treatment group identifier
+df_filtered <- df_filtered %>%
+  mutate(treatment_group = case_when(
+    year_treat == 1995 ~ "Year Treat = 1995",
+    year_treat > 2003 ~ "Year Treat > 2003",
+    TRUE ~ "Never treated"
+  ))
+
+
+
+# Bin the data and calculate averages for each group
+df_binned <- df_filtered %>%
+  mutate(!!bin_var := cut(!!sym(xVar), breaks = num_bins, labels = FALSE)) %>%
+  group_by(!!sym(bin_var), treatment_group) %>%
+  summarise(
+    bin_center = mean(!!sym(xVar), na.rm = TRUE),
+    mean_y = mean(!!sym(yVar), na.rm = TRUE),
+    count = n(),
+    .groups = 'drop'
+  )
+
+
+# Plot all groups on the same graph
+ggplot(df_binned, aes(x = bin_center, y = mean_y, color = treatment_group)) +
+  geom_point(size = 2, alpha = 0.8) +
+  # geom_line(aes(group = treatment_group), linewidth = 1) +  # Add lines connecting points for each group
+  scale_color_manual(
+    values = c(
+      "Year Treat = 1995" = "#E63946",  # Red
+      "Year Treat > 2003" = "#457B9D",  # Blue
+      "Never treated" = "#A8A8A8"  # Gray
+    )
+  ) +
+  labs(
+    title = "Binned Average Change in FN Support vs Log of Population (1988)",
+    subtitle = "Combined groups with treatment year differentiation",
+    x = "Log(Population in 1988) - Bin Center",
+    y = "Average Change in FN Support (1988 to 2017)",
+    color = "Treatment Group"
+  ) +
+  theme_minimal(base_size = 14) +
+  theme(
+    plot.title = element_text(face = "bold", size = 16, hjust = 0.5),
+    plot.subtitle = element_text(size = 12, hjust = 0.5),
+    legend.position = "top",
+    legend.title = element_text(size = 12),
+    legend.text = element_text(size = 10),
+    axis.title = element_text(size = 12),
+    axis.text = element_text(size = 10),
+    panel.grid.major = element_line(color = "gray80", linewidth = 0.5),
+    panel.grid.minor = element_blank()
+  )
+```
+```{r }
+rm(list=ls())
+path_data <- "/Users/ilanpargamin/Desktop/ECONOMICS/thesis/THESIS_REPRO/DATA/"
+path_out <- "/Users/ilanpargamin/Desktop/ECONOMICS/thesis/THESIS_REPRO/OUTPUT/"
+path_figures <- paste0(path_out, "figures/")
+path_tables <- paste0(path_out, "tables/")
+
+```
+
+
+
+
 # Tables
 ## Table 1: Descriptive Statistics in 1990
 ```{r }
-if (file.exists(paste0(path_data, "dataDes.RData"))) {
-  load(paste0(path_data, "dataDes.RData"))
+if (file.exists(paste0(processed_data_path, "dataDes.RData"))) {
+  load(paste0(processed_data_path, "dataDes.RData"))
 } else {
   message("Data environment does not exist")
 }
@@ -3271,23 +2377,20 @@ dataNames <- setdiff(names(df_merged), c("codecommune", "nomcommune", "nom", "ye
 # Filter the data for the year 
 y <- 1990
 df <- dfZRRControls %>% filter(year == y)
+dfRevenue <- df %>%
+  filter(year == 1994) %>%
+  select(codecommune, revenuPerK)
+
 df <- df[c(dataNames, "codecommune")]
+
 
 # merge with dfZRR to get year_treat
 df <- df %>% left_join(dfZRR %>% select(codecommune, year_treat) %>% unique(), 
                        by=c("codecommune"))
 
 
-# add Haie et Vigne
-
-dfHaie <- dfHaie %>%
-  distinct(codecommune, .keep_all = TRUE)
-
-df <- df %>% left_join(dfHaie %>% select(codecommune, haie, vigne), 
-                       by=c("codecommune"))
-
 # add revenue
-df <- df %>% left_join(dfRevenue %>% filter(year==1994) %>% select(codecommune, revenuPerK), 
+df <- df %>% left_join(dfRevenue  %>% select(codecommune, revenuPerK), 
                        by=c("codecommune"))
 
 dataNames <- c(dataNames, "haie", "vigne", "revenuPerK")
