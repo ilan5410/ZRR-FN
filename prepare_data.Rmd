@@ -620,20 +620,46 @@ dfZRR <- left_join(dfZRR, dfDistance, by = c("codecommune"), relationship = "man
 
 
 
-df_merged <- df_merged %>%
+df_merged_to_merge <- df_merged %>%
   mutate(codecommune = sub("^0+", "", as.character(codecommune))) %>%
   # filter year_control
   filter(year == 1990) %>%
   select(-year, -FN1995, -FN1988)
 
 # merge dfZRR with controls
-dfZRRControls <- left_join(dfZRR, df_merged, by = c("codecommune"), relationship = "many-to-many") 
+dfZRRControls <- left_join(dfZRR, df_merged_to_merge, by = c("codecommune"), relationship = "many-to-many") 
+
+
+# Use revenuePerK from 1994 for missing values in 1990
+dfZRRControls <- dfZRRControls %>%
+  left_join(df_merged %>% filter(year==1994) %>% select(codecommune, revenuPerK), 
+            by = "codecommune", 
+            suffix = c("", "_1994")) %>%
+  mutate(revenuPerK = if_else(
+    is.na(revenuPerK),
+    revenuPerK_1994,
+    revenuPerK
+  )) %>%
+  select(-revenuPerK_1994)
+
+# Use popYoungOld from 1995 for missing values in 1990
+dfZRRControls <- dfZRRControls %>%
+  left_join(df_merged %>% filter(year==1995) %>% select(codecommune, popYoungOld), 
+            by = "codecommune", 
+            suffix = c("", "_1995")) %>%
+  mutate(popYoungOld = if_else(
+    is.na(popYoungOld),
+    popYoungOld_1995,
+    popYoungOld
+  )) %>%
+  select(-popYoungOld_1995)
+
 
 controls <- names(df_merged)
-controls <- setdiff(controls, c("codecommune", "year", "reg", "nomcommune", "dep", "FN1995", "popYoungOld", "revenuPerK", "haie", "vigne"))
+controls <- setdiff(controls, c("codecommune", "year", "reg", "nomcommune", "dep", "FN1995",  "haie", "vigne"))
 
 # Clean data
-variables_to_clean <- setdiff(names(dfZRRControls), c( "popYoungOld", "revenuPerK"))
+variables_to_clean <- setdiff(names(dfZRRControls), c( ""))
 for(var in variables_to_clean) {
   # Remove rows with NA values in the current variable
   dfZRRControls <- dfZRRControls[!is.na(dfZRRControls[[var]]), ]
@@ -646,7 +672,7 @@ dfZRRControls$treatment <- as.logical(dfZRRControls$treatment)
 
 # treatYears <- c(2017, 2005, 1995, 2013, 2010, 2014, 2006, 2018, 2007, 2009)
 
-rm(dfZRR_raw, df_merged, var, variables_to_clean)
+rm(dfZRR_raw, var, variables_to_clean, df_merged_to_merge)
 
 dfZRRControls$x <- dfZRRControls$distance_to_border
 dfZRRControls$z <- dfZRRControls$treatment
@@ -655,6 +681,7 @@ dfZRRControls$z <- dfZRRControls$treatment
 # Remove haie (fence) and vigne (vines)
 dfZRRControls <- dfZRRControls %>%
   select(-haie, -vigne)
+
 
 save.image(file = file.path(processed_data_path, "script_sharp.RData"))
 
@@ -796,7 +823,7 @@ save.image(file = file.path(processed_data_path, "script_sharp_noEpicenter.RData
 ```
 
 
-# 
+# dataDes.RData
 ```{r }
 
 rm(list = setdiff(ls(envir = globalenv()), c("processed_data_path", "raw_data_path", "main_path")), envir = globalenv())
