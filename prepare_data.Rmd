@@ -455,6 +455,7 @@ save.image(file = file.path(processed_data_path, "main.RData"))
 
 # borders_pair.RData
 ```{r }
+rm(list = setdiff(ls(envir = globalenv()), c("processed_data_path", "raw_data_path", "main_path")), envir = globalenv())
 
 load(paste0(processed_data_path, "main.RData"))
 
@@ -491,8 +492,32 @@ print(length(unique(dfZRR$codecommune))) ## 7331 (weird...?)
 # Merge with controls
 dfZRRControls <- left_join(dfZRR, df_merged, by = c("codecommune"), relationship = "many-to-many")
 
+# Use revenuePerK from 1994 for missing values in 1990
+dfZRRControls <- dfZRRControls %>%
+  left_join(df_merged %>% filter(year==1994) %>% select(codecommune, revenuPerK), 
+            by = "codecommune", 
+            suffix = c("", "_1994")) %>%
+  mutate(revenuPerK = if_else(
+    is.na(revenuPerK),
+    revenuPerK_1994,
+    revenuPerK
+  )) %>%
+  select(-revenuPerK_1994)
+
+# Use popYoungOld from 1995 for missing values in 1990
+dfZRRControls <- dfZRRControls %>%
+  left_join(df_merged %>% filter(year==1995) %>% select(codecommune, popYoungOld), 
+            by = "codecommune", 
+            suffix = c("", "_1995")) %>%
+  mutate(popYoungOld = if_else(
+    is.na(popYoungOld),
+    popYoungOld_1995,
+    popYoungOld
+  )) %>%
+  select(-popYoungOld_1995)
+
 controls <- names(df_merged)
-controls <- setdiff(controls, c("codecommune", "year", "reg", "nomcommune", "dep", "FN1995", "popYoungOld", "revenuPerK", "vigne", "haie"))
+controls <- setdiff(controls, c("codecommune", "year", "reg", "nomcommune", "dep", "FN1995", "vigne", "haie"))
 
 variables_to_clean <- c("x", "y", "z", controls, "year",  "border_pair",  "canton", "dep", "reg", "deltaFN", "RPR2002", "turnout_2002", "FN2007", "FN2012", "FN2017", "FN2022", "same_department")
 
@@ -616,7 +641,7 @@ dfZRR <- left_join(dfZRR, dfDistance, by = c("codecommune"), relationship = "man
     deltaFN = FN2002 - FN1988,
     y = FN2002,
   )  %>%
-  select("codecommune", "distance_to_border", "treatment", "canton", "deltaFN", starts_with("FN"), starts_with("RPR"), starts_with("turnout"))
+  select("codecommune", "distance_to_border", "treatment", "canton", "deltaFN", "border", starts_with("FN"), starts_with("RPR"), starts_with("turnout"))
 
 
 

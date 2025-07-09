@@ -3356,10 +3356,10 @@ if (file.exists(paste0(processed_data_path, "script_sharp.RData"))) {
 df_rdd <- dfZRRControls %>%
   filter(x >= (-20000) & x <= (20000)) %>%
   mutate(
-    dist = x,                     # Create a distance variable
+    dist = x,                      # Create a distance variable
     treatmentZRR = z,              # Define treatment indicator
-    pop = log(pop),                 # Log-transform population
-    popDensity = log(popDensity)
+    pop = log(pop),                # Log-transform population
+    popDensity = log(popDensity)   # Log-transform pop density
   ) %>%
   distinct(codecommune, .keep_all = TRUE)  # Remove duplicate communes
 
@@ -3371,13 +3371,25 @@ df_rdd <- dfZRRControls %>%
 formulas <- list(
   deltaFN = paste("deltaFN ~ z + x + border +", paste(controls, collapse = " + "), "+ factor(dep) "), 
   RPR2002 = paste("RPR2002 ~ z + x + border +", paste(controls, collapse = " + "), "+ factor(dep) "),
-  FN1988 = paste("FN1988 ~ z + x + border +", paste(controls, collapse = " + "), "+ factor(dep) "),
+  FN1988 = paste("FN1988 ~ z + x + border +", paste(setdiff(controls, "FN1988"), collapse = " + "), "+ factor(dep) "),
   turnout_2002 = paste("turnout_2002 ~ z + x + border +", paste(controls, collapse = " + "), "+ factor(dep) "),
   FN2007 = paste("FN2007 ~ z + x + border +", paste(controls, collapse = " + "), " + factor(dep) "), 
   FN2012 = paste("FN2012 ~ z + x + border +", paste(controls, collapse = " + "), " + factor(dep)"),
   FN2017 = paste("FN2017 ~ z + x + border +", paste(controls, collapse = " + "), " + factor(dep)"),
   FN2022 = paste("FN2022 ~ z + x + border +", paste(controls, collapse = " + "), " + factor(dep) ")
 )
+
+# formulas <- list(
+#   deltaFN = paste("deltaFN ~ z + x  +", paste(controls, collapse = " + "), "+ factor(dep) "), 
+#   RPR2002 = paste("RPR2002 ~ z + x +", paste(controls, collapse = " + "), "+ factor(dep) "),
+#   FN1988 = paste("FN1988 ~ z + x +", paste(controls, collapse = " + "), "+ factor(dep) "),
+#   turnout_2002 = paste("turnout_2002 ~ z + x +", paste(controls, collapse = " + "), "+ factor(dep) "),
+#   FN2007 = paste("FN2007 ~ z + x +", paste(controls, collapse = " + "), " + factor(dep) "), 
+#   FN2012 = paste("FN2012 ~ z + x  +", paste(controls, collapse = " + "), " + factor(dep)"),
+#   FN2017 = paste("FN2017 ~ z + x  +", paste(controls, collapse = " + "), " + factor(dep)"),
+#   FN2022 = paste("FN2022 ~ z + x  +", paste(controls, collapse = " + "), " + factor(dep) ")
+# )
+
 
 
 # Bandwidth values
@@ -3461,11 +3473,6 @@ stargazer(summary_table,
 
 
 
-
-
-
-
-
 rm(list = setdiff(ls(envir = globalenv()), c("processed_data_path", "raw_data_path", "main_path", "path_figures", "path_tables", "path_out", "path_data", "labels")), envir = globalenv())
 
 ```
@@ -3474,52 +3481,29 @@ rm(list = setdiff(ls(envir = globalenv()), c("processed_data_path", "raw_data_pa
 
 ## Table 7: Comparison of Residual Means between Control and Treatment Groups with T-Test Results
 ```{r }
-if (file.exists(paste0(path_data, "borders_pair.RData"))) {
-  load(paste0(path_data, "borders_pair.RData"))
+if (file.exists(paste0(processed_data_path, "borders_pair.RData"))) {
+  load(paste0(processed_data_path, "borders_pair.RData"))
 } else {
   message("Data environment does not exist")
 }
 
 df_rct <- dfZRRControls %>%
   select(-x) %>%
-  rename(treatmentZRR=z) 
-
-labels <- c("FN1988"= "Vote share for FN in 1988",
-            "pchom" = "Unemployed (%)", 
-            "pop" = "Population", 
-            "ratEmp" = "In the labor force (%)", 
-            "ratForeigners" = "Foreigners (%)", 
-            "asso" = "OPI per 1000 inhabitants", 
-            "educNoDiplomaPerK" = "No diploma (%)", 
-            "educSUPPerK" = "Academic (%)", 
-            "educBACPerK" = "Highschool (%)", 
-            "educCAPBEPPerK" = "Technical (%)", 
-            "poph" = "Ages 20-40, men", 
-            "popf" = "Ages 20-40, women", 
-            "pagri" = "Agriculture (%)", 
-            "pindp" = "Independant (%)", 
-            "ppint" = "Intermediate occupations (%)", 
-            "pempl" = "Clerical (%)", 
-            "pouvr" = "Manual (%)", 
-            "altitude" = "Altitude", 
-            "superficie" = "Area", 
-            "logVac" = "Vacant housing (%)", 
-            "haie" = "Fences per squared km", 
-            "vigne" = "Vines per squared km", 
-            "revenuPerK" = "Taxable income per capita",
-            "delta_pop_1982_1990" = "Population change in p.p. 1982-1990", 
-            "delta_emp_1982_1990" = "Change in p.p. in the labor force 1982-1990", 
-            "min_distance_to_agglo" = "Distance to closest agglomeration (meters)")
+  rename(treatmentZRR=z) %>%
+  mutate(
+    pop = log(pop),
+    popDensity = log(popDensity)
+  )
 
 ```
 
 ```{r }
 target_vars <- setdiff(controls, c("treatmentZRR", "border_pair",  "typologie"))
-df_rct$density <- df_rct$pop / df_rct$superficie
 
 # Define control variables
-conditional_on <- c("border_pair", "treatmentZRR", "pagri", "density") # 
+conditional_on <- c("border_pair", "treatmentZRR", "pagri", "popDensity") # inclusion of border_pair: very computer power demanding
 
+conditional_on <- c("dep", "treatmentZRR", "pagri", "popDensity") 
 
 # Function to calculate mean and t-test of residuals
 calculate_residual_balance <- function(df, grouping_var, target_vars, conditional_on) {
@@ -3582,13 +3566,13 @@ balance_summary <- balance_summary %>%
 balance_summary$variable <- labels[balance_summary$variable]
 
 # Round the values to 4 digits
-balance_summary <- balance_summary %>%
-  mutate(
-    `Control (mean)` = round(`Control (mean)`, 4),
-    `Treatment (mean)` = round(`Treatment (mean)`, 4),
-    `Difference` = round(`Difference`, 4),
-    `p-value` = round(`p-value`, 4)
-  )
+# balance_summary <- balance_summary %>%
+#   mutate(
+#     `Control (mean)` = round(`Control (mean)`, 4),
+#     `Treatment (mean)` = round(`Treatment (mean)`, 4),
+#     `Difference` = round(`Difference`, 4),
+#     `p-value` = round(`p-value`, 4)
+#   )
 
 # Use stargazer to display the results in LaTeX format
 stargazer(
@@ -3617,17 +3601,20 @@ rm(list = setdiff(ls(envir = globalenv()), c("processed_data_path", "raw_data_pa
 
 ## Table 8: Border municipalities: regression Results
 ```{r }
-if (file.exists(paste0(path_data, "borders_pair.RData"))) {
-  load(paste0(path_data, "borders_pair.RData"))
+if (file.exists(paste0(processed_data_path, "borders_pair.RData"))) {
+  load(paste0(processed_data_path, "borders_pair.RData"))
 } else {
   message("Data environment does not exist")
 }
 
 df_rct <- dfZRRControls %>%
   select(-x) %>%
-  rename(treatmentZRR=z) 
+  rename(treatmentZRR=z) %>%
+    mutate(
+    pop = log(pop),
+    popDensity = log(popDensity)
+  )
 
-controls <- controls[!controls %in% c("haie", "vigne")]
 
 ```
 

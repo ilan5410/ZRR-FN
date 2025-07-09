@@ -7,6 +7,7 @@ import shapely
 from shapely.geometry import MultiPolygon, LineString
 from shapely.ops import nearest_points
 import matplotlib.pyplot as plt
+from libpysal.weights import Queen
 
 tqdm.pandas()
 
@@ -80,10 +81,31 @@ if __name__ == '__main__':
         return -min_distance if row['treatment'] == 1 else min_distance
 
 
+
+
+    # Create 'border' dummy: 1 if commune boundary intersects buffered frontier
+    print("Tagging border communes...")
+
+    # Build spatial contiguity weights (Queen contiguity = shares border or vertex)
+    w = Queen.from_dataframe(gdf)
+
+    # Create border dummy
+    def is_border(i, treatment_vec, neighbors_dict):
+        own_treatment = treatment_vec[i]
+        for neighbor in neighbors_dict[i]:
+            if treatment_vec[neighbor] != own_treatment:
+                return 1
+        return 0
+
+    # Ensure gdf index matches the weights matrix
+    gdf = gdf.reset_index(drop=True)
+    neighbors_dict = w.neighbors
+    treatment_vec = gdf['treatment'].tolist()
+    gdf['border'] = [is_border(i, treatment_vec, neighbors_dict) for i in range(len(gdf))]
+
     # Apply the function vectorized over the rows
     print("Let's compute distances")
     gdf['distance_to_border'] = gdf.progress_apply(calculate_distances, axis=1)
-
 
     # export
     dfExport = gdf.drop(["geometry", "centroid"], axis=1)
