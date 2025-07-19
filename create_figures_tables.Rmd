@@ -3615,6 +3615,7 @@ df_rct <- dfZRRControls %>%
     popDensity = log(popDensity)
   )
 
+length(unique(df_rct$border_pair))
 
 ```
 
@@ -3628,7 +3629,7 @@ formula <- as.formula(paste("y ~ treatmentZRR +", paste(controls, collapse = " +
 model2 <- lm(formula, data = df_rct)
 
 # 3
-formula <- as.formula(paste("y ~ treatmentZRR +", paste(controls, collapse = " + "), "+ factor(dep)"))
+formula <- as.formula(paste("y ~ treatmentZRR +", paste(controls, collapse = " + "), "+ same_department"))
 model3 <- lm(formula, data = df_rct %>% filter(same_department == 1))
 
 # 4
@@ -3636,7 +3637,7 @@ formula <- as.formula(paste("y ~ treatmentZRR +", paste(controls, collapse = " +
 model4 <- lm(formula, data = df_rct)
 
 # 5
-formula <- as.formula(paste("y ~ treatmentZRR +", paste(controls, collapse = " + "), "+ factor(dep)", " + factor(border_pair)"))
+formula <- as.formula(paste("y ~ treatmentZRR +", paste(controls, collapse = " + "), "+ same_department", " + factor(border_pair)"))
 model5 <- lm(formula, data = df_rct)
 
 # 6
@@ -3647,9 +3648,9 @@ model6 <- plm(formula_fd, data = df_rct_panel, model = "fd")
 # 7 placebo
 formula <- as.formula(paste("FN1988 ~ treatmentZRR +", paste(controls[!controls %in% c("FN1988")], collapse = " + "), "+ factor(dep)", " + factor(border_pair)"))
 model7 <- lm(formula, data = df_rct)
+```
 
-
-
+```{r }
 # Use stargazer to display the results with a note about fixed effects
 stargazer(
   model1, model2, model3, model4, model5, model6, model7,
@@ -3657,7 +3658,7 @@ stargazer(
   title = "Regression Results: Effect of ZRR on FN Vote Share in 2002 and Robustness Checks",
   star.cutoffs = c(0.05, 0.01, 0.001), 
   label = "tab:border-results",
-  omit = c("factor\\\\(dep\\\\)", "factor\\\\(border_pair\\\\)", controls, "Constant"),
+    omit = c("^factor\\(dep.*\\)", "^factor\\(border_pair.*\\)", controls, "Constant"),
   dep.var.labels.include = FALSE,
   column.labels = c("No Controls", "Controls", "Controls + Dept FE", "Controls + Pair FE", "Dept + Pair FE", "First Diff", "Placebo (1988)"),
   add.lines = list(
@@ -3670,6 +3671,8 @@ stargazer(
   out = paste0(path_tables, "table8.tex")
 )
 
+
+
 ```
 
 ```{r }
@@ -3678,49 +3681,32 @@ rm(list = setdiff(ls(envir = globalenv()), c("processed_data_path", "raw_data_pa
 
 ## Table 9: Winsorizing, trimming and doughnut: Estimation of Treatment Effect
 ```{r }
-if (file.exists(paste0(path_data, "script_sharp.RData"))) {
-  load(paste0(path_data, "script_sharp.RData"))
+if (file.exists(paste0(processed_data_path, "script_sharp.RData"))) {
+  load(paste0(processed_data_path, "script_sharp.RData"))
 } else {
   message("Data environment does not exist")
 }
 
-# Define bandwidth and threshold
-bandwidth <- 20000  # Distance in meters
-threshold <- 0
-
 # Filter the data within the specified bandwidth
 df_rdd <- dfZRRControls %>%
-  filter(x >= (threshold - bandwidth) & x <= (threshold + bandwidth)) %>%
+  filter(x >= (-20000) & x <= (20000)) %>%
   mutate(
-    dist = x,                     # Create a distance variable
+    dist = x,                      # Create a distance variable
     treatmentZRR = z,              # Define treatment indicator
-    pop = log(pop)                 # Log-transform population
+    pop = log(pop),                # Log-transform population
+    popDensity = log(popDensity)   # Log-transform pop density
   ) %>%
   distinct(codecommune, .keep_all = TRUE)  # Remove duplicate communes
 
-# Load and prepare canton data
-dfCanton <- read_csv("/Users/ilanpargamin/Desktop/elections_papers/DATA/socio_eco/Taille_agglo_commune_csv/codescommunescantons1999.csv", show_col_types = FALSE) %>%
-  select(codecommune, codecanton, dep) %>%
-  filter(!is.na(codecanton) & !is.na(codecommune)) %>%
-  mutate(codecommune = gsub("^0+", "", codecommune))  # Remove leading zeros from codecommune
 
-# Merge df_rdd with canton data on codecommune
-df_rdd <- df_rdd %>%
-  select(-dep) %>%                      # Remove dep column from df_rdd before merging
-  left_join(dfCanton, by = "codecommune") %>%  # Merge to add canton data
-  mutate(canton = as.character(codecanton)) %>% # Convert codecanton to character as canton
-  select(-codecanton)                    # Remove codecanton after renaming
-
-# Clean up workspace
-rm(bandwidth, threshold, dfCanton)
-
+# convert m to km
 df_rdd$x <- df_rdd$x / 1000
 
 ```
 
 ```{r }
 # Define the formula
-formula <- as.formula(paste("y ~ z + x + ", paste(controls, collapse = " + "), "+ factor(dep)"))
+formula <- as.formula(paste("FN2002 ~ z + x + ", paste(controls, collapse = " + "), "+ factor(dep)"))
 
 # Winsorizing
 winsorize <- function(x, probs = c(0.01, 0.99)) {
@@ -3780,7 +3766,7 @@ stargazer(models,
           omit.stat = c("LL", "ser", "f"), 
           label = "tab:robustness-wtd",
           star.cutoffs = c(0.05, 0.01, 0.001), 
-          notes = "Winsorizing: I replace the outliers with the 5th and the 95th values. Trimming: I remove the outliers, i.e. the values of the data outside the 5th and 95th percentiles. Doughnut: I remove the observations that are withing a 5km range from the frontier border. Standard errors are clustered at the canton level.",
+          notes = "Winsorizing: I replace the outliers with the 5th and the 95th values. Trimming: I remove the outliers, i.e. the values of the data outside the 5th and 95th percentiles. Doughnut: I remove the observations that are withing a 5km range from the frontier border. Standard errors are clustered at the canton level. All specifications include control variables and department fixed effects",
           out=paste0(path_tables, "table9.tex")
 )
 
@@ -3796,8 +3782,8 @@ rm(list = setdiff(ls(envir = globalenv()), c("processed_data_path", "raw_data_pa
 
 ```{r }
 
-if (file.exists(paste0(path_data, "script_sharp.RData"))) {
-  load(paste0(path_data, "script_sharp.RData"))
+if (file.exists(paste0(processed_data_path, "script_sharp.RData"))) {
+  load(paste0(processed_data_path, "script_sharp.RData"))
 } else {
   message("Data environment does not exist")
 }
