@@ -790,68 +790,6 @@ save.image(file = file.path(processed_data_path, "script_sharp_noEpicenter.RData
 # dataDes.RData
 ```{r }
 
-# rm(list = setdiff(ls(envir = globalenv()), c("processed_data_path", "raw_data_path", "main_path")), envir = globalenv())
-# 
-# load(paste0(processed_data_path, "main.RData"))
-# 
-# 
-# dfZRR <- merge(dfZRR_raw, read.csv(paste0(raw_data_path,"ZRR.csv")) %>% mutate(codecommune = sub("^0+", "", as.character(codecommune))) %>% 
-#   select(codecommune, nom, treatment, year) , by = c("codecommune", "year")) %>%
-# 
-#   # Group by city code
-#   group_by(codecommune) %>%
-#   
-#   # Create the year_treat column
-#   mutate(year_treat1 = ifelse(treatment == 1 & !is.na(year), min(year[treatment == 1 & !is.na(year)], na.rm = TRUE), NA_real_)) %>%
-#   mutate(year_treat0 = ifelse(treatment == 0 & !is.na(year), min(year_treat1[treatment == 1 & !is.na(year)], na.rm = TRUE), NA_real_)) %>%
-#   ungroup() %>%
-#   mutate(
-#     year_treat = ifelse(!is.na(year_treat0), year_treat0, year_treat1)
-#   ) %>%
-#   select(-year_treat0, -year_treat1) %>%
-#   mutate(year_treat = ifelse(is.infinite(year_treat), NA, year_treat)) %>%
-#   select(-FN2019, -FN2014, -FN2004, -FN1999, -FN1994)
-# 
-# rm(dfZRR_raw)
-# 
-# # process
-# dfZRR <- dfZRR %>%
-#   filter(year==1995) %>%
-#   select(-year) %>%
-#   mutate(across(matches("^FN|^RPR"), as.numeric)) %>%
-#   mutate(deltaFN = FN2002 - FN1988) %>%
-#   mutate(treatment_in_1995 = treatment)
-# 
-# 
-# dfZRRlong <- dfZRR %>%
-#   mutate(across(matches("^FN|^RPR"), as.numeric)) %>%
-#   pivot_longer(
-#     cols = matches("^FN|^RPR"), 
-#     names_to = c(".value", "year"), 
-#     names_pattern = "(FN|RPR)(\\d+)"
-#   ) %>%
-#   arrange(nom)  %>%
-#   mutate(year_treat = ifelse(is.na(year_treat), 0, year_treat)) %>%
-#   mutate(year = as.numeric(year))
-# 
-# 
-# 
-# dfZRRControls <- left_join(df_merged , dfZRRlong, by = c("codecommune", "year")) %>%
-#   distinct() %>% filter(year < 2021) %>%
-#   mutate(across(where(is.numeric), as.double)) %>%
-#   mutate(across(where(is.numeric), ~ na_if(., Inf))) %>%
-#   group_by(codecommune) %>%
-#   mutate(year_treat = ifelse(is.na(year_treat), max(year_treat, na.rm = TRUE), year_treat)) %>%
-#   ungroup()
-# 
-# save.image(file=paste0(processed_data_path, 'dataDes.RData'))
-
-```
-
-
-# dataDes.RData
-```{r }
-
 rm(list = setdiff(ls(envir = globalenv()), c("processed_data_path", "raw_data_path", "main_path")), envir = globalenv())
 load(paste0(processed_data_path, "main.RData"))
 
@@ -910,6 +848,45 @@ dfZRRControls <- dfZRRControls %>%
   select(-haie, -vigne)
 
 save.image(file=paste0(processed_data_path, 'dataDes.RData'))
+
+```
+# eco_outcomes.RData
+```{r }
+
+if (file.exists(paste0(processed_data_path, "dataDes.RData"))) {
+  load(paste0(processed_data_path, "dataDes.RData"))
+} else {
+  message("Data environment does not exist")
+}
+
+outcomes <- c("pop", "pchom", "ratEmp", "ratForeigners", "popYoungOld", "asso", "educNoDiplomaPerK", "educSUPPerK", "educBACPerK", "educCAPBEPPerK", "poph", "popf", "pagri", "pindp", "ppint", "pempl", "pouvr", "revenuPerK", "popDensity")
+
+df_eco <- dfZRRControls %>%
+  filter(year %in% c(1990, 1999)) %>%
+  select(any_of(c("codecommune", "year", "dep", "reg", "treatment_in_1995", outcomes)))
+  
+# Load and prepare canton data
+dfCanton <- st_read(paste0(raw_data_path, "france1999.dbf")) %>%
+  mutate(codecommune = paste0(as.character(DEP), as.character(COM))) %>%
+  mutate(codecanton = paste0(as.character(DEP), as.character(CT))) %>%
+  select(codecommune, codecanton) 
+
+df_eco <- left_join(df_eco, dfCanton, by = c("codecommune"), relationship = "many-to-many")
+
+rm(list = setdiff(ls(envir = globalenv()), c("processed_data_path", "raw_data_path", "main_path", "outcomes", "df_eco")), envir = globalenv())
+
+
+if (file.exists(paste0(processed_data_path, "script_sharp.RData"))) {
+  load(paste0(processed_data_path, "script_sharp.RData"))
+} else {
+  message("Data environment does not exist")
+}
+
+df_eco <- left_join(df_eco, dfDistance, by = c("codecommune"), relationship = "many-to-one")
+
+rm(list = setdiff(ls(envir = globalenv()), c("processed_data_path", "raw_data_path", "main_path", "outcomes", "df_eco")), envir = globalenv())
+
+save.image(file=paste0(processed_data_path, 'eco_outcomes.RData'))
 
 ```
 

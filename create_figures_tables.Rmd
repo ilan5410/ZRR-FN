@@ -73,7 +73,7 @@ labels <- c("FN1995" = "FN vote share in 1995",
 ```{r }
 pacman::p_load(
 readxl, dplyr, tidyr, ggplot2, sf, stargazer, AER, broom, ggrepel, sf, viridis, stringr, ragg, fixest, sandwich, zoo, readr, rdd, rddtools, magrittr, rdrobust, estimatr, knitr, modelsummary, rddensity, gridExtra, rnaturalearth, rnaturalearthdata, forcats, cowplot, plm, grid, patchwork, reshape2,
-  kableExtra, caret, htetree, glmnet, rpart, randomForest, purrr, devtools,  SuperLearner, xgboost, psych, MatchIt, multiwayvcov, clubSandwich, patchwork
+  kableExtra, caret, htetree, glmnet, rpart, randomForest, purrr, devtools,  SuperLearner, xgboost, psych, MatchIt, multiwayvcov, clubSandwich, patchwork, scales
 
   )
 ```
@@ -1635,36 +1635,104 @@ for (i in 0:99) {
 final_results <- bind_rows(lapply(names(results_list), function(name) {
   mutate(results_list[[name]], Iteration = name)
 }))
+```
 
-# Create a list to store plots
+```{r }
+# ---- A light, publication-friendly theme ----
+theme_paper <- function(base_size = 11, base_family = NULL){
+  theme_minimal(base_size = base_size, base_family = base_family) +
+    theme(
+      plot.title         = element_text(face = "bold", margin = ggplot2::margin(b = 6)),
+      plot.subtitle      = element_text(margin = ggplot2::margin(b = 8)),
+      axis.title.x       = element_text(margin = ggplot2::margin(t = 6)),
+      axis.title.y       = element_text(margin = ggplot2::margin(r = 6)),
+      axis.text          = element_text(color = "grey20"),
+      panel.grid.minor   = element_blank(),
+      panel.grid.major.x = element_blank(),
+      panel.grid.major.y = element_line(linewidth = 0.3, color = "grey85"),
+      axis.ticks         = element_line(linewidth = 0.3, color = "grey60"),
+      axis.ticks.length  = grid::unit(2.5, "pt"),
+      plot.margin        = ggplot2::margin(6, 10, 6, 6),
+      strip.text         = element_text(face = "bold")
+    )
+}
+
+if (exists("margin")) rm(margin)
+
+# ---- Build plots ----
 plot_list <- list()
 
-# Generate histogram for each bandwidth
 for (x in bandwidths) {
-  b_plot <- final_results %>% 
-    filter(Bandwidth == paste0("Bandwidth = ", x), Iteration != "Observed")
-  
-  b_plot_observed <- final_results %>% 
-    filter(Bandwidth == paste0("Bandwidth = ", x), Iteration == "Observed") %>% 
+  # Permutation draws (null)
+  b_plot <- final_results %>%
+    filter(Bandwidth == paste0("Bandwidth = ", x),
+           Iteration != "Observed")
+
+  # Observed coefficient (scalar or NA if missing)
+  b_plot_observed <- final_results %>%
+    filter(Bandwidth == paste0("Bandwidth = ", x),
+           Iteration == "Observed") %>%
     pull(Coefficient)
-  
+  b_plot_observed <- if (length(b_plot_observed) > 0) as.numeric(b_plot_observed[1]) else NA_real_
+
+  # Temporary build for max bin height (for label placement)
+  tmp_build <- ggplot_build(
+    ggplot(b_plot, aes(x = Coefficient)) + geom_histogram(bins = 30)
+  )
+  max_count <- if (length(tmp_build$data) > 0) max(tmp_build$data[[1]]$count, na.rm = TRUE) else 0
+  y_lab <- max_count * 1.08
+
+  # X range (ensure observed is included for limits/pretty breaks)
+  x_range <- range(c(b_plot$Coefficient, b_plot_observed), na.rm = TRUE)
+  # add a little breathing room on both sides
+  pad <- diff(range(pretty(x_range)))/40
+  x_limits <- c(min(x_range) - pad, max(x_range) + pad)
+
   p <- ggplot(b_plot, aes(x = Coefficient)) +
-    geom_histogram(bins = 30, fill = "lightblue", color = "white") +
-    geom_vline(xintercept = b20_observed, color = "red", linewidth = 1) +
-    geom_text(aes(x = b_plot_observed, y = Inf, label = round(b_plot_observed, 3)), 
-              hjust = -0.1, vjust = 1.5, color = "red", size = 4) +
-    labs(title = paste0("Bandwidth = ", x), x = "Coefficient", y = "Count") +
-    theme_minimal()
-  
+    geom_histogram(bins = 30, fill = "grey80", color = "grey30", linewidth = 0.25, boundary = 0) +
+    scale_x_continuous(limits = x_limits, breaks = pretty_breaks(5)) +
+    scale_y_continuous(expand = expansion(mult = c(0, 0.05))) +
+    labs(title = paste0("Bandwidth = ", x),
+         x = "Coefficient",
+         y = "Count") +
+    coord_cartesian(clip = "off") +
+    theme_paper()
+
+  if (!is.na(b_plot_observed)) {
+    p <- p +
+      geom_vline(xintercept = b_plot_observed, color = "black",
+                 linewidth = 0.6, linetype = "dashed") +
+      annotate("label",
+               x = b_plot_observed, y = y_lab,
+               label = paste0("Observed: ", sprintf("%.3f", b_plot_observed)),
+               vjust = 0, hjust = -0.05,
+               size = 3.1, label.size = 0, fill = "white", color = "grey20") +
+      expand_limits(y = y_lab * 1.05)
+  }
+
   plot_list[[paste0("bw_", x)]] <- p
 }
 
-# Arrange plots in a 1x3 layout using patchwork
-combined_plot <- wrap_plots(plot_list, nrow = 1, ncol = 3)
+# ---- Arrange grid and annotate ----
+n_plots <- length(plot_list)
+ncol <- min(3, n_plots)               # up to 3 columns for readability
+nrow <- ceiling(n_plots / ncol)
 
-# Save the combined plot
-file_path <- paste0(path_figures, "figure15.png")
-ggsave(file_path, combined_plot, width = 12, height = 4, dpi = 300)
+combined_plot <-
+  wrap_plots(plotlist = plot_list, nrow = nrow, ncol = ncol) +
+  plot_annotation(
+    title = "Permutation Distributions of the Coefficient by Bandwidth",
+    theme = theme_paper()
+  )
+
+# ---- Save with size that matches the grid ----
+# ~3.2 inches per column and ~2.8 inches per row usually fits journals well
+width_in  <- 3.2 * ncol
+height_in <- 2.8 * nrow
+
+file_path <- file.path(path_figures, "figure15.png")
+ggsave(filename = file_path, plot = combined_plot,
+       width = width_in, height = height_in, dpi = 300, bg = "white")
 
 # # Format results for LaTeX table
 # formatted_results <- final_results %>%
@@ -2505,11 +2573,7 @@ ggplot(df_binned, aes(x = bin_center, y = mean_y, color = treatment_group)) +
   )
 ```
 ```{r }
-rm(list=ls())
-path_data <- "/Users/ilanpargamin/Desktop/ECONOMICS/thesis/THESIS_REPRO/DATA/"
-path_out <- "/Users/ilanpargamin/Desktop/ECONOMICS/thesis/THESIS_REPRO/OUTPUT/"
-path_figures <- paste0(path_out, "figures/")
-path_tables <- paste0(path_out, "tables/")
+rm(list = setdiff(ls(envir = globalenv()), c("processed_data_path", "raw_data_path", "main_path", "path_figures", "path_tables", "path_out", "path_data", "labels")), envir = globalenv())
 
 ```
 
@@ -3931,8 +3995,8 @@ rm(list = setdiff(ls(envir = globalenv()), c("processed_data_path", "raw_data_pa
 
 ## Table 10: The top 10% and bottom 10% of the treatment effect distribution according to the Causal Forest Model
 ```{r }
-if (file.exists(paste0(path_data, "borders_pair.RData"))) {
-  load(paste0(path_data, "borders_pair.RData"))
+if (file.exists(paste0(processed_data_path, "borders_pair.RData"))) {
+  load(paste0(processed_data_path, "borders_pair.RData"))
 } else {
   message("Data environment does not exist")
 }
@@ -3983,33 +4047,6 @@ ones <- function(n) {
 }
 
 
-# Rename the columns using the provided labels
-labels <- c("FN1988"= "FN vote share in 1988",
-            "pchom" = "unemployed (%)", 
-            "pop" = "population", 
-            "ratEmp" = "employed (%)", 
-            "ratForeigners" = "foreigners (%)", 
-            "asso" = "OPI per 1000 inhabitants", 
-            "educNoDiplomaPerK" = "no diploma (%)", 
-            "educSUPPerK" = "academic education (%)", 
-            "educBACPerK" = "highschool education (%)", 
-            "educCAPBEPPerK" = "technical education (%)", 
-            "poph" = "proportion of 20-40, men", 
-            "popf" = "proportion of 20-40, women", 
-            "pagri" = "agriculture workers (%)", 
-            "pindp" = "independent workers (%)", 
-            "ppint" = "intermediate occupations (%)", 
-            "pempl" = "clerical workers (%)", 
-            "pouvr" = "manual workers (%)", 
-            "altitude" = "altitude", 
-            "superficie" = "locality size", 
-            "logVac" = "proportion of vacant housing (log)", 
-            "haie" = "fences per km2", 
-            "vigne" = "vines per km2", 
-            "revenuPerK" = "Taxable income per capita",
-            "delta_pop_1980_1995" = "population change in p.p. 1982-1990", 
-            "delta_emp_1980_1990" = "employed change in p.p. 1982-1990", 
-            "min_distance_to_agglo" = "distance to closest agglomeration")
 
 tree_fml <- as.formula(paste("Y", paste(names(W1), collapse = ' + '), sep = " ~ "))
 causalforest <- causalForest(tree_fml,
@@ -4082,8 +4119,8 @@ rm(list = setdiff(ls(envir = globalenv()), c("processed_data_path", "raw_data_pa
 ```
 ## Table 11: Effect of the ZRR program on the 1999 socioeconomic variables
 ```{r }
-if (file.exists(paste0(path_data, "eco_outcomes.RData"))) {
-  load(paste0(path_data, "eco_outcomes.RData"))
+if (file.exists(paste0(processed_data_path, "eco_outcomes.RData"))) {
+  load(paste0(processed_data_path, "eco_outcomes.RData"))
 } else {
   message("Data environment does not exist")
 }
@@ -4094,24 +4131,34 @@ threshold <- 0
 lower_bound <- threshold - bandwidth
 upper_bound <- threshold + bandwidth
 
-df_rdd <- subset(dfZRRControls, x >= lower_bound & x <= upper_bound)
+df_rdd <- subset(df_eco %>% mutate(x = distance_to_border), 
+                 x >= lower_bound & x <= upper_bound)
 rm(lower_bound, bandwidth)
 
 df_rdd$dist <- df_rdd$x
-df_rdd$treatmentZRR <- df_rdd$z
+df_rdd$treatmentZRR <- df_rdd$treatment
+df_rdd$log_pop <- log(df_rdd$pop)
 
-# Load and prepare canton data
-dfCanton <- read_csv("/Users/ilanpargamin/Desktop/elections_papers/DATA/socio_eco/Taille_agglo_commune_csv/codescommunescantons1999.csv", show_col_types = FALSE) %>%
-  select(codecommune, codecanton, dep) %>%
-  filter(!is.na(codecanton) & !is.na(codecommune)) %>%
-  mutate(codecommune = gsub("^0+", "", codecommune))  # Remove leading zeros from codecommune
-
-# Merge df_rdd with canton data on codecommune
+# pivot from long to large
 df_rdd <- df_rdd %>%
-  select(-dep) %>%                      # Remove dep column from df_rdd before merging
-  left_join(dfCanton, by = "codecommune") %>%  # Merge to add canton data
-  mutate(canton = as.character(codecanton)) %>% # Convert codecanton to character as canton
-  select(-codecanton)                    # Remove codecanton after renaming
+  select(-treatment_in_1995, -index, -nom, -distance_to_border) %>%
+  select(-"...1") %>%
+  rename(z = treatment)
+
+outcomes <- setdiff(c(outcomes, "log_pop"), c("pop"))
+
+id_cols <- setdiff(names(df_rdd), c(outcomes, "year", "pop"))
+
+
+df_rdd_wide <- df_rdd %>%
+  mutate(.yr = sprintf("%04d", as.integer(year))) %>%
+  pivot_wider(
+    id_cols   = all_of(id_cols),
+    names_from  = .yr,
+    values_from = all_of(outcomes),
+    names_glue  = "{.value}_{.yr}",
+    values_fn   = ~ dplyr::first(.x)
+  )
 
 ```
 
@@ -4125,28 +4172,37 @@ b1 <- 10000
 b2 <- 5000
 
 bandwidths <- list(upper_bound, b1, b2)
-outcomes <- setdiff(c(outcomes, "log_pop"), c("vigne", "haie", "min_distance_to_agglo", "pop"))
-dfZRR1995Outcomes$log_pop_1999 <- log(dfZRR1995Outcomes$pop_1999)
-outcomes_2002 <- paste0(outcomes, "_", year_outcome)
+
+year_outcome <- "1999"
+outcomes_1999 <- paste0(outcomes, "_1999")
+controls <- setdiff(paste0(outcomes, "_1990"), c("popYoungOld_1990", "revenuPerK_1990"))
+
 
 # Loop over each outcome
-for (y in outcomes_2002) {
+for (y in outcomes_1999) {
   print(y)
-  # Merge df_rdd with dfZRR1995Outcomes to get the outcome values
-  df_rdd1 <- df_rdd %>%
-    left_join(dfZRR1995Outcomes %>% select(codecommune, all_of(y)), by = "codecommune")
-  df_rdd1 <- unique(df_rdd1)
+
+  df <- unique(df_rdd_wide)
+  
   # Create formula for the current outcome
   formula <- paste(y, " ~ z + x +", paste(controls, collapse = " + "), "+ factor(dep)")
   
   # Fit models for each bandwidth
   for (bw in bandwidths) {
-    filtered_data <- filter(df_rdd1, x >= -bw & x <= bw)
+    
+  filtered_data <- df %>%
+    filter(x >= -bw & x <= bw) %>%
+    select(any_of(c(c(y, "z", "x", "dep", "codecanton"), controls))) %>%
+    filter(
+      if_all(everything(), ~ !is.na(.x)),                          # drop NAs everywhere
+      if_all(where(is.numeric), ~ is.finite(.x))                   # drop Inf/-Inf only for numeric cols
+    )
+      
     nobs_vector <- c(nobs_vector, nrow(filtered_data))
     
     # Run the regression
     model <- lm(as.formula(formula), data = filtered_data)
-    coefs <- coeftest(model, vcov = vcovHC(model, type = "HC1", cluster = "group", cluster.id = df_rdd$canton))
+    coefs <- coeftest(model, vcov = vcovHC(model, type = "HC1", cluster = "group", cluster.id = filtered_data$codecanton))
     
     # Save the model with a specific name
     model_name <- paste(y, "bw", bw, sep = "_")
@@ -4176,7 +4232,7 @@ for (bw in bandwidths) {
   column_name <- paste("bw", bw, sep = "_")
   for (outcome in paste0(outcomes, "_", year_outcome)) {
     model_name <- paste(outcome, "bw", bw, sep = "_")
-    summary_table[summary_table$Outcome == outcome, column_name] <- extract_coefficients(all_models[[model_name]], "zTRUE")
+    summary_table[summary_table$Outcome == outcome, column_name] <- extract_coefficients(all_models[[model_name]], "z")
   }
 }
 
@@ -4189,37 +4245,10 @@ for (i in 1:length(bandwidths)) {
 # Combine the nobs row with the summary table
 summary_table <- rbind(summary_table, nobs_row)
 
-labels <- c("FN1988"= "Vote share for FN in 1988",
-            "pchom" = "Unemployed (%)", 
-            "log_pop" = "Population (log)", 
-            "ratEmp" = "Employed (%)", 
-            "ratForeigners" = "Foreigners (%)", 
-            "asso" = "OPI per 1000 inhabitants", 
-            "educNoDiplomaPerK" = "No diploma (%)", 
-            "educSUPPerK" = "Academic (%)", 
-            "educBACPerK" = "Highschool (%)", 
-            "educCAPBEPPerK" = "Technical (%)", 
-            "poph" = "Ages 20-40 (%), men", 
-            "popf" = "Ages 20-40 (%), women", 
-            "pagri" = "Agriculture (%)", 
-            "pindp" = "Independant (%)", 
-            "ppint" = "Intermediate occupations (%)", 
-            "pempl" = "Clerical (%)", 
-            "pouvr" = "Manual (%)", 
-            "altitude" = "Altitude", 
-            "superficie" = "Area", 
-            "logVac" = "Vacant housing (%)", 
-            "haie" = "Fences per squared km", 
-            "vigne" = "Vines per squared km", 
-            "revenuPerK" = "Taxable income per capita",
-            "delta_pop_1982_1990" = "Population change in p.p. 1982-1990", 
-            "delta_emp_1982_1990" = "Employed change in p.p. 1982-1990", 
-            "min_distance_to_agglo" = "Distance to closest agglomeration",
-            "nobs" ="Observations")
+labels_1999 <- labels
+names(labels_1999) <- paste0(names(labels), "_1999")
 
-names(labels) <- paste0(names(labels), "_1999")
-
-summary_table$Outcome <- labels[summary_table$Outcome]
+summary_table$Outcome <- labels_1999[summary_table$Outcome]
 
 kable_output <- summary_table %>%
   kable(format = "latex", booktabs = TRUE) %>%
@@ -4234,8 +4263,8 @@ rm(list = setdiff(ls(envir = globalenv()), c("processed_data_path", "raw_data_pa
 ```
 ## Table 12: ZRR effect on absolute number of votes (log) for FN, different bandwidths
 ```{r }
-if (file.exists(paste0(path_data, "script_sharp.RData"))) {
-  load(paste0(path_data, "script_sharp.RData"))
+if (file.exists(paste0(processed_data_path, "script_sharp.RData"))) {
+  load(paste0(processed_data_path, "script_sharp.RData"))
 } else {
   message("Data environment does not exist")
 }
@@ -4255,17 +4284,16 @@ df_rdd <- dfZRRControls %>%
   distinct(codecommune, .keep_all = TRUE)  # Remove duplicate communes
 
 # Load and prepare canton data
-dfCanton <- read_csv("/Users/ilanpargamin/Desktop/elections_papers/DATA/socio_eco/Taille_agglo_commune_csv/codescommunescantons1999.csv", show_col_types = FALSE) %>%
-  select(codecommune, codecanton, dep) %>%
+dfCanton <- st_read(paste0(raw_data_path, "france1999.dbf")) %>%
+  mutate(codecommune = paste0(as.character(DEP), as.character(COM))) %>%
+  mutate(codecanton = paste0(as.character(DEP), as.character(CT))) %>%
+  select(codecommune, codecanton) %>%
   filter(!is.na(codecanton) & !is.na(codecommune)) %>%
   mutate(codecommune = gsub("^0+", "", codecommune))  # Remove leading zeros from codecommune
 
 # Merge df_rdd with canton data on codecommune
 df_rdd <- df_rdd %>%
-  select(-dep) %>%                      # Remove dep column from df_rdd before merging
-  left_join(dfCanton, by = "codecommune") %>%  # Merge to add canton data
-  mutate(canton = as.character(codecanton)) %>% # Convert codecanton to character as canton
-  select(-codecanton)                    # Remove codecanton after renaming
+  left_join(dfCanton, by = "codecommune")  # Merge to add canton data
 
 # Clean up workspace
 rm(bandwidth, threshold, dfCanton)
@@ -4273,7 +4301,8 @@ rm(bandwidth, threshold, dfCanton)
 ```
 
 ```{r }
-df_rdd$FN2002abs <- log(df_rdd$y * exp(df_rdd$pop) * df_rdd$turnout_2002 + 0.0001)
+
+df_rdd$FN2002abs <- log(df_rdd$FN2002 * exp(df_rdd$pop) * df_rdd$turnout_2002 + 0.0001)
 
 
 
@@ -4289,7 +4318,7 @@ model_bw_1 <- lm(formula,
                                x >= -b1 &
                                  x <= b1))
 
-cluster_se_bw_1 <- coeftest(model_bw_1, vcov = vcovHC(model_bw_1, type = "HC1", cluster = "group", cluster.id = df_rdd$canton))
+cluster_se_bw_1 <- coeftest(model_bw_1, vcov = vcovHC(model_bw_1, type = "HC1", cluster = "group", cluster.id = df_rdd$codecanton))
 
 
 model_bw_2 <- lm(formula,
@@ -4297,14 +4326,14 @@ model_bw_2 <- lm(formula,
                                x >= -b2 &
                                  x <= b2))
 
-cluster_se_bw_2 <- coeftest(model_bw_2, vcov = vcovHC(model_bw_2, type = "HC1", cluster = "group", cluster.id = df_rdd$canton))
+cluster_se_bw_2 <- coeftest(model_bw_2, vcov = vcovHC(model_bw_2, type = "HC1", cluster = "group", cluster.id = df_rdd$codecanton))
 
 model_bw_3 <- lm(formula,
                  data = filter(df_rdd,
                                x >= -b3 &
                                  x <= b3))
 
-cluster_se_bw_3 <- coeftest(model_bw_3, vcov = vcovHC(model_bw_3, type = "HC1", cluster = "group", cluster.id = df_rdd$canton))
+cluster_se_bw_3 <- coeftest(model_bw_3, vcov = vcovHC(model_bw_3, type = "HC1", cluster = "group", cluster.id = df_rdd$codecanton))
 
 
 model_names <- c(paste0("Bandwidth = ", b1), 
@@ -4359,10 +4388,10 @@ stargazer(models,
 rm(list = setdiff(ls(envir = globalenv()), c("processed_data_path", "raw_data_path", "main_path", "path_figures", "path_tables", "path_out", "path_data", "labels")), envir = globalenv())
 ```
 
-## Table A1: Evolution of Socioeconomic Variables between 1988 and 2002 with T-Test Results
+## Table Annex 1: Evolution of Socioeconomic Variables between 1988 and 2002 with T-Test Results
 ```{r }
-if (file.exists(paste0(path_data, "dataDes.RData"))) {
-  load(paste0(path_data, "dataDes.RData"))
+if (file.exists(paste0(processed_data_path, "dataDes.RData"))) {
+  load(paste0(processed_data_path, "dataDes.RData"))
 } else {
   message("Data environment does not exist")
 }
@@ -4403,34 +4432,6 @@ dfSpe <- dfSpe %>%
 
 
 ```{r }
-labels <- c("FN" = "FN vote share",
-            "pchom" = "unemployed (%)", 
-  "pop" = "population size", 
-  "ratEmp" = "employed (%)", 
-  "ratForeigners" = "foreigners (%)", 
-  "asso" = "OPI per 1000 inhabitants", 
-  "educNoDiplomaPerK" = "no diploma (%)", 
-  "educSUPPerK" = "academic education (%)", 
-  "educBACPerK" = "highschool education (%)", 
-  "educCAPBEPPerK" = "technical education (%)", 
-  "poph" = "proportion of 20-40, men", 
-  "popf" = "proportion of 20-40, women", 
-  "pagri" = "agriculture workers (%)", 
-  "pindp" = "independent workers (%)", 
-  "ppint" = "intermediate occupations (%)", 
-  "pempl" = "clerical workers (%)", 
-  "pouvr" = "manual workers (%)", 
-  "altitude" = "altitude", 
-  "superficie" = "locality size", 
-  "logVac" = "proportion of vacant housing (log)", 
-  "haie" = "fences per km2", 
-  "vigne" = "vines per km2", 
-  "revenuPerK" = "Taxable income per capita",
-  "delta_pop_1982_1990" = "population change in p.p. 1982-1990", 
-  "delta_emp_1982_1990" = "employed change in p.p. 1982-1990", 
-  "min_distance_to_agglo" = "distance to closest agglomeration"
-)
-
 
 # Function to calculate mean and t-test
 calculate_balance <- function(df, grouping_var, target_vars) {
@@ -4487,16 +4488,15 @@ latex_table <- balance_summary %>%
   kable_styling(latex_options = c("hold_position", "scale_down"), full_width = FALSE, position = "center")
 
 # Save the table to a .tex file
-cat(latex_table, file = paste0(path_tables, "tableA1.tex"))
-
-
+cat(latex_table, file = paste0(path_tables, "Annex1.tex"))
 
 ```
 
 ```{r }
 rm(list = setdiff(ls(envir = globalenv()), c("processed_data_path", "raw_data_path", "main_path", "path_figures", "path_tables", "path_out", "path_data", "labels")), envir = globalenv())
 ```
-## Table D1: Main results, different bandwidths
+
+## Table Annex 2: Main results, different bandwidths
 ```{r }
 if (file.exists(paste0(path_data, "script_sharp_noEpicenter.RData"))) {
   load(paste0(path_data, "script_sharp_noEpicenter.RData"))
@@ -4615,7 +4615,7 @@ stargazer(models,
           #se = list(cluster_se, cluster_se_bw_1, cluster_se_bw_2, cluster_se_bw_3), 
           star.cutoffs = c(0.05, 0.01, 0.001), 
           notes = "Standard errors are clustered at the canton level",
-          out=paste0(path_tables, "tableC1.tex")
+          out=paste0(path_tables, "Annex2.tex")
 )
 
 
@@ -4627,7 +4627,7 @@ stargazer(models,
 rm(list = setdiff(ls(envir = globalenv()), c("processed_data_path", "raw_data_path", "main_path", "path_figures", "path_tables", "path_out", "path_data", "labels")), envir = globalenv())
 ```
 
-## Table D2: Main results when bandwidth is 10 km, different specifications
+## Table Annex 3: Main results when bandwidth is 10 km, different specifications
 ```{r }
 if (file.exists(paste0(path_data, "script_sharp_noEpicenter.RData"))) {
   load(paste0(path_data, "script_sharp_noEpicenter.RData"))
@@ -4718,7 +4718,7 @@ stargazer(models, type = "text",
           column.sep.width = "3pt",
           float = FALSE,
           notes="I restrict the sample to the municipalities located 10km at most from the frontier program.",
-          out=paste0(path_tables, "tableC2.tex"),
+          out=paste0(path_tables, "Annex3.tex"),
           tabel="rdd_results_10_noEpi")
 
 ```
@@ -4729,7 +4729,7 @@ rm(list = setdiff(ls(envir = globalenv()), c("processed_data_path", "raw_data_pa
 ```
 
 
-## Table E1: Comparison of Residual Means between Control and Treatment Groups with T-Test Results
+## Table Annex 4: Comparison of Residual Means between Control and Treatment Groups with T-Test Results
 ```{r }
 if (file.exists(paste0(path_data, "borders_pair.RData"))) {
   load(paste0(path_data, "borders_pair.RData"))
@@ -4858,7 +4858,7 @@ stargazer(
   dep.var.labels.include = FALSE,
   rownames = FALSE,
   label="tab:ttest-border",
-  out=paste0(path_tables, "ttest_matching.tex")
+  out=paste0(path_tables, "Annex4.tex")
 )
 
 
@@ -4869,7 +4869,7 @@ stargazer(
 rm(list = setdiff(ls(envir = globalenv()), c("processed_data_path", "raw_data_path", "main_path", "path_figures", "path_tables", "path_out", "path_data", "labels")), envir = globalenv())
 ```
 
-## Table E2: Border municipalities: regression Results (matching)
+## Table Annex 5: Border municipalities: regression Results (matching)
 ```{r }
 if (file.exists(paste0(path_data, "borders_pair.RData"))) {
   load(paste0(path_data, "borders_pair.RData"))
@@ -4927,7 +4927,7 @@ stargazer(
   ),
   digits = 3,
   notes="The table presents the regression results of the effect of the ZRR program on the vote share for the FN in 2002, using a sample of 11,604 pairs of border municipalities that are in the same department. Specification (1) shows the simplest model with no controls. Specification (2) includes control variables. Specification (3) adds department fixed effects to the model. Specification (4) includes border pair fixed effects.",
-  out = paste0(path_tables, "tableD2.tex")
+  out = paste0(path_tables, "Annex5.tex")
 )
 
 ```
@@ -4938,7 +4938,7 @@ rm(list = setdiff(ls(envir = globalenv()), c("processed_data_path", "raw_data_pa
 ```
 
 
-## Table F1: Main results when bandwidth is 10 km, different specifications, 1995
+## Table Annex 6: Main results when bandwidth is 10 km, different specifications, 1995
 ```{r }
 if (file.exists(paste0(path_data, "script_sharp_1995.RData"))) {
   load(paste0(path_data, "script_sharp_1995.RData"))
@@ -5027,7 +5027,7 @@ stargazer(models, type = "text",
           column.sep.width = "3pt",
           float = FALSE,
           notes="I restrict the sample to the municipalities located 10km at most from the frontier program.",
-          out=paste0(path_tables, "tableF1.tex"),
+          out=paste0(path_tables, "Annex6.tex"),
           tabel="tab:rdd_results_10")
 
 ```
@@ -5041,7 +5041,7 @@ stargazer(models, type = "text",
 rm(list = setdiff(ls(envir = globalenv()), c("processed_data_path", "raw_data_path", "main_path", "path_figures", "path_tables", "path_out", "path_data", "labels")), envir = globalenv())
 ```
 
-## Table F2: Main results, different bandwidths
+## Table Annex 7: Main results, different bandwidths
 ```{r }
 if (file.exists(paste0(path_data, "script_sharp_1995.RData"))) {
   load(paste0(path_data, "script_sharp_1995.RData"))
@@ -5154,7 +5154,7 @@ stargazer(models,
           #se = list(cluster_se, cluster_se_bw_1, cluster_se_bw_2, cluster_se_bw_3), 
           star.cutoffs = c(0.05, 0.01, 0.001), 
           notes = "Standard errors are clustered at the canton level",
-          out=paste0(path_tables, "tableF2.tex"),
+          out=paste0(path_tables, "Annex7.tex"),
           title="Main results, different bandwidths (1995)",
           label="tab:rdd_results_diffbandwidth-1995"
 )
