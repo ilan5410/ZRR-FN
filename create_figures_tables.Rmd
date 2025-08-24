@@ -14,12 +14,12 @@ knitr::opts_chunk$set(echo = FALSE)
 # Define the paths
 ```{r }
 rm(list=ls())
-path_out <- "/Users/ilanpargamin/Desktop/ECONOMICS/thesis/THESIS_REPRO copy/OUTPUT/"
+path_out <- "/Users/ilanpargamin/Desktop/ECONOMICS/thesis/THESIS_REPRO July 2025/OUTPUT/"
 path_figures <- paste0(path_out, "figures/")
 path_tables <- paste0(path_out, "tables/")
 keep_vars<- c("path_data", "path_out", "path_figures", "path_tables")
 
-main_path <- "/Users/ilanpargamin/Desktop/ECONOMICS/thesis/THESIS_REPRO copy/"
+main_path <- "/Users/ilanpargamin/Desktop/ECONOMICS/thesis/THESIS_REPRO July 2025/"
 path_data <- paste0(main_path, "data/")
 
 raw_data_path <- paste0(path_data, "raw data/")
@@ -79,7 +79,7 @@ readxl, dplyr, tidyr, ggplot2, sf, stargazer, AER, broom, ggrepel, sf, viridis, 
 ```
 # Checks
 
-## Check that the canton and treatment overlap
+Check that the canton and treatment overlap
 ```{r }
 dfZRR_raw  <- read.csv(paste0(raw_data_path,"ZRR.csv"))
 
@@ -1449,17 +1449,13 @@ ggsave(paste0(path_figures, "figure13.png"), plot = plot, width = 8, height = 6)
 rm(list = setdiff(ls(envir = globalenv()), c("processed_data_path", "raw_data_path", "main_path", "path_figures", "path_tables", "path_out", "path_data", "labels")), envir = globalenv())
 
 ```
-
-
-## Figure 14: Map and Distribution of the running variable - Placebo
+## Figure 14: Map and Distribution of the running variable - Randomized treatment
 ```{r}
 if (file.exists(paste0(processed_data_path, "script_sharp.RData"))) {
   load(paste0(processed_data_path, "script_sharp.RData"))
 } else {
   message("Data environment does not exist")
 }
-
-
 
 dfMap <- read_excel(paste0(processed_data_path, "dataGeoRDD_canton_random/dataGeoRDD_canton_random1.xlsx")) %>%
   select(-year) %>%
@@ -1534,7 +1530,7 @@ p_dis <- ggplot(df_rdd,
         legend.box.background = element_rect(color = "black"))  # Optional: add a border around the legend box
 
 combined_plot <- map / p_dis + plot_layout(ncol = 1)
-file_path <- paste0(path_figures, "distanceMapAndDistribution_placebo.png")
+file_path <- paste0(path_figures, "figure14.png")
 
 # Save the plot as a PNG file
 ggsave(file_path, plot = combined_plot, device = "png", width = 10, height = 12)
@@ -1544,7 +1540,163 @@ ggsave(file_path, plot = combined_plot, device = "png", width = 10, height = 12)
 rm(list = setdiff(ls(envir = globalenv()), c("processed_data_path", "raw_data_path", "main_path", "path_figures", "path_tables", "path_out", "path_data", "labels")), envir = globalenv())
 ```
 
-## Figure 15: Comparison of Heterogeneity Effects
+
+## Figure 15: Randomization of Treatment 
+
+```{r }
+
+if (file.exists(paste0(processed_data_path, "script_sharp.RData"))) {
+  load(paste0(processed_data_path, "script_sharp.RData"))
+} else {
+  message("Data environment does not exist")
+}
+
+
+# Define constants
+bandwidths <- c(20, 10, 5)
+model_names <- paste0("Bandwidth = ", bandwidths)
+threshold <- 0
+formula <- as.formula(paste("FN2002 ~ z + x +", paste(controls, collapse = " +"), "+ factor(dep)"))
+
+# Helper function for significance stars
+add_stars <- function(coef, se) {
+  t_value <- abs(coef / se)
+  dplyr::case_when(
+    t_value > 2.58 ~ "***",
+    t_value > 1.96 ~ "**",
+    t_value > 1.65 ~ "*",
+    TRUE ~ ""
+  )
+}
+
+# Load and clean canton data
+dfCanton <- st_read(paste0(raw_data_path, "france1999.dbf")) %>%
+  mutate(
+    codecommune = gsub("^0+", "", paste0(DEP, COM)),
+    codecanton = paste0(DEP, CT)
+  ) %>%
+  filter(!is.na(codecanton), !is.na(codecommune)) %>%
+  select(codecommune, codecanton)
+
+# Function to prepare RDD data
+prepare_rdd_data <- function(df, bandwidth, threshold, canton_data) {
+  df %>%
+    filter(x >= (threshold - bandwidth), x <= (threshold + bandwidth)) %>%
+    mutate(
+      dist = x,
+      treatmentZRR = z,
+      pop = log(pop),
+      x = x / 1000
+    ) %>%
+    distinct(codecommune, .keep_all = TRUE) %>%
+    left_join(canton_data, by = "codecommune") %>%
+    mutate(canton = as.character(codecanton)) %>%
+    select(-codecanton)
+}
+
+# Function to run model for a given bandwidth
+run_model <- function(data, bw, formula) {
+  model_data <- filter(data, x >= -bw, x <= bw)
+  model <- lm(formula, data = model_data)
+  coef_z <- coef(model)[grepl("^z", names(coef(model)))]
+  se_z <- sqrt(diag(vcovHC(model, type = "HC1", cluster = "group", cluster.id = model_data$canton))[grepl("^z", names(coef(model)))])
+  return(data.frame(Bandwidth = paste0("Bandwidth = ", bw), Coefficient = coef_z, Clustered_SE = se_z))
+}
+
+# Initialize results list
+results_list <- list()
+
+# Process observed data
+observed_data <- prepare_rdd_data(dfZRRControls, 20000, threshold, dfCanton)
+results_list[["Observed"]] <- bind_rows(lapply(bandwidths, function(bw) run_model(observed_data, bw, formula)))
+
+
+# Loop over files of distance data
+for (i in 0:99) {
+  dfDistance <- read_excel(paste0(processed_data_path, "dataGeoRDD_canton_random/dataGeoRDD_canton_random", i, ".xlsx")) %>%
+    mutate(
+      codecommune = sub("^0+", "", as.character(codecommune)),
+      x = distance_to_border,
+      z = ifelse(x < 0, 1, 0)
+    ) %>%
+    select(codecommune, x, z)
+  
+  df_rdd <- dfZRRControls %>%
+    select(-x, -z, -distance_to_border) %>%
+    distinct(codecommune, .keep_all = TRUE) %>%
+    mutate(codecommune = sub("^0+", "", as.character(codecommune))) %>%
+    left_join(dfDistance, by = "codecommune") %>%
+    prepare_rdd_data(20000, threshold, dfCanton)
+  
+  results_list[[paste0("Iteration_", i)]] <- bind_rows(lapply(bandwidths, function(bw) run_model(df_rdd, bw, formula)))
+}
+
+# Combine results
+final_results <- bind_rows(lapply(names(results_list), function(name) {
+  mutate(results_list[[name]], Iteration = name)
+}))
+
+# Create a list to store plots
+plot_list <- list()
+
+# Generate histogram for each bandwidth
+for (x in bandwidths) {
+  b_plot <- final_results %>% 
+    filter(Bandwidth == paste0("Bandwidth = ", x), Iteration != "Observed")
+  
+  b_plot_observed <- final_results %>% 
+    filter(Bandwidth == paste0("Bandwidth = ", x), Iteration == "Observed") %>% 
+    pull(Coefficient)
+  
+  p <- ggplot(b_plot, aes(x = Coefficient)) +
+    geom_histogram(bins = 30, fill = "lightblue", color = "white") +
+    geom_vline(xintercept = b20_observed, color = "red", linewidth = 1) +
+    geom_text(aes(x = b_plot_observed, y = Inf, label = round(b_plot_observed, 3)), 
+              hjust = -0.1, vjust = 1.5, color = "red", size = 4) +
+    labs(title = paste0("Bandwidth = ", x), x = "Coefficient", y = "Count") +
+    theme_minimal()
+  
+  plot_list[[paste0("bw_", x)]] <- p
+}
+
+# Arrange plots in a 1x3 layout using patchwork
+combined_plot <- wrap_plots(plot_list, nrow = 1, ncol = 3)
+
+# Save the combined plot
+file_path <- paste0(path_figures, "figure15.png")
+ggsave(file_path, combined_plot, width = 12, height = 4, dpi = 300)
+
+# # Format results for LaTeX table
+# formatted_results <- final_results %>%
+#   mutate(
+#     Significance = mapply(add_stars, Coefficient, Clustered_SE),
+#     Formatted = sprintf("%.3f (%.3f)%s", Coefficient, Clustered_SE, Significance)
+#   ) %>%
+#   select(Iteration, Bandwidth, Formatted) %>%
+#   pivot_wider(names_from = Bandwidth, values_from = Formatted, 
+#               names_glue = "Bandwidth {sub('Bandwidth = ', '', Bandwidth)}") %>%
+#   rename_with(~paste0("Bandwidth ", .x), starts_with("Bandwidth"))
+# 
+# # Generate and save LaTeX table
+# kbl(formatted_results, format = "latex", booktabs = TRUE, 
+#     caption = "Regression Results: Coefficient and Clustered SE for treatment effect of ZRR",
+#     label = "rdd_results_diffbandwidth_placebo") %>%
+#   kable_styling(latex_options = c("hold_position", "scale_down")) %>%
+#   add_header_above(c("Iteration" = 1, "Bandwidth 20" = 1, "Bandwidth 10" = 1, "Bandwidth 5" = 1)) %>%
+#   cat(file = paste0(path_tables, "table10.tex"))
+
+
+
+```
+
+
+
+```{r }
+rm(list = setdiff(ls(envir = globalenv()), c("processed_data_path", "raw_data_path", "main_path", "path_figures", "path_tables", "path_out", "path_data", "labels")), envir = globalenv())
+```
+
+
+## Figure 16: Comparison of Heterogeneity Effects
 
 ```{r}
 
@@ -1769,7 +1921,7 @@ p <- ggplot(het_effects_long, aes(x = Heterogeneity_Effect, fill = Method)) +
 print(p)
 
 # Save the plot to a file
-ggsave(paste0(path_figures, "figure15.png"), p, width = 10, height = 6)
+ggsave(paste0(path_figures, "figure16.png"), p, width = 10, height = 6)
 
 rm(list = setdiff(ls(envir = globalenv()), c("processed_data_path", "raw_data_path", "main_path", "path_figures", "path_tables", "path_out", "path_data", "labels")), envir = globalenv())
 
@@ -3777,150 +3929,7 @@ stargazer(models,
 rm(list = setdiff(ls(envir = globalenv()), c("processed_data_path", "raw_data_path", "main_path", "path_figures", "path_tables", "path_out", "path_data", "labels")), envir = globalenv())
 ```
 
-## Table 10: Main results, different bandwidths - Placebo 
-
-
-```{r }
-
-if (file.exists(paste0(processed_data_path, "script_sharp.RData"))) {
-  load(paste0(processed_data_path, "script_sharp.RData"))
-} else {
-  message("Data environment does not exist")
-}
-rm(dfDistance)
-
-# Define bandwidth and threshold
-bandwidth <- 20000  # Distance in meters
-threshold <- 0
-
-b1 <- 20
-b2 <- 10
-b3 <- 5
-
-formula <- as.formula(paste("y ~ z + x + ", paste(controls, collapse = " + "), "+ factor(dep)"))
-
-# Helper function to add significance stars based on p-values
-add_stars <- function(coef, se) {
-  t_value <- abs(coef / se)
-  if (t_value > 2.58) {
-    return("***")
-  } else if (t_value > 1.96) {
-    return("**")
-  } else if (t_value > 1.65) {
-    return("*")
-  } else {
-    return("")
-  }
-}
-
-
-# Load and prepare canton data
-dfCanton <- read_csv("/Users/ilanpargamin/Desktop/elections_papers/DATA/socio_eco/Taille_agglo_commune_csv/codescommunescantons1999.csv", show_col_types = FALSE) %>%
-  select(codecommune, codecanton, dep) %>%
-  filter(!is.na(codecanton) & !is.na(codecommune)) %>%
-  mutate(codecommune = gsub("^0+", "", codecommune))  # Remove leading zeros from codecommune
-
-# Initialize an empty list to store results for each iteration of i
-results_list <- list()
-
-
-# Loop over files of distance data
-for (i in 0:10){
-  
-  # Prepare data
-  dfDistance <- read_excel(paste0(path_data, "dataGeoRDD_canton_random/dataGeoRDD_canton_random", i, ".xlsx")) %>%
-    select(-year) %>%
-    mutate(
-      codecommune = sub("^0+", "", as.character(codecommune)),
-      x = distance_to_border,
-      z = ifelse(x < 0, 1, 0),
-      treatment = z,
-      distance_to_border = x
-    ) %>%
-    select(codecommune, x, z, distance_to_border)
-
-  df_rdd <- left_join(dfZRRControls %>% 
-                        select(-x, -z) %>%
-                        distinct(codecommune, .keep_all = TRUE) %>%
-                        mutate(codecommune = sub("^0+", "", as.character(codecommune))), 
-                      dfDistance %>% 
-                        distinct(codecommune, .keep_all = TRUE), by="codecommune") %>%
-    filter(x >= (threshold - bandwidth) & x <= (threshold + bandwidth)) %>%
-    mutate(
-      dist = x,                     
-      treatmentZRR = z,              
-      pop = log(pop)                 
-    ) %>%
-    distinct(codecommune, .keep_all = TRUE)  %>%
-    select(-dep) %>%                      
-    left_join(dfCanton, by = "codecommune") %>%  # Merge to add canton data
-    mutate(canton = as.character(codecanton)) %>% # Convert codecanton to character as canton
-    select(-codecanton)                    # Remove codecanton after renaming
-  df_rdd$x <- df_rdd$x / 1000
-  
-  # Temporary storage for this iteration's results
-  iter_results <- data.frame(
-    Bandwidth = model_names,
-    Coefficient = NA,
-    Clustered_SE = NA
-  )
-
-  # Loop through each bandwidth model
-  for (j in 1:3) {
-    bw <- get(paste0("b", j))
-    model <- lm(formula, data = filter(df_rdd, x >= -bw & x <= bw))
-    
-    # Extract coefficient and clustered standard error for zTRUE, Store in results matrix
-    iter_results[j, "Coefficient"]  <- coef(model)["z"]
-    iter_results[j, "Clustered_SE"] <- sqrt(diag(vcovHC(model, type = "HC1", cluster = "group", cluster.id = df_rdd$canton))["z"])
-  }
-  
-  # Add results of this iteration to the list
-  results_list[[paste0("Iteration_", i)]] <- iter_results
-  
-}
-
-# Combine all results into a single data frame
-final_results <- do.call(rbind, lapply(names(results_list), function(name) {
-  cbind(Iteration = name, results_list[[name]])
-}))
-
-
-# Format results with coefficient, standard error, and significance stars
-formatted_results <- final_results %>%
-  mutate(
-    Significance = mapply(add_stars, Coefficient, Clustered_SE),
-    Formatted = sprintf("%.3f (%.3f)%s", Coefficient, Clustered_SE, Significance)
-  ) %>%
-  select(Iteration, Bandwidth, Formatted) %>%
-  pivot_wider(
-    names_from = Bandwidth,
-    values_from = Formatted
-  ) %>%
-  rename(`Bandwidth 20` = `Bandwidth = 20`, `Bandwidth 10` = `Bandwidth = 10`, `Bandwidth 5` = `Bandwidth = 5`)
-
-# Display the formatted table in LaTeX
-tab <- kbl(formatted_results, format = "latex", booktabs = TRUE, 
-           caption = "Regression Results: Coefficient and Clustered SE for treatment effect of ZRR",
-           label="rdd_results_diffbandwidth_placebo") %>%
-  kable_styling(latex_options = c("hold_position", "scale_down")) %>%
-  add_header_above(c("Iteration" = 1, "Bandwidth 20" = 1, "Bandwidth 10" = 1, "Bandwidth 5" = 1)) %>%
-  row_spec(0, bold = TRUE)
-
-cat(tab, file = paste0(path_tables, "table10.tex"))
-
-
-
-
-```
-
-
-
-```{r }
-rm(list = setdiff(ls(envir = globalenv()), c("processed_data_path", "raw_data_path", "main_path", "path_figures", "path_tables", "path_out", "path_data", "labels")), envir = globalenv())
-```
-
-## Table 11: The top 10% and bottom 10% of the treatment effect distribution according to the Causal Forest Model
+## Table 10: The top 10% and bottom 10% of the treatment effect distribution according to the Causal Forest Model
 ```{r }
 if (file.exists(paste0(path_data, "borders_pair.RData"))) {
   load(paste0(path_data, "borders_pair.RData"))
@@ -4062,7 +4071,7 @@ t_test_summary <- t_test_summary[, c("Description", "p_value", "Significance", "
 
 # Step 4: Display the t-test results using stargazer
 stargazer(t_test_summary, type = "latex", summary = FALSE, digits = 3,
-          out = paste0(path_tables, "table11.tex"),
+          out = paste0(path_tables, "table10.tex"),
           title="Comparison of Heterogeneity Effects",
           label="fig:heterogeneity",
           notes="The table presents a comparison between the top 10\ and bottom 10\ of the treatment effect distribution as estimated by the Causal Forest Model. The columns display the mean values of key socioeconomic and demographic variables for both groups, the t-value from a t-test comparing the means, the corresponding p-value, and significance levels indicated by stars (*** p < 0.01, ** p < 0.05, * p < 0.1). This comparison highlights the characteristics of the groups most and least affected by the treatment.",
@@ -4071,7 +4080,7 @@ stargazer(t_test_summary, type = "latex", summary = FALSE, digits = 3,
 
 rm(list = setdiff(ls(envir = globalenv()), c("processed_data_path", "raw_data_path", "main_path", "path_figures", "path_tables", "path_out", "path_data", "labels")), envir = globalenv())
 ```
-## Table 12: Effect of the ZRR program on the 1999 socioeconomic variables
+## Table 11: Effect of the ZRR program on the 1999 socioeconomic variables
 ```{r }
 if (file.exists(paste0(path_data, "eco_outcomes.RData"))) {
   load(paste0(path_data, "eco_outcomes.RData"))
@@ -4216,14 +4225,14 @@ kable_output <- summary_table %>%
   kable(format = "latex", booktabs = TRUE) %>%
   kable_styling()
 
-save_kable(kable_output, file = paste0(path_tables, "table12.tex"))
+save_kable(kable_output, file = paste0(path_tables, "table11.tex"))
 ```
 
 
 ```{r }
 rm(list = setdiff(ls(envir = globalenv()), c("processed_data_path", "raw_data_path", "main_path", "path_figures", "path_tables", "path_out", "path_data", "labels")), envir = globalenv())
 ```
-## Table 13: ZRR effect on absolute number of votes (log) for FN, different bandwidths
+## Table 12: ZRR effect on absolute number of votes (log) for FN, different bandwidths
 ```{r }
 if (file.exists(paste0(path_data, "script_sharp.RData"))) {
   load(paste0(path_data, "script_sharp.RData"))
@@ -4341,7 +4350,7 @@ stargazer(models,
           #se = list(cluster_se, cluster_se_bw_1, cluster_se_bw_2, cluster_se_bw_3), 
           star.cutoffs = c(0.05, 0.01, 0.001), 
           notes = "Standard errors are clustered at the canton level",
-          out=paste0(path_tables, "table13.tex")
+          out=paste0(path_tables, "table12.tex")
 )
 
 ```

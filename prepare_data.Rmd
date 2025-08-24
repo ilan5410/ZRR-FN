@@ -21,9 +21,9 @@ readxl, dplyr, tidyr, ggplot2, sf, stargazer, AER, broom, ggrepel, sf, viridis, 
 ```{r}
 rm(list=ls())
 
-main_path <- "/Users/ilanpargamin/Desktop/ECONOMICS/thesis/THESIS_REPRO copy/"
-raw_data_path <- "/Users/ilanpargamin/Desktop/ECONOMICS/thesis/THESIS_REPRO copy/DATA/raw data/"
-processed_data_path <- "/Users/ilanpargamin/Desktop/ECONOMICS/thesis/THESIS_REPRO copy/DATA/processed data/"
+main_path <- "/Users/ilanpargamin/Desktop/ECONOMICS/thesis/THESIS_REPRO July 2025/"
+raw_data_path <- "/Users/ilanpargamin/Desktop/ECONOMICS/thesis/THESIS_REPRO July 2025/DATA/raw data/"
+processed_data_path <- "/Users/ilanpargamin/Desktop/ECONOMICS/thesis/THESIS_REPRO July 2025/DATA/processed data/"
 
 ```
 
@@ -85,9 +85,10 @@ interpolate_variable <- function(df, vars) {
   
   Run file "distAgglo.py" 
 
-  ## dataGeoRDD_canton_random
+  ## canton_random
   
-  Run file "defineBorders_randomZRR_more.py"
+  Run file "defineBorders_randomZRR.py"
+  --> Creates randomized treatment dataframes
 
 # main.RData
 
