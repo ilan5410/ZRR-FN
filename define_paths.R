@@ -1,6 +1,6 @@
 pacman::p_load(
   readxl, dplyr, tidyr, ggplot2, sf, stargazer, AER, broom, ggrepel, sf, viridis, stringr, ragg, fixest, sandwich, zoo, readr, rdd, rddtools, magrittr, rdrobust, estimatr, knitr, modelsummary, rddensity, gridExtra, rnaturalearth, rnaturalearthdata, forcats, cowplot, plm, grid, patchwork, reshape2,
-  kableExtra, caret, htetree, glmnet, rpart, randomForest, purrr, devtools,  SuperLearner, xgboost, psych, MatchIt, multiwayvcov, clubSandwich, patchwork
+  kableExtra, caret, htetree, glmnet, rpart, randomForest, purrr, devtools,  SuperLearner, xgboost, psych, MatchIt, multiwayvcov, clubSandwich, patchwork, stringr, progress, scales
   
 )
 
@@ -59,4 +59,5 @@ labels <- c("FN1995" = "FN vote share in 1995",
             "delta_pop_1980_1995" = "Population change in p.p. 1980-1990",
             "popDensity" = "Population density",
             "popYoungOld" = "Age ratio young/old (%)",
-            "nobs" = "Number of observations")
+            "nobs" = "Number of observations",
+            "FN" = "FN vote share")

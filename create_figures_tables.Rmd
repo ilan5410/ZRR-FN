@@ -72,10 +72,12 @@ labels <- c("FN1995" = "FN vote share in 1995",
 # Libraries
 ```{r }
 pacman::p_load(
-readxl, dplyr, tidyr, ggplot2, sf, stargazer, AER, broom, ggrepel, sf, viridis, stringr, ragg, fixest, sandwich, zoo, readr, rdd, rddtools, magrittr, rdrobust, estimatr, knitr, modelsummary, rddensity, gridExtra, rnaturalearth, rnaturalearthdata, forcats, cowplot, plm, grid, patchwork, reshape2,
-  kableExtra, caret, htetree, glmnet, rpart, randomForest, purrr, devtools,  SuperLearner, xgboost, psych, MatchIt, multiwayvcov, clubSandwich, patchwork, scales
+  readxl, dplyr, tidyr, ggplot2, sf, stargazer, AER, broom, ggrepel, sf, viridis, stringr, ragg, fixest, sandwich, zoo, readr, rdd, rddtools, magrittr, rdrobust, estimatr, knitr, modelsummary, rddensity, gridExtra, rnaturalearth, rnaturalearthdata, forcats, cowplot, plm, grid, patchwork, reshape2,
+  kableExtra, caret, htetree, glmnet, rpart, randomForest, purrr, devtools,  SuperLearner, xgboost, psych, MatchIt, multiwayvcov, clubSandwich, patchwork, stringr, progress, scales
+  
+)
 
-  )
+  
 ```
 # Checks
 
@@ -1154,6 +1156,7 @@ df_rdd_nor <- df_rdd %>%
   mutate(across(all_of(controls_part1), ~ scale(.) %>% as.vector)) %>%
   mutate(across(all_of(controls_part2), ~ scale(.) %>% as.vector))
 
+
 create_plots_cond <- function(controls_subset, file_name, b, df_rdd_nor) {
   plots <- list()
   df_filtered <- filter(df_rdd_nor, x >= -b & x <= b)
@@ -1165,71 +1168,82 @@ create_plots_cond <- function(controls_subset, file_name, b, df_rdd_nor) {
     df_filtered$residuals <- residuals(model)
     
     # Compute clustered standard errors at the "canton" level
-    clustered_se <- coef_test(model, cluster = df_filtered$canton, vcov = "CR2")
-    
+    # clustered_se <- coef_test(model, cluster = df_filtered$canton, vcov = "CR0")
+    clustered_se <- vcovCL(model, cluster = df_filtered$canton, type = "HC1")
     # Extract coefficient, clustered standard error, and p-value for `zTRUE`
     z_coeff <- summary(model)$coefficients["zTRUE", "Estimate"]
-    z_se <- clustered_se["zTRUE", "SE"]
-    z_pvalue <- clustered_se["zTRUE", "p_Satt"]
-  
+    # z_se <- clustered_se["zTRUE", "SE"]
+    # z_pvalue <- clustered_se["zTRUE", "p_Satt"]
+    z_se <- sqrt(diag(clustered_se))["zTRUE"]
+    z_pvalue <- coeftest(model, vcov = clustered_se)["zTRUE", "Pr(>|t|)"]
+    
     # Determine significance stars based on p-value
     significance <- ifelse(z_pvalue < 0.001, "***", 
-                           ifelse(z_pvalue < 0.01, "**", 
-                                  ifelse(z_pvalue < 0.05, "*", "")))
+                          ifelse(z_pvalue < 0.01, "**", 
+                                 ifelse(z_pvalue < 0.05, "*", "")))
     
     # Format the text for annotation
     annotation_text <- paste0("Coef. Treatment: ", round(z_coeff, 3), " (", round(z_se, 3), ") ", significance)
     
+    # Binning step 
+    df_bins <- df_filtered %>% 
+      mutate(bin = ntile(x, 15)) %>%
+      group_by(bin) %>%
+      mutate(
+        bin_center = mean(x, na.rm = TRUE),
+        group = ifelse(mean(x, na.rm = TRUE) <= 0, "Inside Program", "Outside Program")
+      ) %>%
+      summarize(
+        bin_center = mean(x, na.rm = TRUE),
+        residuals_mean = mean(residuals, na.rm = TRUE),
+        group = first(group),
+        .groups = "drop"
+      )
     
-# Binning step 
-df_bins <- df_filtered %>% 
-  mutate(bin = ntile(x, 15)) %>%
-  group_by(bin) %>%
-  mutate(
-    bin_center = mean(x, na.rm = TRUE),
-    group = ifelse(mean(x, na.rm = TRUE) <= 0, "Inside Program", "Outside Program")
-  ) %>%
-  summarize(
-    bin_center = mean(x, na.rm = TRUE),
-    residuals_mean = mean(residuals, na.rm = TRUE),
-    group = first(group),
-    .groups = "drop"
-  )
-
-    # Create plot with residuals
-
-p <- ggplot(df_bins, aes(x = bin_center, y = residuals_mean)) +
-  geom_point(aes(shape = group), size = 2, color = "black") +
-  geom_smooth(
-    data = df_filtered, 
-    aes(x = x, y = residuals, group = ifelse(x <= 0, "Inside Program", "Outside Program")), 
-    method = "lm", formula = y ~ poly(x, 1), size = 1, color = "black"
-  ) +
-  geom_vline(xintercept = 0, color = "black") +
-  labs(title = labels[y]) +
-  theme_minimal() +
-  theme(
-    legend.position = "none",
-    plot.title = element_text(size = 50, hjust = 0.5),
-    axis.title.x = element_blank(),
-    axis.title.y = element_blank()
-  ) +
-  annotate("text", x = Inf, y = Inf, label = annotation_text, 
-           hjust = 1.1, vjust = 1.5, size = 6, color = "black", parse = FALSE)
-    
+    # Create plot with residuals, wrapped title, and academic styling
+    p <- ggplot(df_bins, aes(x = bin_center, y = residuals_mean)) +
+      geom_point(aes(shape = group), size = 2, color = "black") +
+      geom_smooth(
+        data = df_filtered, 
+        aes(x = x, y = residuals, group = ifelse(x <= 0, "Inside Program", "Outside Program")), 
+        method = "lm", formula = y ~ poly(x, 1), size = 0.5, color = "black"
+      ) +
+      geom_vline(xintercept = 0, color = "black", linetype = "dashed") +
+      labs(title = str_wrap(labels[y], width = 25)) + # Wrap title to ~25 characters
+      theme_minimal(base_family = "serif") + # Use serif font for academic style
+      theme(
+        legend.position = "none",
+        plot.title = element_text(size = 14, hjust = 0.5, margin = ggplot2::margin(b = 10)), # Explicit ggplot2::margin
+        axis.title.x = element_blank(),
+        axis.title.y = element_blank(),
+        axis.text = element_text(size = 12, color = "black"),
+        panel.grid.major = element_line(color = "gray90"),
+        panel.grid.minor = element_blank()
+      ) # +
+      # annotate("text", x = Inf, y = Inf, label = annotation_text, 
+      #          hjust = 1.05, vjust = 1.2, size = 4, color = "black", family = "serif", parse = FALSE)
     
     plots[[y]] <- p
   }
   
-  # Combine plots into one figure
-  png(file_name, width = 800 * 3, height = 900 * ceiling(length(controls_subset) / 3))
+  # Combine plots into one figure with adjusted layout
+  png(file_name, width = 8.5 * 300, height = 2.5 * 300 * ceiling(length(controls_subset) / 3), res = 300)
   
-  combined_plot <- grid.arrange(grobs = plots, ncol = 3, 
-                                bottom = textGrob("Distance to Program Frontier", gp = gpar(fontsize = 50)),
-                                left = textGrob("Residuals", rot = 90, gp = gpar(fontsize = 50)))
+  combined_plot <- grid.arrange(
+    grobs = plots, 
+    ncol = 3, 
+    padding = unit(0.5, "cm"),
+    bottom = textGrob("Distance to Program Frontier", gp = gpar(fontsize = 14, fontfamily = "serif")),
+    left = textGrob("Residuals", rot = 90, gp = gpar(fontsize = 14, fontfamily = "serif")),
+    top = textGrob("", gp = gpar(fontsize = 16, fontfamily = "serif")),
+    widths = unit(rep(2.5, 3), "in"),
+    heights = unit(rep(2.5, ceiling(length(controls_subset) / 3)), "in")
+  )
   
   dev.off()
 }
+
+
 
 
 # Create and save the plots for each part
@@ -1316,7 +1330,6 @@ create_plots_cond <- function(df, controls_subset, file_name, b) {
   dev.off()
 }
 
-# Example usage
 create_plots_cond(df_rdd, c("FN2002", "RPR2002", "turnout_2002", "FN2007", "FN2012"), 
                   paste0(path_figures, "figure11_1.png"), 10000)
 create_plots_cond(df_rdd, c("FN2002", "RPR2002", "turnout_2002", "FN2007", "FN2012"), 
@@ -1328,38 +1341,132 @@ rm(list = setdiff(ls(envir = globalenv()), c("processed_data_path", "raw_data_pa
 
 ## Figure 12: ZRR effect on later elections
 ```{r }
-# Create the data
-df <- data.frame(
-  Year = c(2007, 2012, 2017, 2022),
-  Bandwidth20000_Estimate = c(-0.004, -0.006, -0.008, -0.007),
-  Bandwidth20000_SE = c(0.001, 0.001, 0.002, 0.002),
-  Bandwidth10000_Estimate = c(-0.002, -0.003, -0.005, -0.004),
-  Bandwidth10000_SE = c(0.001, 0.002, 0.002, 0.002),
-  Bandwidth5000_Estimate = c(0.0, -0.002, 0.0, -0.001),
-  Bandwidth5000_SE = c(0.002, 0.003, 0.003, 0.003)
-)
+
+if (file.exists(paste0(processed_data_path, "script_sharp.RData"))) {
+  load(paste0(processed_data_path, "script_sharp.RData"))
+} else {
+  message("Data environment does not exist")
+}
+
+
+
+df_rdd <- dfZRRControls %>%
+  filter(x >= (-20000) & x <= (20000)) %>%
+  mutate(
+    dist = x,                     # Create a distance variable
+    treatmentZRR = z,              # Define treatment indicator
+    pop = log(pop),                 # Log-transform population
+    popDensity = log(popDensity)
+  ) %>%
+  distinct(codecommune, .keep_all = TRUE)  # Remove duplicate communes
+
+
+conditional_on <- c(controls, "dep")
+
+# Initialize data frame for results
+results <- data.frame(Year = c(2002, 2007, 2012, 2017, 2022))
+outputs <- c("FN2002", "FN2007", "FN2012", "FN2017", "FN2022")
+bw <- c(20000, 10000, 5000)
+
+# Regression loop
+for (i in seq_along(outputs)) {
+  y <- outputs[i]
+  
+  # Define previous FN variables as controls
+  previous_controls <- if (i > 1) paste(outputs[1:(i-1)], collapse = " + ") else ""
+  
+  # Build formula with conditional_on and previous_controls
+  formula_str <- paste(y, "~ z + x + ", paste(conditional_on, collapse = " + "))
+  if (nchar(previous_controls) > 0) {
+    formula_str <- paste(formula_str, " + ", previous_controls)
+  }
+  formula <- as.formula(formula_str)
+  
+  # Bandwidth 20000
+  model <- lm(formula, data = filter(df_rdd, x >= -20000 & x <= 20000))
+  cluster_se <- coeftest(model, vcov = vcovHC(model, type = "HC1", cluster = "group", cluster.id = df_rdd$canton))
+  results$Est_20000[i] <- cluster_se["zTRUE", "Estimate"]
+  results$SE_20000[i] <- cluster_se["zTRUE", "Std. Error"]
+  results$Pval_20000[i] <- cluster_se["zTRUE", "Pr(>|t|)"]
+  
+  # Bandwidth 10000
+  model <- lm(formula, data = filter(df_rdd, x >= -10000 & x <= 10000))
+  cluster_se <- coeftest(model, vcov = vcovHC(model, type = "HC1", cluster = "group", cluster.id = df_rdd$canton))
+  results$Est_10000[i] <- cluster_se["zTRUE", "Estimate"]
+  results$SE_10000[i] <- cluster_se["zTRUE", "Std. Error"]
+  results$Pval_10000[i] <- cluster_se["zTRUE", "Pr(>|t|)"]
+  
+  # Bandwidth 5000
+  model <- lm(formula, data = filter(df_rdd, x >= -5000 & x <= 5000))
+  cluster_se <- coeftest(model, vcov = vcovHC(model, type = "HC1", cluster = "group", cluster.id = df_rdd$canton))
+  results$Est_5000[i] <- cluster_se["zTRUE", "Estimate"]
+  results$SE_5000[i] <- cluster_se["zTRUE", "Std. Error"]
+  results$Pval_5000[i] <- cluster_se["zTRUE", "Pr(>|t|)"]
+}
+
+# Add significance stars
+results <- results %>%
+  mutate(
+    Sig_20000 = ifelse(Pval_20000 < 0.001, "***", 
+                       ifelse(Pval_20000 < 0.01, "**", 
+                              ifelse(Pval_20000 < 0.05, "*", ""))),
+    Sig_10000 = ifelse(Pval_10000 < 0.001, "***", 
+                       ifelse(Pval_10000 < 0.01, "**", 
+                              ifelse(Pval_10000 < 0.05, "*", ""))),
+    Sig_5000 = ifelse(Pval_5000 < 0.001, "***", 
+                      ifelse(Pval_5000 < 0.01, "**", 
+                             ifelse(Pval_5000 < 0.05, "*", "")))
+  )
+
+
 
 # Reshape to long format
-df_long <- df %>%
-  pivot_longer(cols = -Year, names_to = c("Bandwidth", ".value"), names_pattern = "Bandwidth(\\d+)_(.*)") %>%
+df_long <- results %>%
+  pivot_longer(cols = matches("Est_|SE_"), 
+               names_to = c("Metric", "Bandwidth"), 
+               names_pattern = "(Est|SE)_(\\d+)", 
+               values_to = "Value") %>%
+  pivot_wider(names_from = Metric, values_from = Value) %>%
+  left_join(
+    results %>%
+      pivot_longer(cols = matches("Sig_"), 
+                   names_to = c("Metric", "Bandwidth"), 
+                   names_pattern = "(Sig)_(\\d+)", 
+                   values_to = "Sig") %>%
+      select(Year, Bandwidth, Sig),
+    by = c("Year", "Bandwidth")
+  ) %>%
   mutate(Bandwidth = paste("Bandwidth", Bandwidth))
 
-# Plot
- p <- ggplot(df_long, aes(x = Year, y = Estimate, group = Bandwidth, color = Bandwidth)) +
-  geom_point() +
-  geom_line() +
-  geom_errorbar(aes(ymin = Estimate - SE, ymax = Estimate + SE), width = 0.5) +
+# Create the plot
+p <- ggplot(df_long, aes(x = Year, y = Est, group = Bandwidth, color = Bandwidth)) +
+  geom_point(size = 3) +
+  geom_line(linewidth = 1) +
+  geom_errorbar(aes(ymin = Est - SE, ymax = Est + SE), width = 0.2, linewidth = 0.8) +
+  # geom_text(aes(label = Sig, y = Est + SE + 0.001), vjust = -0.5, size = 4) +
   geom_hline(yintercept = 0, linetype = "dashed", color = "red") +
   labs(
     x = "Election Year",
     y = "Coefficient Estimate",
-    color = "Bandwidth"
+    color = "Bandwidth",
+    caption = "Note: Error bars represent standard errors clustered at the canton level.\nControls include FN shares in previous election results."
   ) +
-  theme_minimal()
+  theme_classic() +
+  theme(
+    text = element_text(size = 12),
+    axis.title = element_text(size = 14, face = "bold"),
+    axis.text = element_text(size = 12),
+    legend.position = "top",
+    legend.title = element_text(size = 12, face = "bold"),
+    legend.text = element_text(size = 12),
+    plot.caption = element_text(size = 10, hjust = 0)
+  ) +
+  scale_x_continuous(breaks = c(2002, 2007, 2012, 2017, 2022)) +
+  scale_color_manual(values = c("Bandwidth 5000" = "#1b9e77", "Bandwidth 10000" = "#d95f02", "Bandwidth 20000" = "#7570b3"))
 
 
 # Export the combined plot
-file_path <- paste0(path_figures, "figure12_later_elections.png")
+file_path <- paste0(path_figures, "figure12.png")
 ggsave(file_path, p, width = 10, height = 8)
 
 rm(list = setdiff(ls(envir = globalenv()), c("processed_data_path", "raw_data_path", "main_path", "path_figures", "path_tables", "path_out", "path_data", "labels")), envir = globalenv())
@@ -1377,21 +1484,15 @@ if (file.exists(paste0(processed_data_path, "script_sharp.RData"))) {
   message("Data environment does not exist")
 }
 
-bandwidth <- 20000 # it corresponds to the distance (in meters)
-threshold <- 0
-
-lower_bound <- threshold - bandwidth
-upper_bound <- threshold + bandwidth
-
-df_rdd <- subset(dfZRRControls, x >= lower_bound & x <= upper_bound)
-rm(lower_bound, bandwidth)
-
-df_rdd$dist <- df_rdd$x
-# df_rdd$deltaFN2002_1988 <- df_rdd$y # voteShareFN2002 or deltaFN2002_1988 or voteShareFN1988
-df_rdd$treatmentZRR <- df_rdd$z
-df_rdd$pop <- log(df_rdd$pop)
-
-df_rdd <- df_rdd[!duplicated(df_rdd$codecommune), ]
+df_rdd <- dfZRRControls %>%
+  filter(x >= (-20000) & x <= (20000)) %>%
+  mutate(
+    dist = x,                     # Create a distance variable
+    treatmentZRR = z,              # Define treatment indicator
+    pop = log(pop),                 # Log-transform population
+    popDensity = log(popDensity)
+  ) %>%
+  distinct(codecommune, .keep_all = TRUE)  # Remove duplicate communes
 
 ```
 
@@ -1400,7 +1501,7 @@ df_rdd <- df_rdd[!duplicated(df_rdd$codecommune), ]
 formula <- as.formula(paste("FN2002 ~ z + x + ", paste(controls, collapse = " + "), "+ factor(dep)"))
 
 # Define a vector of bandwidths
-bandwidths <- seq(1000, 40000, by = 1000) 
+bandwidths <- seq(1000, 30000, by = 1000) 
 
 # Initialize vectors to store results
 coef_zTRUE <- numeric(length(bandwidths))
@@ -1417,11 +1518,15 @@ for (i in seq_along(bandwidths)) {
   model <- lm(formula, data = df_filtered)
   
   # Calculate cluster-robust standard errors
-  cluster_se <- coeftest(model, vcov = vcovHC(model, type = "HC1", cluster = "group", cluster.id = df_filtered$canton))
+
+  
+  clustered_se <- vcovCL(model, cluster = df_filtered$canton, type = "HC1")
+
+
   
   # Store the coefficient of zTRUE and its standard error
-  coef_zTRUE[i] <- cluster_se["zTRUE", "Estimate"]
-  se_zTRUE[i] <- cluster_se["zTRUE", "Std. Error"]
+  coef_zTRUE[i] <- summary(model)$coefficients["zTRUE", "Estimate"]
+  se_zTRUE[i] <- sqrt(diag(clustered_se))["zTRUE"]
 }
 
 # Create a data frame for plotting
@@ -1440,8 +1545,8 @@ plot <- ggplot(results, aes(x = Bandwidth, y = Coefficient)) +
   geom_smooth(method = "lm", formula = y ~ poly(x, 1), se = FALSE, color = "red", linetype = "dashed") +
   labs(#title = "Effect of Bandwidth on Estimated Treatment Effect with Quadratic Fit",
        x = "Bandwidth",
-       y = "Estimated Coefficient of LATE") +
-  theme_minimal()
+       y = "Estimated Coefficient of LATE")  +
+   theme_minimal()
 
 ggsave(paste0(path_figures, "figure13.png"), plot = plot, width = 8, height = 6)
 
@@ -1451,6 +1556,7 @@ rm(list = setdiff(ls(envir = globalenv()), c("processed_data_path", "raw_data_pa
 ```
 ## Figure 14: Map and Distribution of the running variable - Randomized treatment
 ```{r}
+
 if (file.exists(paste0(processed_data_path, "script_sharp.RData"))) {
   load(paste0(processed_data_path, "script_sharp.RData"))
 } else {
@@ -1458,7 +1564,6 @@ if (file.exists(paste0(processed_data_path, "script_sharp.RData"))) {
 }
 
 dfMap <- read_excel(paste0(processed_data_path, "dataGeoRDD_canton_random/dataGeoRDD_canton_random1.xlsx")) %>%
-  select(-year) %>%
   mutate(
     codecommune = sub("^0+", "", as.character(codecommune)),
     x = distance_to_border,
@@ -1612,6 +1717,7 @@ results_list[["Observed"]] <- bind_rows(lapply(bandwidths, function(bw) run_mode
 
 
 # Loop over files of distance data
+pb <- progress_bar$new(total = 100 , format = "[:bar] :percent :current/:total (:eta)")
 for (i in 0:99) {
   dfDistance <- read_excel(paste0(processed_data_path, "dataGeoRDD_canton_random/dataGeoRDD_canton_random", i, ".xlsx")) %>%
     mutate(
@@ -1629,6 +1735,8 @@ for (i in 0:99) {
     prepare_rdd_data(20000, threshold, dfCanton)
   
   results_list[[paste0("Iteration_", i)]] <- bind_rows(lapply(bandwidths, function(bw) run_model(df_rdd, bw, formula)))
+  pb$tick()
+
 }
 
 # Combine results
@@ -1700,7 +1808,7 @@ for (x in bandwidths) {
 
   if (!is.na(b_plot_observed)) {
     p <- p +
-      geom_vline(xintercept = b_plot_observed, color = "black",
+      geom_vline(xintercept = b_plot_observed, color = "red",
                  linewidth = 0.6, linetype = "dashed") +
       annotate("label",
                x = b_plot_observed, y = y_lab,
@@ -1715,7 +1823,7 @@ for (x in bandwidths) {
 
 # ---- Arrange grid and annotate ----
 n_plots <- length(plot_list)
-ncol <- min(3, n_plots)               # up to 3 columns for readability
+ncol <- min(2, n_plots)               # up to 3 columns for readability
 nrow <- ceiling(n_plots / ncol)
 
 combined_plot <-
@@ -1734,24 +1842,6 @@ file_path <- file.path(path_figures, "figure15.png")
 ggsave(filename = file_path, plot = combined_plot,
        width = width_in, height = height_in, dpi = 300, bg = "white")
 
-# # Format results for LaTeX table
-# formatted_results <- final_results %>%
-#   mutate(
-#     Significance = mapply(add_stars, Coefficient, Clustered_SE),
-#     Formatted = sprintf("%.3f (%.3f)%s", Coefficient, Clustered_SE, Significance)
-#   ) %>%
-#   select(Iteration, Bandwidth, Formatted) %>%
-#   pivot_wider(names_from = Bandwidth, values_from = Formatted, 
-#               names_glue = "Bandwidth {sub('Bandwidth = ', '', Bandwidth)}") %>%
-#   rename_with(~paste0("Bandwidth ", .x), starts_with("Bandwidth"))
-# 
-# # Generate and save LaTeX table
-# kbl(formatted_results, format = "latex", booktabs = TRUE, 
-#     caption = "Regression Results: Coefficient and Clustered SE for treatment effect of ZRR",
-#     label = "rdd_results_diffbandwidth_placebo") %>%
-#   kable_styling(latex_options = c("hold_position", "scale_down")) %>%
-#   add_header_above(c("Iteration" = 1, "Bandwidth 20" = 1, "Bandwidth 10" = 1, "Bandwidth 5" = 1)) %>%
-#   cat(file = paste0(path_tables, "table10.tex"))
 
 
 
@@ -2228,13 +2318,13 @@ df_filtered$residuals <- residuals(model)
     
 
 # Compute clustered standard errors at the "canton" level
-clustered_se <- coef_test(model, cluster = df_filtered$canton, vcov = "CR2")
+clustered_se <- vcovCL(model, cluster = df_filtered$canton, type = "HC1")
 
 
 # Extract coefficient, clustered standard error, and p-value for `zTRUE`
 z_coeff <- summary(model)$coefficients["zTRUE", "Estimate"]
-z_se <- clustered_se["zTRUE", "SE"]
-z_pvalue <- clustered_se["zTRUE", "p_Satt"]
+z_se <- sqrt(diag(clustered_se))["zTRUE"]
+z_pvalue <- coeftest(model, vcov = clustered_se)["zTRUE", "Pr(>|t|)"]
 
 # Determine significance stars based on p-value
 significance <- ifelse(z_pvalue < 0.001, "***", 
@@ -2451,15 +2541,16 @@ if (file.exists(paste0(processed_data_path, "dataDes.RData"))) {
 }
 
 df <- dfZRRControls %>% 
+  # select(-year_treat, -treatment) %>%
   mutate(codecommune = sub("^0+", "", as.character(codecommune))) %>%
-  left_join(dfZRRlong %>% 
-              mutate(codecommune = sub("^0+", "", as.character(codecommune))) %>% 
-              unique(), by=c("codecommune", "year")
-            ) %>%
+  # left_join(dfZRRlong %>% 
+  #             mutate(codecommune = sub("^0+", "", as.character(codecommune))) %>% 
+  #             unique(), by=c("codecommune", "year")
+  #           ) %>%
   select(codecommune, year, year_treat, treatment, pop, FN) %>% # choose variable here. ---- min_distance_to_agglo, 
   drop_na() %>% 
   filter_all(all_vars(!is.infinite(.))) %>%
-  mutate(logpop = log(df$pop+1))
+  mutate(logpop = log(pop))
 
 
 
@@ -4389,117 +4480,115 @@ rm(list = setdiff(ls(envir = globalenv()), c("processed_data_path", "raw_data_pa
 ```
 
 ## Table Annex 1: Evolution of Socioeconomic Variables between 1988 and 2002 with T-Test Results
+
 ```{r }
+
 if (file.exists(paste0(processed_data_path, "dataDes.RData"))) {
   load(paste0(processed_data_path, "dataDes.RData"))
 } else {
   message("Data environment does not exist")
 }
 
-# We keep the years 1988 and 2002 when we have elections results
-dfSpe <- dfZRRControls  %>%
-  filter(year %in% list(1988,2002) )
+# Process data
+df_did <- dfZRRControls %>%
+  filter(year %in% c(1988, 2002)) %>%
+  mutate(
+    treated = if_else(year_treat == 1995, 1, 0, missing = 0),
+    post = if_else(year >= 1995, 1, 0),
+    did = post * treated
+  ) %>%
+  select(-any_of(c("nomcommune", "reg", "nom", "time_since_open", "year_treat", 
+                   "FN_log", "treatment", "FN1995", "RPR", "deltaFN", "turnout_2002", "canton", "popYoungOld", "revenuPerK",
+                   "treatment_in_1995", "dep"))) %>%
+  filter(across(.cols = -c(codecommune, year), .fns = ~ !is.na(.x) & !is.infinite(.x))) %>%
+  distinct(codecommune, year, .keep_all = TRUE)
 
-# create treated var
-dfSpe$treated = ifelse( dfSpe$year_treat == 1995, 1, 0)
-# Create a dummy variable to indicate the time when the treatment started. Lets assume that treatment started in 1995. In this case, years before 1995 will have a value of 0 and 1995+ a 1. 
-
-dfSpe$post = ifelse(dfSpe$year >= 1995, 1, 0)
-
-controls <- names(dfSpe)
-controls <- setdiff(controls, c("codecommune", "nomcommune", "dep", "year", "reg", "nom", "codecommune", "time_since_open", "year_treat", "post", "FN_log", "treated", "FN", "treatment", "FN1995", "RPR", "deltaFN", "turnout_2002", "canton"))
-
-variables_to_clean <- c("codecommune", "FN", "year", controls, "post", "treated")
-
-# Loop through each variable in the list
-for(var in variables_to_clean) {
-  # Remove rows with NA values in the current variable
-  dfSpe <- dfSpe[!is.na(dfSpe[[var]]), ]
-  
-  # Remove rows with Inf or -Inf values in the current variable
-  dfSpe <- dfSpe[!is.infinite(dfSpe[[var]]), ]
+# Check if both years are present
+if (length(unique(df_did$year)) < 2) {
+  stop("Data contains only one year (", paste(unique(df_did$year), collapse = ", "), 
+       "); need both 1988 and 2002 for balance check")
 }
 
-dfSpe <- dfSpe %>%
-  select(all_of(variables_to_clean))
 
-dfSpe$did <- dfSpe$post * dfSpe$treated
+# Define controls
+controls <- setdiff(names(df_did), c("codecommune", "year", "post", "treated", "did", "FN"))
 
-dfSpe <- dfSpe %>%
-  distinct()
-
-```
-
-
-```{r }
-
-# Function to calculate mean and t-test
+# Function to calculate balance table
 calculate_balance <- function(df, grouping_var, target_vars) {
-  # Calculate means
   means <- df %>%
     group_by({{ grouping_var }}) %>%
     summarise(across(all_of(target_vars), mean, na.rm = TRUE)) %>%
     pivot_longer(-{{ grouping_var }}, names_to = "variable", values_to = "mean") %>%
     pivot_wider(names_from = {{ grouping_var }}, values_from = mean, names_prefix = "mean_")
   
-  # Calculate t-tests
   t_tests <- map_dfr(target_vars, function(var) {
-    test <- t.test(df[[var]] ~ df[[rlang::as_string(rlang::ensym(grouping_var))]])
+    test <- t.test(df[[var]] ~ df[[rlang::as_name(enquo(grouping_var))]])
     data.frame(
       variable = var,
-      estimate = test$estimate[2] - test$estimate[1],
-      p.value = test$p.value
+      difference = test$estimate[2] - test$estimate[1],
+      p_value = test$p.value
     )
   })
   
-  # Merge means and t-tests
   summary <- means %>%
     left_join(t_tests, by = "variable") %>%
     mutate(significance = case_when(
-      p.value < 0.001 ~ "***",
-      p.value < 0.01 ~ "**",
-      p.value < 0.05 ~ "*",
+      p_value < 0.001 ~ "***",
+      p_value < 0.01 ~ "**",
+      p_value < 0.05 ~ "*",
       TRUE ~ ""
     ))
   
   return(summary)
 }
 
-
-# Calculate balance summary
+# Generate balance summary
 vars <- setdiff(controls, "typologie")
-balance_summary <- calculate_balance(dfSpe, post, c("FN",vars))
+balance_summary <- calculate_balance(df_did, post, c("FN", vars))
 
-# Rename columns for better readability
-colnames(balance_summary) <- c("Variable", "1988 (mean)", "2002 (mean)", "Difference", "p-value", "Significance")
+# Check for labels and apply
+if (!exists("labels") || !is.vector(labels) || !all(balance_summary$variable %in% names(labels))) {
+  warning("Labels not properly defined; using variable names")
+  balance_summary$Variable <- balance_summary$variable
+} else {
+  balance_summary$Variable <- labels[balance_summary$variable]
+}
 
+# Rename columns
+balance_summary <- balance_summary %>%
+  select(Variable, mean_0, mean_1, difference, significance) %>%
+  rename("1988 (Mean)" = mean_0, "2002 (Mean)" = mean_1, "Difference" = difference, 
+         "Significance" = significance)
 
-# Replace variable names with labels
-balance_summary$Variable <- labels[balance_summary$Variable]
-
-
-# Generate the LaTeX table and assign it to a variable
+# Generate LaTeX table
 latex_table <- balance_summary %>%
-  kable(format = "latex", 
-        caption = "Comparison of Means between Control and Treatment Groups with T-Test Results", 
-        digits = c(NA, 4, 4, 4, 3, NA),
-        booktabs = TRUE, 
-        escape = FALSE) %>%
-  kable_styling(latex_options = c("hold_position", "scale_down"), full_width = FALSE, position = "center")
+  kable(
+    format = "latex",
+    caption = "Balance of Covariates Across Pre- and Post-Treatment Periods",
+    digits = c(NA, 4, 4, 4, 3, NA),
+    booktabs = TRUE,
+    escape = FALSE,
+    col.names = c("Variable", "1988 (Mean)", "2002 (Mean)", "Difference", "")
+  ) %>%
+  kable_styling(
+    latex_options = c("hold_position", "scale_down"),
+    full_width = FALSE,
+    position = "center"
+  ) %>%
+  add_footnote("Note: Means are calculated for pre-treatment (1988) and post-treatment (2002) periods. Differences are tested using two-sample t-tests. Significance levels: *** p<0.001, ** p<0.01, * p<0.05.", 
+               notation = "none")
 
-# Save the table to a .tex file
+# Save table
 cat(latex_table, file = paste0(path_tables, "Annex1.tex"))
 
-```
 
-```{r }
 rm(list = setdiff(ls(envir = globalenv()), c("processed_data_path", "raw_data_path", "main_path", "path_figures", "path_tables", "path_out", "path_data", "labels")), envir = globalenv())
 ```
 
 ## Table Annex 2: Main results, different bandwidths
 ```{r }
-if (file.exists(paste0(path_data, "script_sharp_noEpicenter.RData"))) {
-  load(paste0(path_data, "script_sharp_noEpicenter.RData"))
+if (file.exists(paste0(processed_data_path, "script_sharp_noEpicenter.RData"))) {
+  load(paste0(processed_data_path, "script_sharp_noEpicenter.RData"))
 } else {
   message("Data environment does not exist")
 }
@@ -4521,30 +4610,27 @@ df_rdd <- dfZRRControls %>%
 
 
 # Load and prepare canton data
-dfCanton <- read_csv("/Users/ilanpargamin/Desktop/elections_papers/DATA/socio_eco/Taille_agglo_commune_csv/codescommunescantons1999.csv", show_col_types = FALSE) %>%
-  select(codecommune, codecanton, dep) %>%
-  filter(!is.na(codecanton) & !is.na(codecommune)) %>%
-  mutate(codecommune = gsub("^0+", "", codecommune))  # Remove leading zeros from codecommune
+dfCanton <- st_read(paste0(raw_data_path, "france1999.dbf")) %>%
+  mutate(codecommune = paste0(as.character(DEP), as.character(COM))) %>%
+  mutate(codecanton = paste0(as.character(DEP), as.character(CT))) %>%
+  select(codecommune, codecanton, NCC, REG) 
 
 # Merge df_rdd with canton data on codecommune
 df_rdd <- df_rdd %>%
-  select(-dep) %>%                      # Remove dep column from df_rdd before merging
   left_join(dfCanton, by = "codecommune") %>%  # Merge to add canton data
   mutate(canton = as.character(codecanton)) %>% # Convert codecanton to character as canton
   select(-codecanton)                    # Remove codecanton after renaming
 
 # Clean up workspace
 rm(bandwidth, threshold, dfCanton)
-```
 
-```{r }
 b1 <- 20000
 b2 <- 10000
 b3 <- 5000
 
 df_rdd$x_km <- df_rdd$x / 1000
 
-formula <- as.formula(paste("y ~ z + x_km + ", paste(controls, collapse = " + "), "+ factor(dep) "))
+formula <- as.formula(paste("FN2002 ~ z + x_km + ", paste(controls, collapse = " + "), "+ factor(dep) "))
 
 
 model_bw_1 <- lm(formula,
@@ -4607,14 +4693,14 @@ stargazer(models,
           column.labels = model_names, 
           covariate.labels = c("Treatment ZRR", "Distance to Frontier"), 
           omit = c("factor\\(dep\\)", controls), 
-          add.lines = list(
-            c("Controls", rep(TRUE, length(models))),  # Assuming controls are included in all models
-            c("Department fixed effects", sapply(models, function(m) has_fe(m, "factor(dep)")))
-          ), 
+          # add.lines = list(
+          #   c("Controls", rep(TRUE, length(models))),  # Assuming controls are included in all models
+          #   c("Department fixed effects", sapply(models, function(m) has_fe(m, "factor(dep)")))
+          # ), 
           omit.stat = c("LL", "ser", "f"), 
           #se = list(cluster_se, cluster_se_bw_1, cluster_se_bw_2, cluster_se_bw_3), 
           star.cutoffs = c(0.05, 0.01, 0.001), 
-          notes = "Standard errors are clustered at the canton level",
+          notes = "Standard errors are clustered at the canton level. All regressions include controls and department fixed effects.",
           out=paste0(path_tables, "Annex2.tex")
 )
 
@@ -4629,8 +4715,8 @@ rm(list = setdiff(ls(envir = globalenv()), c("processed_data_path", "raw_data_pa
 
 ## Table Annex 3: Main results when bandwidth is 10 km, different specifications
 ```{r }
-if (file.exists(paste0(path_data, "script_sharp_noEpicenter.RData"))) {
-  load(paste0(path_data, "script_sharp_noEpicenter.RData"))
+if (file.exists(paste0(processed_data_path, "script_sharp_noEpicenter.RData"))) {
+  load(paste0(processed_data_path, "script_sharp_noEpicenter.RData"))
 } else {
   message("Data environment does not exist")
 }
@@ -4650,14 +4736,13 @@ df_rdd <- dfZRRControls %>%
   distinct(codecommune, .keep_all = TRUE)  # Remove duplicate communes
 
 # Load and prepare canton data
-dfCanton <- read_csv("/Users/ilanpargamin/Desktop/elections_papers/DATA/socio_eco/Taille_agglo_commune_csv/codescommunescantons1999.csv", show_col_types = FALSE) %>%
-  select(codecommune, codecanton, dep) %>%
-  filter(!is.na(codecanton) & !is.na(codecommune)) %>%
-  mutate(codecommune = gsub("^0+", "", codecommune))  # Remove leading zeros from codecommune
+dfCanton <- st_read(paste0(raw_data_path, "france1999.dbf")) %>%
+  mutate(codecommune = paste0(as.character(DEP), as.character(COM))) %>%
+  mutate(codecanton = paste0(as.character(DEP), as.character(CT))) %>%
+  select(codecommune, codecanton, NCC, REG) 
 
 # Merge df_rdd with canton data on codecommune
 df_rdd <- df_rdd %>%
-  select(-dep) %>%                      # Remove dep column from df_rdd before merging
   left_join(dfCanton, by = "codecommune") %>%  # Merge to add canton data
   mutate(canton = as.character(codecanton)) %>% # Convert codecanton to character as canton
   select(-codecanton)                    # Remove codecanton after renaming
@@ -4693,7 +4778,7 @@ df_filtered$x <- df_filtered$x / 1000
 # Run regressions with grouped control variables and store the models
 for (i in seq_along(control_groups)) {
   control_vars <- control_groups[[i]]$vars
-  formula <- as.formula(paste("y ~ treatmentZRR +", paste(control_vars, collapse = " + ")))
+  formula <- as.formula(paste("FN2002 ~ treatmentZRR +", paste(control_vars, collapse = " + ")))
   models[[paste0("group", i)]] <- lm(formula, data = df_filtered)
 }
 
@@ -4731,8 +4816,8 @@ rm(list = setdiff(ls(envir = globalenv()), c("processed_data_path", "raw_data_pa
 
 ## Table Annex 4: Comparison of Residual Means between Control and Treatment Groups with T-Test Results
 ```{r }
-if (file.exists(paste0(path_data, "borders_pair.RData"))) {
-  load(paste0(path_data, "borders_pair.RData"))
+if (file.exists(paste0(processed_data_path, "borders_pair.RData"))) {
+  load(paste0(processed_data_path, "borders_pair.RData"))
 } else {
   message("Data environment does not exist")
 }
@@ -4742,40 +4827,14 @@ df_rct <- dfZRRControls %>%
   rename(treatmentZRR=z)
 
 
-ps_model <- matchit(treatmentZRR ~ pchom + FN1988 + delta_pop_1980_1995 + pop + ratEmp + ratForeigners + asso + educNoDiplomaPerK + educSUPPerK + educBACPerK + educCAPBEPPerK + poph + popf + pagri + pindp + ppint + pempl + pouvr + altitude + superficie + min_distance_to_agglo + logVac + haie + vigne + typologie, data = df_rct, method = "nearest", distance = "logit")
+ps_model <- matchit(treatmentZRR ~ pchom + FN1988 + delta_pop_1980_1995 + pop + ratEmp + ratForeigners + asso + educNoDiplomaPerK + educSUPPerK + educBACPerK + educCAPBEPPerK + poph + popf + pagri + pindp + ppint + pempl + pouvr + altitude + superficie + min_distance_to_agglo + logVac +  + typologie, data = df_rct, method = "nearest", distance = "logit")
 
-ps_model_refined <- matchit(treatmentZRR ~ pchom + FN1988 + delta_pop_1980_1995 + pop + ratEmp + ratForeigners + asso + educNoDiplomaPerK + educSUPPerK + educBACPerK + educCAPBEPPerK + poph + popf + pagri + pindp + ppint + pempl + pouvr + altitude + superficie + min_distance_to_agglo + logVac + haie + vigne + typologie, data = df_rct, method = "nearest", distance = "logit", caliper = 0.2)
+ps_model_refined <- matchit(treatmentZRR ~ pchom + FN1988 + delta_pop_1980_1995 + pop + ratEmp + ratForeigners + asso + educNoDiplomaPerK + educSUPPerK + educBACPerK + educCAPBEPPerK + poph + popf + pagri + pindp + ppint + pempl + pouvr + altitude + superficie + min_distance_to_agglo + logVac  + typologie, data = df_rct, method = "nearest", distance = "logit", caliper = 0.2)
 
 df_rct <- match.data(ps_model_refined)
 ```
 ```{r }
 
-labels <- c("FN1988"= "Vote share for FN in 1988",
-            "pchom" = "Unemployed (%)", 
-            "pop" = "Population", 
-            "ratEmp" = "Employed (%)", 
-            "ratForeigners" = "Foreigners (%)", 
-            "asso" = "OPI per 1000 inhabitants", 
-            "educNoDiplomaPerK" = "No diploma (%)", 
-            "educSUPPerK" = "Academic education (%)", 
-            "educBACPerK" = "Highschool education (%)", 
-            "educCAPBEPPerK" = "Technical education (%)", 
-            "poph" = "Proportion of 20-40, men", 
-            "popf" = "Proportion of 20-40, women", 
-            "pagri" = "Agriculture workers (%)", 
-            "pindp" = "Independant workers (%)", 
-            "ppint" = "Intermediate occupations (%)", 
-            "pempl" = "Clerical workers (%)", 
-            "pouvr" = "Manual workers (%)", 
-            "altitude" = "Altitude", 
-            "superficie" = "Locality size", 
-            "logVac" = "Proportion of vacant housing (log)", 
-            "haie" = "Fences per km2", 
-            "vigne" = "Vines per km2", 
-            "revenuPerK" = "Taxable income per capita",
-            "delta_pop_1980_1995" = "Population change in p.p. 1982-1990", 
-            "delta_emp_1980_1990" = "Employed change in p.p. 1982-1990", 
-            "min_distance_to_agglo" = "Distance to closest agglomeration")
 
 # Function to calculate mean and t-test of residuals
 calculate_residual_balance <- function(df, grouping_var, target_vars, conditional_on) {
@@ -4842,8 +4901,7 @@ balance_summary <- balance_summary %>%
   mutate(
     `Control (mean)` = round(`Control (mean)`, 4),
     `Treatment (mean)` = round(`Treatment (mean)`, 4),
-    `Difference` = round(`Difference`, 4),
-    `p-value` = round(`p-value`, 4)
+    `Difference` = round(`Difference`, 4)
   )
 
 # Use stargazer to display the results in LaTeX format
@@ -4871,8 +4929,8 @@ rm(list = setdiff(ls(envir = globalenv()), c("processed_data_path", "raw_data_pa
 
 ## Table Annex 5: Border municipalities: regression Results (matching)
 ```{r }
-if (file.exists(paste0(path_data, "borders_pair.RData"))) {
-  load(paste0(path_data, "borders_pair.RData"))
+if (file.exists(paste0(processed_data_path, "borders_pair.RData"))) {
+  load(paste0(processed_data_path, "borders_pair.RData"))
 } else {
   message("Data environment does not exist")
 }
@@ -4882,9 +4940,9 @@ df_rct <- dfZRRControls %>%
   rename(treatmentZRR=z)
 
 
-ps_model <- matchit(treatmentZRR ~ pchom + FN1988 + delta_pop_1980_1995 + pop + ratEmp + ratForeigners + asso + educNoDiplomaPerK + educSUPPerK + educBACPerK + educCAPBEPPerK + poph + popf + pagri + pindp + ppint + pempl + pouvr + altitude + superficie + min_distance_to_agglo + logVac + haie + vigne + typologie, data = df_rct, method = "nearest", distance = "logit")
+ps_model <- matchit(treatmentZRR ~ pchom + FN1988 + delta_pop_1980_1995 + pop + ratEmp + ratForeigners + asso + educNoDiplomaPerK + educSUPPerK + educBACPerK + educCAPBEPPerK + poph + popf + pagri + pindp + ppint + pempl + pouvr + altitude + superficie + min_distance_to_agglo + logVac + typologie, data = df_rct, method = "nearest", distance = "logit")
 
-ps_model_refined <- matchit(treatmentZRR ~ pchom + FN1988 + delta_pop_1980_1995 + pop + ratEmp + ratForeigners + asso + educNoDiplomaPerK + educSUPPerK + educBACPerK + educCAPBEPPerK + poph + popf + pagri + pindp + ppint + pempl + pouvr + altitude + superficie + min_distance_to_agglo + logVac + haie + vigne + typologie, 
+ps_model_refined <- matchit(treatmentZRR ~ pchom + FN1988 + delta_pop_1980_1995 + pop + ratEmp + ratForeigners + asso + educNoDiplomaPerK + educSUPPerK + educBACPerK + educCAPBEPPerK + poph + popf + pagri + pindp + ppint + pempl + pouvr + altitude + superficie + min_distance_to_agglo + logVac + typologie, 
                             data = df_rct, 
                             method = "nearest", # optimal, nearest
                             #distance = "logit", 
@@ -4930,6 +4988,8 @@ stargazer(
   out = paste0(path_tables, "Annex5.tex")
 )
 
+
+
 ```
 
 
@@ -4940,8 +5000,9 @@ rm(list = setdiff(ls(envir = globalenv()), c("processed_data_path", "raw_data_pa
 
 ## Table Annex 6: Main results when bandwidth is 10 km, different specifications, 1995
 ```{r }
-if (file.exists(paste0(path_data, "script_sharp_1995.RData"))) {
-  load(paste0(path_data, "script_sharp_1995.RData"))
+
+if (file.exists(paste0(processed_data_path, "script_sharp.RData"))) {
+  load(paste0(processed_data_path, "script_sharp.RData"))
 } else {
   message("Data environment does not exist")
 }
@@ -4955,19 +5016,19 @@ df_rdd <- dfZRRControls %>%
   mutate(
     dist = x,                     # Create a distance variable
     treatmentZRR = z,              # Define treatment indicator
+    log_pop_density = log(pop/superficie),
     pop = log(pop)                 # Log-transform population
   ) %>%
   distinct(codecommune, .keep_all = TRUE)  # Remove duplicate communes
 
 # Load and prepare canton data
-dfCanton <- read_csv("/Users/ilanpargamin/Desktop/elections_papers/DATA/socio_eco/Taille_agglo_commune_csv/codescommunescantons1999.csv", show_col_types = FALSE) %>%
-  select(codecommune, codecanton, dep) %>%
-  filter(!is.na(codecanton) & !is.na(codecommune)) %>%
-  mutate(codecommune = gsub("^0+", "", codecommune))  # Remove leading zeros from codecommune
+dfCanton <- st_read(paste0(raw_data_path, "france1999.dbf")) %>%
+  mutate(codecommune = paste0(as.character(DEP), as.character(COM))) %>%
+  mutate(codecanton = paste0(as.character(DEP), as.character(CT))) %>%
+  select(codecommune, codecanton) 
 
 # Merge df_rdd with canton data on codecommune
 df_rdd <- df_rdd %>%
-  select(-dep) %>%                      # Remove dep column from df_rdd before merging
   left_join(dfCanton, by = "codecommune") %>%  # Merge to add canton data
   mutate(canton = as.character(codecanton)) %>% # Convert codecanton to character as canton
   select(-codecanton)                    # Remove codecanton after renaming
@@ -4985,8 +5046,6 @@ b <- 10000
 # Initialize a list to store the regression models
 models <- list()
 
-df_rdd$log_pop_density <- log(df_rdd$pop / df_rdd$superficie)
-
 # Define the groups of control variables
 control_groups <- list(
   group1 = list(vars = c("x"), dep = FALSE, controls = FALSE),
@@ -5002,7 +5061,7 @@ df_filtered$x <- df_filtered$x / 1000
 # Run regressions with grouped control variables and store the models
 for (i in seq_along(control_groups)) {
   control_vars <- control_groups[[i]]$vars
-  formula <- as.formula(paste("y ~ treatmentZRR +", paste(control_vars, collapse = " + ")))
+  formula <- as.formula(paste("FN1995 ~ treatmentZRR +", paste(control_vars, collapse = " + ")))
   models[[paste0("group", i)]] <- lm(formula, data = df_filtered)
 }
 
@@ -5033,18 +5092,15 @@ stargazer(models, type = "text",
 ```
 
 
-
-
-
-
 ```{r }
 rm(list = setdiff(ls(envir = globalenv()), c("processed_data_path", "raw_data_path", "main_path", "path_figures", "path_tables", "path_out", "path_data", "labels")), envir = globalenv())
 ```
 
 ## Table Annex 7: Main results, different bandwidths
 ```{r }
-if (file.exists(paste0(path_data, "script_sharp_1995.RData"))) {
-  load(paste0(path_data, "script_sharp_1995.RData"))
+
+if (file.exists(paste0(processed_data_path, "script_sharp.RData"))) {
+  load(paste0(processed_data_path, "script_sharp.RData"))
 } else {
   message("Data environment does not exist")
 }
@@ -5052,26 +5108,25 @@ if (file.exists(paste0(path_data, "script_sharp_1995.RData"))) {
 bandwidth <- 20000 # it corresponds to the distance (in meters)
 threshold <- 0
 
-
 # Filter the data within the specified bandwidth
 df_rdd <- dfZRRControls %>%
   filter(x >= (threshold - bandwidth) & x <= (threshold + bandwidth)) %>%
   mutate(
     dist = x,                     # Create a distance variable
     treatmentZRR = z,              # Define treatment indicator
+    log_pop_density = log(pop/superficie),
     pop = log(pop)                 # Log-transform population
   ) %>%
   distinct(codecommune, .keep_all = TRUE)  # Remove duplicate communes
 
 # Load and prepare canton data
-dfCanton <- read_csv("/Users/ilanpargamin/Desktop/elections_papers/DATA/socio_eco/Taille_agglo_commune_csv/codescommunescantons1999.csv", show_col_types = FALSE) %>%
-  select(codecommune, codecanton, dep) %>%
-  filter(!is.na(codecanton) & !is.na(codecommune)) %>%
-  mutate(codecommune = gsub("^0+", "", codecommune))  # Remove leading zeros from codecommune
+dfCanton <- st_read(paste0(raw_data_path, "france1999.dbf")) %>%
+  mutate(codecommune = paste0(as.character(DEP), as.character(COM))) %>%
+  mutate(codecanton = paste0(as.character(DEP), as.character(CT))) %>%
+  select(codecommune, codecanton) 
 
 # Merge df_rdd with canton data on codecommune
 df_rdd <- df_rdd %>%
-  select(-dep) %>%                      # Remove dep column from df_rdd before merging
   left_join(dfCanton, by = "codecommune") %>%  # Merge to add canton data
   mutate(canton = as.character(codecanton)) %>% # Convert codecanton to character as canton
   select(-codecanton)                    # Remove codecanton after renaming
@@ -5087,7 +5142,7 @@ b3 <- 5000
 
 df_rdd$x_km <- df_rdd$x / 1000
 
-formula <- as.formula(paste("y ~ z + x_km + ", paste(controls, collapse = " + "), "+ factor(dep) "))
+formula <- as.formula(paste("FN1995 ~ z + x_km + ", paste(controls, collapse = " + "), "+ factor(dep) "))
 
 
 model_bw_1 <- lm(formula,
