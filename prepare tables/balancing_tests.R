@@ -100,10 +100,10 @@ generate_balance_tests <- function(processed_data_path, path_tables,
   # Define conditioning variables
   if (is.null(conditional_vars)) {
     if (use_border_pairs && "border_pair" %in% names(df_rct)) {
-      conditional_vars <- c("border_pair", "treatmentZRR", "pagri", "popDensity")
+      conditional_vars <- c("border_pair", "pagri", "popDensity")
       cat("  ⚠️  Using border_pair fixed effects (computationally intensive)\n")
     } else {
-      conditional_vars <- c("dep", "treatmentZRR", "pagri", "popDensity")
+      conditional_vars <- c("dep", "pagri", "popDensity")
       cat("  ✓ Using department fixed effects (more efficient)\n")
     }
   }
@@ -252,10 +252,12 @@ generate_balance_tests <- function(processed_data_path, path_tables,
       variable, 
       `Control (mean)` = mean_FALSE, 
       `Treatment (mean)` = mean_TRUE, 
-      `Difference` = estimate, 
-      `p-value` = p.value,
-      significance
-    )
+      `p-value` = p.value
+    ) 
+  
+  balance_summary_formatted <- balance_summary_formatted %>%
+    dplyr::mutate(dplyr::across(where(is.numeric), ~ round(.x, 3)))
+  
   
   # Apply variable labels if available
   if (has_labels) {
@@ -293,29 +295,72 @@ generate_balance_tests <- function(processed_data_path, path_tables,
     "department fixed effects"
   }
   
-  # Generate LaTeX table using stargazer
-  stargazer_output <- stargazer(
-    balance_summary_formatted %>% select(-Difference, -significance),  # Exclude difference for cleaner display
-    type = "latex",
-    summary = FALSE,
-    title = "Balancing tests for border pairs",
-    notes = paste("The table displays the means of the residuals of the regression of each variable on",
-                  conditioning_description, "along with population density and the share of",
-                  "agriculture workers. P-values from t-tests comparing treatment and control groups.",
-                  "Significance levels: * p<0.05, ** p<0.01, *** p<0.001"),
-    notes.align = "l",
-    digits = 4,
-    dep.var.labels.include = FALSE,
-    rownames = FALSE,
-    label = "tab:ttest-border",
-    table.placement = "H",
-    float = FALSE,
-    out = output_file
+  # Format numbers with scientific notation for small values
+  format_number <- function(x) {
+    if (is.na(x)) return("NA")
+    if (abs(x) < 0.001 && x != 0) {
+      # Use scientific notation for very small numbers
+      formatted <- formatC(x, format = "e", digits = 0)
+      # Clean up the scientific notation
+      formatted <- gsub("e-0", "e-", formatted)
+      formatted <- gsub("e\\+00", "", formatted)
+      return(formatted)
+    } else {
+      # Use fixed notation with 4 decimal places
+      return(formatC(x, format = "f", digits = 4))
+    }
+  }
+  
+  # Format the output dataframe
+  df_out <- balance_summary_formatted %>%
+    mutate(
+      `Control (mean)` = sapply(`Control (mean)`, format_number),
+      `Treatment (mean)` = sapply(`Treatment (mean)`, format_number),
+      `p-value` = formatC(`p-value`, format = "f", digits = 4)
+    )
+  
+  # Rename columns to match desired output
+  names(df_out) <- c("Variable", "Control", "Treatment", "p-value")
+  
+  # Create the LaTeX table manually for better control
+  latex_lines <- c(
+    "\\begin{table}[!htbp]",
+    "\\small",
+    "\\centering",
+    "  \\caption{Balancing tests for border pairs}",
+    "  \\label{tab:ttest-border}",
+    "\\begin{tabular}{@{\\extracolsep{5pt}} lccc}",
+    "\\\\[-1.8ex]\\hline",
+    "\\hline \\\\[-1.8ex]",
+    "Variable & Control & Treatment & p-value \\\\",
+    "\\hline \\\\[-1.8ex]"
   )
   
-  cat("✓ Generated LaTeX table\n")
-  cat("  - Output file:", output_file, "\n")
+  # Add data rows
+  for (i in 1:nrow(df_out)) {
+    row <- paste(df_out[i, 1], "&", df_out[i, 2], "&", df_out[i, 3], "&", df_out[i, 4], "\\\\")
+    latex_lines <- c(latex_lines, row)
+  }
   
+  # Add closing lines
+  latex_lines <- c(
+    latex_lines,
+    "\\hline \\\\[-1.8ex]",
+    "\\end{tabular}",
+    "    \\begin{tablenotes}",
+    "      \\footnotesize",
+    paste0("      \\item \\textit{Notes:} The table displays the means of the residuals of the regression of the variable on the ", 
+           conditioning_description, 
+           " along with the other set of controls. The right column shows the significance level of the t-test comparing both groups among the border municipalities."),
+    "    \\end{tablenotes}",
+    "\\end{table}"
+  )
+  
+  # Write to file
+  writeLines(latex_lines, output_file)
+  
+  cat("✓ Generated LaTeX table\n")
+  cat("  - Output file:", output_file, "\n")  
   # --------------------------------------------------------------------------
   # 8. DISPLAY RESULTS SUMMARY
   # --------------------------------------------------------------------------

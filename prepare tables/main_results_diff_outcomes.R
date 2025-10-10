@@ -95,29 +95,8 @@ generate_rdd_multiple_outcomes <- function(processed_data_path, path_tables,
   # --------------------------------------------------------------------------
   cat("\n3. Defining outcome variables and regression formulas...\n")
   
-  # Define outcome variables
-  outcome_variables <- c("deltaFN", "RPR2002", "FN1988", "turnout_2002", 
-                         "FN2007", "FN2012", "FN2017", "FN2022")
-  
-  # Create regression formulas for each outcome
-  formulas <- list()
-  
-  for (outcome in outcome_variables) {
-    if (outcome == "FN1988") {
-      # Special case: exclude FN1988 from controls when it's the outcome
-      controls_filtered <- setdiff(controls, "FN1988")
-      formulas[[outcome]] <- paste(outcome, "~ z + x + border +", 
-                                   paste(controls_filtered, collapse = " + "), 
-                                   "+ factor(dep)")
-    } else {
-      formulas[[outcome]] <- paste(outcome, "~ z + x + border +", 
-                                   paste(controls, collapse = " + "), 
-                                   "+ factor(dep)")
-    }
-  }
-  
-  
-  
+  # Define outcome variables (only those needed for the table)
+  outcome_variables <- c("deltaFN", "RPR2002", "turnout_2002", "FN1988")
   
   # Build one formula per outcome.
   # For FNYYYY outcomes, include only FNXXXX controls with XXXX < YYYY,
@@ -157,8 +136,6 @@ generate_rdd_multiple_outcomes <- function(processed_data_path, path_tables,
     formulas
   }
   
-  
-  outcome_variables <- c("deltaFN", "RPR2002", "FN1988", "turnout_2002", "FN2007", "FN2012", "FN2017", "FN2022")
   formulas <- make_formulas(outcome_variables, controls, names(df_rdd))  
   
   cat("✓ Defined formulas for", length(outcome_variables), "outcome variables\n")
@@ -221,10 +198,10 @@ generate_rdd_multiple_outcomes <- function(processed_data_path, path_tables,
       se <- model[variable, "Std. Error"]
       p_val <- model[variable, "Pr(>|t|)"]
       
-      # Add significance stars
-      stars <- ifelse(p_val < 0.001, "***", 
-                      ifelse(p_val < 0.01, "**", 
-                             ifelse(p_val < 0.05, "*", "")))
+      # Add significance stars (matching desired output)
+      stars <- ifelse(p_val < 0.01, "\\textasteriskcentered \\textasteriskcentered \\textasteriskcentered ", 
+                      ifelse(p_val < 0.05, "\\textasteriskcentered \\textasteriskcentered ", 
+                             ifelse(p_val < 0.1, "\\textasteriskcentered ", "")))
       
       return(paste0(sprintf("%.3f", coef), " (", sprintf("%.3f", se), ")", stars))
     } else {
@@ -232,15 +209,26 @@ generate_rdd_multiple_outcomes <- function(processed_data_path, path_tables,
     }
   }
   
-  # Create summary table structure
-  summary_table <- data.frame(Outcome = outcome_variables)
+  # Create summary table structure with descriptive labels
+  outcome_labels <- c(
+    "FN vote share change 1988-2002",
+    "RPR vote share in 2002",
+    "Turnout in 2002",
+    "FN vote share in 1988"
+  )
+  
+  summary_table <- data.frame(
+    Outcome = outcome_labels,
+    stringsAsFactors = FALSE
+  )
   
   # Fill the summary table with coefficients for treatment variable "z"
   for (i in seq_along(bandwidths)) {
     bw_km <- bandwidths[i]
-    column_name <- paste("bw", bw_km, sep = "_")
+    column_name <- paste0("bw=", format(bw_km, scientific = FALSE, big.mark = ","))
     
-    for (outcome in outcome_variables) {
+    for (j in seq_along(outcome_variables)) {
+      outcome <- outcome_variables[j]
       model_name <- paste(outcome, "bw", bw_km, sep = "_")
       
       # Try both "zTRUE" and "z" as treatment variable names
@@ -249,72 +237,83 @@ generate_rdd_multiple_outcomes <- function(processed_data_path, path_tables,
         coef_result <- extract_coefficients(all_models[[model_name]], "z")
       }
       
-      summary_table[summary_table$Outcome == outcome, column_name] <- coef_result
+      summary_table[j, column_name] <- coef_result
     }
   }
   
   cat("✓ Extracted coefficients for all models\n")
   
   # --------------------------------------------------------------------------
-  # 6. ADD OBSERVATION COUNTS
+  # 6. GENERATE LATEX TABLE MANUALLY
   # --------------------------------------------------------------------------
-  cat("\n6. Adding observation counts to summary table...\n")
+  cat("\n6. Generating LaTeX table...\n")
   
-  # Create observation count row
-  nobs_row <- data.frame(Outcome = "N")
-  for (i in seq_along(bandwidths)) {
-    bw_km <- bandwidths[i]
-    column_name <- paste("bw", bw_km, sep = "_")
-    nobs_row[1, column_name] <- nobs_vector[i]
-  }
-  
-  # Combine with summary table
-  summary_table <- rbind(summary_table, nobs_row)
-  
-  cat("✓ Added observation counts\n")
-  cat("  - Observation counts by bandwidth:", paste(nobs_vector, collapse = ", "), "\n")
-  
-  # --------------------------------------------------------------------------
-  # 7. GENERATE OUTPUT TABLES
-  # --------------------------------------------------------------------------
-  cat("\n7. Generating output tables...\n")
-  
-  # Prepare output file paths
+  # Prepare output file path
   latex_file <- file.path(path_tables, "main_results_diff_outcomes.tex")
   
-  # Generate LaTeX table using stargazer
-  stargazer_output <- stargazer(
-    summary_table, 
-    type = "latex", 
-    style = "qje",
-    summary = FALSE,
-    star.cutoffs = c(0.05, 0.01, 0.001),
-    title = "RDD main specification results on other outcomes",
-    label = "tab:rdd_results_outcomes_later",
-    out = latex_file,
-    notes = paste("Standard errors clustered at canton level using HC1 estimator.",
-                  "Specification includes controls and department fixed effects.",
-                  "Significance levels: * p<0.05, ** p<0.01, *** p<0.001"),
-    notes.align = "l",
-    table.placement = "H",
-    float = FALSE
+  # Build LaTeX table manually for precise formatting
+  latex_lines <- c(
+    "\\begin{table}",
+    "\\centering",
+    "\\caption{RDD main specification results on other outcomes}",
+    "\\begin{tabular}{llll}",
+    "\\toprule"
   )
+  
+  # Add header row
+  bw_labels <- sapply(bandwidths, function(x) paste0("bw=", format(x, scientific = FALSE, big.mark = ",")))
+  header <- paste(c("Outcome", bw_labels), collapse = " & ")
+  latex_lines <- c(latex_lines, paste0(header, "\\\\"))
+  latex_lines <- c(latex_lines, "\\midrule")
+  
+  # Add section header for 2002 elections
+  latex_lines <- c(latex_lines, "\\textit{2002 elections} & & &\\\\")
+  
+  # Add first three outcomes (2002 elections)
+  for (i in 1:3) {
+    row_data <- c(summary_table$Outcome[i], 
+                  summary_table[i, 2], 
+                  summary_table[i, 3], 
+                  summary_table[i, 4])
+    latex_lines <- c(latex_lines, paste(row_data, collapse = " & "), "\\\\")
+  }
+  
+  # Add spacing and placebo test section
+  latex_lines <- c(latex_lines, "\\addlinespace")
+  latex_lines <- c(latex_lines, "\\textit{Placebo test} & & & \\\\")
+  
+  # Add FN1988 (placebo test)
+  row_data <- c(summary_table$Outcome[4], 
+                summary_table[4, 2], 
+                summary_table[4, 3], 
+                summary_table[4, 4])
+  latex_lines <- c(latex_lines, paste(row_data, collapse = " & "), "\\\\")
+  
+  # Add spacing and observations row
+  latex_lines <- c(latex_lines, "\\addlinespace")
+  obs_row <- paste(c("Observations", nobs_vector), collapse = " & ")
+  latex_lines <- c(latex_lines, paste0(obs_row, "\\\\"))
+  
+  # Close table
+  latex_lines <- c(latex_lines, 
+                   "\\bottomrule",
+                   "\\end{tabular}",
+                   "\\label{tab:rdd_results_outcomes_later}",
+                   "",
+                   "\\parbox{\\textwidth}{\\footnotesize \\textit{Notes:} While the effect of the ZRR program on the delta of the FN vote share between 1988 and 2002 is significant and positive, its effect on the vote share of the RPR, Jacques Chirac's party, is null. There is also no effect on the election turnout. We run the specification on different bandwidths, with controls and place fixed effects. The standard errors are clustered at the department level.}",
+                   "",
+                   "\\end{table}")
+  
+  # Write to file
+  writeLines(latex_lines, latex_file)
   
   cat("✓ Generated LaTeX table\n")
   cat("  - Output file:", latex_file, "\n")
   
-  # Generate kable table for display
-  kable_output <- summary_table %>%
-    kable(format = "latex", booktabs = TRUE, 
-          caption = "RDD Results for Multiple Outcomes Across Bandwidths") %>%
-    kable_styling(latex_options = c("hold_position", "scale_down"))
-  
-  cat("✓ Generated kable table for display\n")
-  
   # --------------------------------------------------------------------------
-  # 8. DISPLAY RESULTS SUMMARY
+  # 7. DISPLAY RESULTS SUMMARY
   # --------------------------------------------------------------------------
-  cat("\n8. Results Summary:\n")
+  cat("\n7. Results Summary:\n")
   
   # Display summary statistics
   cat("  - Outcome variables analyzed:", length(outcome_variables), "\n")
@@ -342,4 +341,3 @@ generate_rdd_multiple_outcomes <- function(processed_data_path, path_tables,
 
 generate_rdd_multiple_outcomes(processed_data_path, path_tables,
                                bandwidths, controls)
-

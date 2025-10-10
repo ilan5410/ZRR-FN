@@ -92,31 +92,31 @@ generate_rdd_main_results <- function(processed_data_path, path_tables,
   # Define the groups of control variables for different specifications
   control_groups <- list(
     group1 = list(
-      vars = c("x"), 
+      vars = c("x", "treatmentZRR:x"), 
       dep = FALSE, 
       controls = FALSE,
       description = "Distance only"
     ),
     group2 = list(
-      vars = c("x", "pop", "superficie"), 
+      vars = c("x", "treatmentZRR:x", "pop", "superficie"), 
       dep = FALSE, 
       controls = FALSE,
       description = "Distance + basic demographics"
     ),
     group3 = list(
-      vars = c("x", "pop", "superficie", "dep"), 
+      vars = c("x", "treatmentZRR:x", "pop", "superficie", "dep"), 
       dep = TRUE, 
       controls = FALSE,
       description = "Distance + demographics + dept FE"
     ),
     group4 = list(
-      vars = c("x", "pop", "superficie", setdiff(controls, c("pop", "superficie"))), 
+      vars = c("x", "treatmentZRR:x", "pop", "superficie", setdiff(controls, c("pop", "superficie"))), 
       dep = FALSE, 
       controls = TRUE,
       description = "Distance + demographics + all controls"
     ),
     group6 = list(
-      vars = c("x", "pop", "superficie", setdiff(controls, c("pop", "superficie")), "dep"), 
+      vars = c("x", "treatmentZRR:x", "pop", "superficie", setdiff(controls, c("pop", "superficie")), "dep"), 
       dep = TRUE, 
       controls = TRUE,
       description = "Distance + demographics + all controls + dept FE"
@@ -209,29 +209,34 @@ generate_rdd_main_results <- function(processed_data_path, path_tables,
   # Prepare output file path
   output_file <- file.path(path_tables, "main_results_diff_specifications.tex")
   
+  # Convert target_bandwidth from meters to km for display
+  bandwidth_km <- target_bandwidth / 1000
+  
   # Generate the regression table using stargazer with clustered standard errors
   table_output <- stargazer(
     models, 
     se = lapply(robust_models, function(x) x[, "Std. Error"]),
     type = "latex",
-    title = paste("Main results when bandwidth is", target_bandwidth, "km, different specifications"),
-    dep.var.labels = "FN Vote Share 2002",
-    covariate.labels = c("ZRR Treatment", "Distance"),
+    title = paste("Main results when bandwidth is", bandwidth_km, "km, different specifications"),
+    dep.var.labels = "FN vote share in 2002",
+    covariate.labels = c("ZRR", "Distance to Frontier"),
     omit = c(setdiff(controls, "superficie"), "dep"),  # Omit control variables from display
     omit.stat = c("adj.rsq", "ser", "f"),
     add.lines = list(
       c("Controls", fe_lines$Controls),
       c("Dept FE", fe_lines$`Dept FE`)
     ),
-    star.cutoffs = c(0.05, 0.01, 0.001), 
+    star.cutoffs = c(0.1, 0.05, 0.01),  # Changed to match desired output
     column.sep.width = "3pt",
-    float = FALSE,
-    notes = paste("Standard errors clustered at canton level using HC1 estimator.",
-                  "Sample restricted to municipalities located", target_bandwidth, 
-                  "km at most from the program frontier."),
+    float = TRUE,
+    table.placement = "!htbp",
+    font.size = "small",
+    notes = paste0("\\parbox{\\textwidth}{\\footnotesize \\textit{Notes:} We restrict the sample to the municipalities located ",
+                   bandwidth_km, "km at most from the frontier program and run the specification with controls and place fixed effects. ",
+                   "The standard errors are clustered at the county level. $^{*}$p$<$0.1; $^{**}$p$<$0.05; $^{***}$p$<$0.01}"),
+    notes.append = FALSE,
     notes.align = "l",
-    table.placement = "H",
-    label = "tab:rdd_results_main",
+    label = paste0("tab:rdd_results_", bandwidth_km),
     out = output_file
   )
   

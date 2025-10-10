@@ -188,45 +188,98 @@ build_bandwidth_summaries <- function(processed_data_path,
   #   dplyr::mutate(Statistic = as.character(Statistic))
   
   # --------------------------------------------------------------------------
-  # 4) RENDER LATEX (STARGAZER)
+  # 4) RENDER LATEX (KABLEEXTRA) - FORMATTED LIKE TARGET TABLE
   # --------------------------------------------------------------------------
-  cat("4) Rendering LaTeX (stargazer)...\n")
-  # columns in the order: C_20000, T_20000, C_10000, T_10000, ...
+  cat("4) Rendering LaTeX (kableExtra)...\n")
+  
+  # Prepare columns in the desired order
   value_cols <- as.vector(rbind(paste0("Control_", bandwidths), paste0("Treatment_", bandwidths)))
   keep_cols  <- c("Statistic", value_cols)
   
-  # -- ensure exactly 2 decimals in the printed table
+  # Round to 2 decimals
   results_print <- results_out[, keep_cols, drop = FALSE]
   results_print <- results_print %>%
     dplyr::mutate(
       dplyr::across(dplyr::where(is.numeric), ~round(.x, 2))
     )
   
-  # nice column labels: for each b, show "C_b" and "T_b"
-  col_labels <- c("Statistic", as.vector(rbind(paste0("C_", bandwidths), paste0("T_", bandwidths))))
+  # Identify section breaks
+  panel_vars <- c("Number of cantons", "Average communes per canton", "Average pop per canton",
+                  "Average SD of pop", "Average Min of pop", "Average Max of pop")
+  section_labels <- c("Counties", "Municipalities", "Election", "Employment", 
+                      "Demographics", "Education", "Geography")
   
-  suppressWarnings({
-    stargazer::stargazer(results_print,
-                         type = "latex",
-                         summary = FALSE,
-                         title = "Summary Statistics for Different Bandwidths",
-                         digits = 2,
-                         out = out_tex,
-                         rownames = FALSE,
-                         label = "tab:summary_stats_combined",
-                         column.labels = col_labels[-1],
-                         covariate.labels = results_print$Statistic,
-                         dep.var.labels.include = FALSE,
-                         header = FALSE,
-                         notes = "The table reports panel-level metrics (top) and means of control variables (bottom) for Control (C) and Treatment (T) groups within each bandwidth (in meters).")
-  })
+  # Create a mapping of which rows belong to which section
+  results_print <- results_print %>%
+    dplyr::mutate(
+      Section = dplyr::case_when(
+        Statistic %in% panel_vars[1] ~ "Counties",
+        Statistic %in% panel_vars[2:6] ~ "Municipalities",
+        grepl("FN.*1988|Vote share", Statistic) ~ "Election",
+        grepl("Unemployed|labor force|Agriculture|Independant|Intermediate|Clerical|Manual|Labor force", Statistic) ~ "Employment",
+        grepl("Population|Foreigners|Ages|Vacant|OPI|Age ratio", Statistic) ~ "Demographics",
+        grepl("diploma|Academic|Highschool|Technical", Statistic) ~ "Education",
+        grepl("Altitude|Distance|Area|Fences|Vines", Statistic) ~ "Geography",
+        TRUE ~ "Other"
+      )
+    )
+  
+  # Use kableExtra for better control
+
+  latex_table <- results_print %>%
+    dplyr::select(-Section) %>%
+    kbl(format = "latex",
+        booktabs = TRUE,
+        col.names = c("Statistic", rep(c("C", "T"), length(bandwidths))),
+        caption = "Summary Statistics for Different Bandwidths",
+        label = "summary_stats_combined",
+        align = c("l", rep("c", length(value_cols))),
+        linesep = "") %>%
+    kable_styling(latex_options = c("hold_position", "scale_down"),
+                  font_size = 9) %>%
+    # Add bandwidth header
+    add_header_above(c(" " = 1, 
+                       setNames(rep(2, length(bandwidths)), 
+                                paste0(format(bandwidths, big.mark = ",")))),
+                     bold = TRUE) %>%
+    add_header_above(c(" " = 1, "Bandwidths" = length(value_cols)), bold = TRUE) %>%
+    # Add section headers with banding
+    pack_rows("Counties", 
+              which(results_print$Statistic == panel_vars[1]),
+              which(results_print$Statistic == panel_vars[1]),
+              italic = TRUE, bold = FALSE, hline_after = FALSE) %>%
+    pack_rows("Municipalities",
+              which(results_print$Statistic == panel_vars[2]),
+              which(results_print$Statistic == panel_vars[6]),
+              italic = TRUE, bold = FALSE) %>%
+    # Add other sections dynamically
+    {
+      tbl <- .
+      for (sec in c("Election", "Employment", "Demographics", "Education", "Geography")) {
+        sec_rows <- which(results_print$Section == sec)
+        if (length(sec_rows) > 0) {
+          tbl <- pack_rows(tbl, sec, min(sec_rows), max(sec_rows), 
+                           italic = TRUE, bold = FALSE)
+        }
+      }
+      tbl
+    } %>%
+    footnote(general = "The table displays the main summary statistics of the demographic distributions of the sample as well as the summary statistics of the main controls for each bandwidth, with separate columns for the Control (C) and Treatment (T) groups.",
+             general_title = "Notes:",
+             footnote_as_chunk = TRUE,
+             threeparttable = TRUE)
+  
+  # Save to file
+  writeLines(latex_table, out_tex)
   
   cat("✓ Saved LaTeX to:", out_tex, "\n")
+  
+  cat("✓ Saved alternative LaTeX (stargazer)\n")
   cat("\n===============================================\n")
   cat("DONE\n")
-  cat("===============================================\n")
-  
+  cat("===============================================\n")  
 }
+
 
 # -------------------------------------------------------------------------------
 # RUN

@@ -71,6 +71,9 @@ source(paste0(path_code_prepare_figures, "balancing_checks.R"))
 ## RDD_outcomes.R
 source(paste0(path_code_prepare_figures, "RDD_outcomes.R"))
 
+## later_elections.R
+source(paste0(path_code_prepare_figures, "later_elections.R"))
+
 ## map_dist_running_var_random.R
 source(paste0(path_code_prepare_figures, "map_dist_running_var_random.R"))
 
