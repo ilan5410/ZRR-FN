@@ -1,0 +1,93 @@
+% !TEX root = main.tex
+\documentclass[12pt,a4paper]{article}
+
+\input{preamble}
+
+
+%-------------------------------------------
+% Paper Head
+%-------------------------------------------
+\title{On the dark Paths of Populism: Can state Policy Reduce Electoral Support for Populism? Evidence from France}
+
+\author{
+  Yannay Spitzer\thanks{yannay.spitzer@mail.huji.ac.il} \and 
+  Ilan Pargamin\thanks{ilan.pargamin@mail.huji.ac.il}
+}
+\affil{\small Hebrew University of Jerusalem}
+
+\date{August 2024} 
+
+\begin{document}
+
+\maketitle
+
+\begin{abstract}
+
+
+We show the effectiveness of a spatial redistribution program in reducing electoral support for populism, using evidence from a tax credit program targeted at rural areas in France. The Zone de Revitalization Rurale (ZRR) program, launched in 1995, aimed to promote economic development and employment in rural areas through various corporate and payroll tax exemptions. Employing a spatial regression discontinuity design, we compare small rural municipalities situated near the ZRR program boundary. My findings reveal that municipalities benefiting from the ZRR program experienced a 0.3-0.5 percentage point reduction in National Front (FN) vote share in the 2002 presidential election, translating to a 3-5\% decrease on average relative to an average vote of 17\%. We argue that while the ZRR program was neither explicitly designed to counter populism nor effective in improving local economic conditions, the perceived support from the central state helped alleviate social discontent and reduce populist voting. This paper contributes to the growing literature on the socioeconomic and demographic determinants of populism by providing causal evidence of the role of geographic-based redistribution policies. 
+
+
+\end{abstract}
+
+\textbf{Keywords}: Populism, Inequalities, Redistribution, Policy, France rurality, RDD.  
+\newpage
+
+
+\small{
+\textit{Passing through these villages felt like reviewing the façades in mourning. What wasn't closed was for sale, and what was for sale found no buyers. The war memorials bore glorious names, and it seemed to us that the few living souls wandering the streets could have been added to the list. [...] We were in the heart of the lost country, in the gray areas of "hyper-rurality." The inhabitants of this desert convinced themselves that Paris could not hear them.}\footnote{Original text translated by the author: \textit{Traverser ces villages donnait l'impression de passer la revue des façades en berne. Ce qui n'était pas fermé était à vendre, ce qui était à vendre ne trouvait pas acquéreur. Les monuments aux morts portaient les noms glorieux et il nous semblait que les quelques vivants vaquant dans les rues auraient pu s'ajouter à la liste. […] Nous étions là au cœur du pays perdu, dans les zones grises de « l'hyper ruralité ». Les habitants de ce désert se persuadaient que Paris ne les entendait pas.}}
+
+		Sylvain Tesson, \textit{Sur les chemins noirs} (On the dark Paths), Gallimard, 2016, p. 82}
+
+
+
+%-------------------------------------------
+% Paper Body
+%-------------------------------------------
+
+\input{Introduction.tex}
+\input{Background.tex}
+\input{Data.tex}
+\input{EvolutionFN.tex}
+\input{Results.tex}
+\input{Discussion.tex}
+
+
+\section{Concluding remarks}\label{conclusion}
+
+Liberal democracies in the Western world have been facing, in the last few decades, the threatening rise of populism. An expression of discontent against the "establishment", the current political and legal system, and national institutions, reminding to some of the interwar period.\footnote{Philippe Corcuff, Les années 30 reviennent et la gauche est dans le brouillard (2014, Textuel); Farid Abdelouahab et Pascal Blanchard, Les Années 30. Et si l'histoire recommençait ? (2017, la Martinière); Emmanuel Macron, to Ouest-France in November 2018: "The moment we are living through resembles the interwar period."}
+
+My contribution underscores the importance of place-based policies to mitigate the reactions of populist voters, emphasizing that regional interventions can be powerful tools to support local communities, which are essential for a healthy market economy. These results echo the works of \cite{Rajan} and \cite{polanyi1944}, which remind that economics are "embedded" in communities and emphasize that regional interventions can be powerful tools to support local communities, which are essential for a healthy market economy.
+
+
+
+
+%-------------------------------------------
+% References
+%-------------------------------------------
+
+% Print bibliography
+%\printbibliography
+%-------------------------------------------
+% Appendix
+%-------------------------------------------
+\appendix
+
+% Change equation numbering format to be sequential within sections in the appendix
+\renewcommand\theequation{\Alph{section}\arabic{equation}} % Redefine equation numbering format
+\counterwithin*{equation}{section} % Number equations within sections
+\renewcommand\thefigure{\Alph{section}\arabic{figure}} % Redefine equation numbering format
+\counterwithin*{figure}{section} % Number equations within sections
+\renewcommand\thetable{\Alph{section}\arabic{table}} % Redefine equation numbering format
+\counterwithin*{table}{section} % Number equations within sections
+
+\newpage
+
+
+%\input{Appendices.tex}
+
+
+
+\end{document}
+
+
+

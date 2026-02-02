@@ -1,0 +1,69 @@
+\subsection{Robustness}\label{robustness-section}
+
+
+In this section, after having already established the robustness of my results to different model specifications, I consider the robustness of my results to an alternative distance measure, varying bandwidths, correction for potential spatial correlation of the error term, and estimation samples. I also establish, by conducting placebo analysis, that my results are driven by the ZRR program. 
+
+
+\subsubsection{Alternative distance measure}
+
+In appendix \ref{app:alternative-distance}, I use an alternative measure of the distance to the program frontier. Instead of measuring the shortest distance from the municipality centroid to the border, I measure the shortest distance between the municipality's border and the program border. Municipalities that touch the program frontier thus have a distance equal to zero. 
+
+The results are consistent and, although larger than with the original distance measure, similar: the ZRR program reduced the FN vote shares in 2002 by 0.5 percentage points on average. 
+
+\subsubsection{Varying bandwidth}
+
+Following \cite{lee2010}, I check the robustness of the estimated LATE against different values of the bandwidth. Figure \ref{fig:bandwidth_effect} reports the coefficients. The treatment effect remains negative across all the different values of the bandwidths and becomes significant when I include the localities that are within a 10 km range from the program frontier. The tradeoff between sample size and precision in the local treatment effect estimation becomes less severe as we acknowledge a certain stability of the estimation.
+
+% different bandwidth vs. coefficient
+\begin{figure}
+    \centering
+    \caption{TODO: remove double title. Local Linear Regressions with varying bandwidth: FN Share of vote in 2002}
+    \includegraphics[width=0.7\linewidth]{figures/local_linear_reg_FN2002.png}
+    \label{fig:bandwidth_effect}
+
+\parbox{\textwidth}{\footnotesize \textit{Notes:} The errors are clustered at the canton level. The confidence intervals are reported at the 95\% level. In red, the linear fit of the LATE coefficients. The bandwidth is in meters.  }
+
+\end{figure}
+
+
+\subsubsection{Winsorizing, trimming and doughnut}
+
+The results of the robustness tests presented in Table \ref{tab:robustness-wtd} confirm the consistency of the estimated treatment effects across different approaches for handling outliers and spatial proximity to the border. Winsorizing reduces the influence of extreme values by capping the top and bottom percentiles of the outcome distribution. Trimming instead removes observations with extreme values entirely. Both techniques aim to ensure that a few extreme municipalities — perhaps due to measurement error or unusual local contexts — do not disproportionately drive the estimated treatment effect. The doughnut method, by excluding municipalities located within a narrow band (here, 5km) on either side of the treatment frontier, addresses potential concerns about spatial spillovers near the border.
+
+All three methods yield negative and statistically significant coefficients for the treatment variable, indicating a reduction in the 2002 FN vote share associated with the treatment. Specifically, the coefficient for the doughnut test is slightly higher in magnitude at -0.007 compared to the winsorized and trimmed methods, both of which have a coefficient of -0.006. This suggests that excluding municipalities within 5km of the border has a marginally stronger impact on the treatment effect, though the difference is not substantial.
+
+The stability of the estimated coefficients additionally suggests that spatial spillovers in political preferences across the border are limited. If voters were influenced by their neighbors across the border, one would expect the coefficient to be much higher when we exclude the municipalities contiguous to the border (doughnut approach), which is not the case. 
+
+% Winsorizing, trimming and doughnut
+\input{tables/winsorizing_trimming_doughnut.tex}
+
+
+\subsubsection{ Randomization of ZRR boundary}
+[YS: This needs to be developed further. It could be that in any case it is better to place it in an appendix. There are two issues here: (i) 33\% is arbitrary (ii) the counties that receive a placebo treatment don't have the same spatial correlation that characterizes the ZRR assignment. it will be a pain to try and replicate this process, but at least the difference should be acknowledged]
+
+To provide further evidence that the discontinuous jump in the FN 2002 vote share is not driven by potential endogeneity of the ZRR boundary and unobservable differences between localities in my estimation sample, I perform a permutation inference exercise where I randomly remove 33\% (1177 out of 3532) treated counties out of treatment and inversely, add 33\% untreated counties to the program. As an illustration, I display the map of a "new" program in Figure \ref{fig:map-placebo} along with the distribution of the distance to the program frontier, my running variable. I then estimate the same model as in Equation 2. After repeating this exercise 100 times, I report the results in Figure \ref{fig:coeff-placebo}. 
+
+% Map and Distribution of the running variable - Placebo
+\begin{figure}
+    \centering
+    \includegraphics[width=1\linewidth]{figures/map_dist_running_var_random.png}
+    \caption{Map and Distribution of the running variable - Placebo}
+    \label{fig:coeff-placebo}
+
+\parbox{\textwidth}{\footnotesize \textit{Notes:} The map displays the running variable, the distance to the randomized program frontier, by three categories: outside the ZRR program and more than 5km away from the frontier; in a 5km range around the frontier, both inside and outside the ZRR program; inside the ZRR program and more than 5km away from the frontier. The bottom graph shows the distribution of the distance to program frontier in meters. If the distance is negative, the locality is inside the randomized program, outside otherwise.}
+    
+\end{figure}
+
+%% Main results, different bandwidths - placebo
+\begin{landscape}
+
+\begin{figure}
+    \centering
+    \includegraphics[width=1\linewidth]{figures/RDD_randomization.png}
+    \caption{TODO: remove double title. Permutation Distributions of Treatment Effects by Bandwidth}
+    \label{fig:map-placebo}
+
+\parbox{\textwidth}{\footnotesize \textit{Notes:} The placebo test consists in randomly switching treatment status of one third of the counties. The figure displays the coefficient of the treatment effect of the ZRR on the FN vote share in 2002. The red dotted line corresponds to the "true" coefficient. The grey ones to that of the randomized permutations.}
+    
+\end{figure}
+\end{landscape}

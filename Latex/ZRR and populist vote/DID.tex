@@ -1,0 +1,46 @@
+\subsection{DID Analysis}
+
+[YS: Let's discuss how to redo this subsection. I think we should start by presenting Figure 7]
+
+As a first step, I compare the evolution of the FN vote share between the 1988 and 2002 presidential elections to evaluate the short-term response to inclusion in the ZRR. I divide my sample into two groups of municipalities: those that entered the ZRR program in 1995 and those that entered the program after 2004. As explained earlier, counties that entered after 2004 did so based on eligibility criteria from the 1999 population census, but no counties were withdrawn from the program even if they no longer met the updated criteria. [YS: do we know if none of them qualified based on the earlier criteria?]
+
+I plot the vote share for FN in 1988 against the vote share for FN in 2002. Figure \ref{fig:did_FN1988-FN2002} displays the results. The top plot shows the binned FN vote shares in 1988 against 2002 while the bottom plot shows the binned residuals of the FN vote shares after regressing them on a set of pre-treatment control variables and fixed effects for departments. 
+
+% Plot FN 1988 vs. FN 2002
+\begin{figure}
+    \centering
+    \caption{Comparison of FN vote share between 1988 and 2002 by Treatment Status}
+    \includegraphics[width=1\linewidth]{figures/FN_evolution_by_treat_status.png}
+    \label{fig:did_FN1988-FN2002}
+
+\parbox{\textwidth}{\footnotesize \textit{Notes:} The top plot shows the binned FN vote shares in 1988 against 2002. The bottom plot shows the residuals of the FN vote shares after regressing them on a set of pre-treatment control variables and fixed effects for department.}
+    
+\end{figure}
+
+
+
+The top plot shows a clear difference of trajectory between the municipalities that were treated in 1995 and the ones that were treated later. This difference seems uniform across 1988 vote and is very large. This difference diminish and lose its uniformity once we control for municipalities' characteristics and fixed effects. Table \ref{tab:did_result} displays the estimation of the OLS model with a difference-in-difference specification, as well as the within estimator (identical to the first-difference estimator in a two-period setting). The third model takes the municipalities that entered the ZRR after 2005 as the reference group, and estimate the effect of entering the ZRR in 1995 and never entering the program. The three estimators are almost equal and indicate that entering the ZRR program in 1995 reduced the FN vote share in 2002 by 1 percentage point.
+
+
+[YS: I would add here a discussion on the new figure, with dFN over logpopulation. Perhaps there should also be a figure dFN against density of canton]
+
+
+
+
+% Another very important thing: you would expect the difference to go in the other way, no? If places that were treated earlier were more "neglected", or with smaller population, shouldn't this create a bias towards showing a positive treatment effect? Why is the difference negative and so strong? It helps your case, but you need to point it out and try to make sense of it.
+
+
+% Table: DID estimation
+
+\input{tables/DID_results.tex}
+
+
+
+
+
+
+[TODO: update this paragraph with new references] This strategy assumes that both groups would have had parallel trend in FN vote absent the assignment to the ZRR treatment. However, it might be that the selection into the program was based on criteria that could be associated with the future voting trend, for example, population density, employment rate or share of agricultural workers. As shown in Figure \ref{fig:pop_vs_FN}, smaller municipalities were increasing their FN vote faster during this period. As Appendix \ref{tab:1988-2002} shows, a simple t-test shows that almost all the municipality characteristics significantly changed between 1988 and 2002. Finally, it is possible that some municipalities that entered after 2004 did not enter the program randomly due, for example, to politically driven manipulation.
+
+
+%Considering that we controlled for enough variables and for department fixed effects, this assumption seems reasonable. To the best of our knowledge, there were no other policy changes, or regional developments that affected the outcome differently between the two groups, except for the ZRR program. Nevertheless, if we consider the reasons why certain municipalities entered the program in 1995 versus after 2004, it might be that the selection into the program was based on criteria that could be associated with the future voting trend (for example: population density, employment rate or share of agricultural workers - as shown in Figure \ref{fig:pop_vs_FN}, smaller municipalities were increasing their FN vote faster during this period). As Appendix \ref{tab:1988-2002} shows, the socioeconomic evolution of the municipalities between 1988 and 2002 is obviously non negligible. Finally, it is possible that some municipalities that entered after 2004 did not enter the program randomly due, for example, to politically driven manipulation.
+

@@ -1,0 +1,470 @@
+
+\begin{appendices}
+\newcommand{\mycomment}[1]{}
+
+\section*{Appendix}
+
+\mycomment{
+
+
+%--- Section ---%
+\section{Socioeconomic Evolution, 1988-2002}
+\label{app:did}
+
+% Comparison socioeco 1988-2002
+\begin{table}[ht]
+\scriptsize
+\centering
+\caption{Evolution of Socioeconomic Variables between 1988 and 2002  with T-Test Results}
+\label{tab:1988-2002}
+\begin{tabular}{lcccccc}
+\toprule
+Variable & 1988 (mean) & 2002 (mean) & Difference & p-value & Significance \\
+\midrule
+FN vote share & 0.1111 & 0.1600 & 0.0488 & 0.000 & *** \\
+unemployed (\%) & 0.0820 & 0.0967 & 0.0147 & 0.000 & *** \\
+population change in p.p. 1982-1990 & 0.0040 & 0.0036 & -0.0004 & 0.795 &  \\
+population size & 601.7774 & 583.4155 & -18.3620 & 0.275 &  \\
+employed (\%) & 0.2613 & 0.2348 & -0.0265 & 0.000 & *** \\
+employed change in p.p. 1982-1990 & -0.0478 & -0.0467 & 0.0011 & 0.872 &  \\
+foreigners (\%) & 0.0191 & 0.0236 & 0.0045 & 0.000 & *** \\
+OPI per 1000 inhabitants & 3.0796 & 3.4834 & 0.4038 & 0.000 & *** \\
+no diploma (\%) & 0.2803 & 0.1664 & -0.1139 & 0.000 & *** \\
+academic education (\%) & 0.0375 & 0.0919 & 0.0543 & 0.000 & *** \\
+highschool education (\%) & 0.0566 & 0.0924 & 0.0358 & 0.000 & *** \\
+technical education (\%) & 0.1286 & 0.1963 & 0.0677 & 0.000 & *** \\
+proportion of 20-40, men & 0.1709 & 0.1441 & -0.0268 & 0.000 & *** \\
+proportion of 20-40, women & 0.1497 & 0.1322 & -0.0175 & 0.000 & *** \\
+agriculture workers (\%) & 0.2438 & 0.1358 & -0.1079 & 0.000 & *** \\
+independent workers (\%) & 0.0907 & 0.0767 & -0.0140 & 0.000 & *** \\
+intermediate occupations (\%) & 0.1346 & 0.1794 & 0.0447 & 0.000 & *** \\
+clerical workers (\%) & 0.1748 & 0.2527 & 0.0779 & 0.000 & *** \\
+manual workers (\%) & 0.3130 & 0.2949 & -0.0180 & 0.000 & *** \\
+altitude & 5.4578 & 5.4675 & 0.0097 & 0.320 &  \\
+locality size & 7.2164 & 7.1916 & -0.0248 & 0.003 & ** \\
+distance to closest agglomeration & 10.3402 & 10.3422 & 0.0020 & 0.724 &  \\
+proportion of vacant housing (log) & 0.0993 & 0.0802 & -0.0191 & 0.000 & *** \\
+\bottomrule
+\end{tabular}
+
+\parbox{\textwidth}{\footnotesize \textit{Notes:} T-test comparison between 1988 and 2002 socioeconomic characteristics of the municipalities.}
+    
+\end{table}
+}
+
+%--- Section ---%
+%\section{Bartik Construction}
+%\label{app:bartik}
+
+%Using data from 1990 and 1999 censuses on employment disaggregated at the municipality level, I take the initial share of each employment sector and multiply it by the national sectoral growth over the period 1990-1999.\footnote{I use the NAF (Nomenclature d'Activités Française) which divides employment into six sectors: Intermediate professions, Workers, Employees, Executives and higher intellectual professions, Craftsmen, shopkeepers, and business owners and Farmers.} The variable has substantial variability across the almost 35,000 municipalities of my sample, ranging from -118.1\% to 42.9\%. Figure \ref{fig:bartik-FN} shows the binned scatter plots of the Bartik variable across the 1990-1999 period against the FN vote share in 2002. For a finer use of the Bartik approach to explain the FN vote, see \cite{davoine2019}.
+
+%\begin{figure}
+%    \centering
+%    \caption{Bartik variable 1990-1999 and FN vote share evolution 1988-2002}
+%    \label{fig:bartik-FN}
+%    \includegraphics[width=0.8\linewidth]{figures/bartik_vs_FN.png}
+%    \newline
+%    \vspace{0.2}
+
+%\parbox{\textwidth}{\footnotesize \textit{Notes:} The binned scatter plot of the FN vote share evolution rate between the 1988 and 1995 presidential elections and the bartik values over the 1990-1999 period. The negative correlation indicates that municipalities that experiences more growth increased less their support for the FN between 1988 and 2002.}
+    
+%\end{figure}
+
+
+
+%--- Section ---%
+\mycomment{
+
+\section{FN Constituency}
+\label{app:FN-constituency}
+
+I divide the sample into two groups - inside and outside the ZRR program - and reproduce the results of section \ref{fn-growth}. The results are displayed in figure \ref{app:FE_figures_treated}. Comparing the municipalities that entered the ZRR program in 1995 with those that did not, we observe that the coefficients for the former are much smaller (except for population size). Although the interpretation is not straightforward, it seems clear that something happened in the ZRR area. I argue that there might be a distinctive electoral behavior in areas that were exposed to a redistributive state policy.
+
+% FE_figures_treated
+\begin{figure}
+    \centering
+    \caption{Nonparametric Effect of several Locality Characteristics, as of 2002 on Support for FN over Time, by treatment status}
+    
+    \includegraphics[width=1\linewidth]{figures/FE_figures_treated.png}
+    \raggedright\footnotesize{\textit{Notes:} Same as Figure \ref{fig:FE_figures}, this time with two different samples. The dashed-line corresponds to the untreated population, whereas the full-line to the treated population (in ZRR).}
+    \label{app:FE_figures_treated}
+\end{figure}
+}
+%--- Section ---%
+\section{Alternative Distance Measure}
+\label{app:alternative-distance}
+
+ As an alternative, I use the distance from each locality's border to the nearest point on the program frontier as the running variable. This distance is negative for municipalities inside the program and positive for those outside, with the cutoff at zero. Figure \ref{fig:dist_distribution-noEpi} shows the map and distribution of the running variable.
+
+As before, the key assumption underpinning this strategy is that, conditional on county characteristics which affected the program eligibility, municipalities near the cutoff are similar in all respects other than their treatment status, allowing any discontinuities in outcomes to be attributed to the program effect.
+
+After presenting the balancing checks in Figure \ref{fig:RDD_balancing_combined_noEpi}, I estimate Equation \ref{eq2} and reproduce Figure \ref{fig:RDD_outcome_combined-2002} and Tables \ref{tab:rdd_results_diffbandwidth} and \ref{tab:rdd_results_10}.
+
+% Map and distribution of the running variable
+\begin{figure}
+    \centering
+    \caption{Map and distribution of the running variable}
+    \includegraphics[width=1\linewidth]{figures/distanceMapAndDistribution_epi.png}
+    \raggedright\footnotesize{\textit{Notes:} The map displays the running variable, the distance to the program frontier, by three categories: outside the ZRR program and more than 5km away from the frontier; in a 5km range around the frontier, both inside and outside the ZRR program; inside the ZRR program and more than 5km away from the frontier. The bottom graph shows the distribution of the distance to program frontier in meters. If the distance is negative, the locality is inside the ZRR program, outside otherwise.}
+    \label{fig:dist_distribution-noEpi}
+\end{figure}
+
+
+\subsection{Balancing checks}
+
+Figure \ref{fig:RDD_balancing_combined_noEpi} shows the balancing checks. There are some discontinuities around the cutoff value (0), implying that our identification is not good enough, and that the size of the municipalities seem to matter. In particular, Figure \ref{fig:FN1988_rdd_noEpi} shows that there is no discontinuity in the vote share for the FN in 1988.
+
+% RDD: balancing checks
+\begin{figure}[htbp]
+\caption{RDD: balancing checks with alternative distance measure}
+    \label{fig:RDD_balancing_combined_noEpi}
+
+    \begin{subfigure}{1\textwidth}
+        \includegraphics[width=\linewidth]{figures/RDD_plots_conditional_part1_noEpi.png}
+        \subcaption{Balancing Tests: Part 1}
+        \label{fig:RDD_balancing_part1_noEpi}
+    \end{subfigure}
+
+\end{figure}    
+\begin{figure}\ContinuedFloat
+    \begin{subfigure}{1\textwidth}
+        \includegraphics[width=\linewidth]{figures/RDD_plots_conditional_part2_noEpi.png}
+        \subcaption{Balancing Tests: Part 2}
+        \label{fig:RDD_balancing_part2_noEpi}
+    \end{subfigure}
+    
+\parbox{\textwidth}{\footnotesize \textit{Notes:} Balancing tests:  I plot the residuals of the control variable on the control variables, the department fixed effects and the treatment status (as in equation 2. I also report the estimate of the treatment effect (which should be null and not significant) at the top of each graph. The chosen bandwidth is 10 kilometers around the cutoff.}
+    
+\end{figure}
+
+% Vote Share for FN in 1988
+\begin{figure}
+    \centering
+    \caption{Vote Share for FN in 1988 (placebo test)}
+    \includegraphics[width=1\linewidth]{figures/RDD_plots_conditional_FN1988_noEpi.png}
+    
+    \label{fig:FN1988_rdd_noEpi}
+\parbox{\textwidth}{\footnotesize \textit{Notes:} Balancing test for the vote share for FN in 1988. Remarkably, there is no big discontinuity around the cutoff.}
+    
+\end{figure}
+
+\subsection{Results}
+
+Figure \ref{fig:RDD_outcome_combined-noEpi} shows the main discontinuity results on the outcome variables. Table \ref{tab:rdd_results_diffbandwidth-noEpi} reports the estimation of the model on different bandwidths, and Table \ref{tab:rdd_results_10-noEpi} reports the estimation on different model specifications. The results are consistent and, although larger than with the original distance measure, similar: The ZRR program reduced the FN vote shares in 2002 by 0.5 percentage points on average.
+
+% RDD_outcome_combined_noEpi
+
+\begin{figure}[h!]
+    \centering
+    % First subfigure
+    \begin{subfigure}[b]{0.95\textwidth}
+        \centering
+        \includegraphics[width=\textwidth]{figures/RDD_plots_conditional_outcomes_20000_noEpi.png}
+        \caption{Bandwidth of 20 kilometers}
+    \end{subfigure}
+    
+    \vspace{0.5cm} % Optional space between the subfigures
+    
+    % Second subfigure
+    \begin{subfigure}[b]{0.95\textwidth}
+        \centering
+        \includegraphics[width=\textwidth]{figures/RDD_plots_conditional_outcomes_10000_noEpi.png}
+        \caption{Bandwidth of 10 kilometers}
+    \end{subfigure}
+    
+    % Main caption
+    \caption{RDD: main results}
+    \label{fig:RDD_outcome_combined-noEpi}
+    
+    \begin{tablenotes}
+      \footnotesize
+      \item \textit{Notes:} I plot the residuals of the main outcome variables on the control variables and the department fixed effects. The chosen bandwidths are 20 and 10 kilometers around the cutoff. The shaded areas around the trend lines represent confidence intervals.
+    \end{tablenotes}
+    
+    
+\end{figure}
+
+
+
+% Main results, different bandwidths
+\begin{table}[!htbp] \centering 
+  \caption{Main results, different bandwidths (shortest distance between borders, not epicenters)} 
+  \label{tab:rdd_results_diffbandwidth-noEpi} 
+\begin{tabular}{@{\extracolsep{5pt}}lccc} 
+\\[-1.8ex]\hline 
+\hline \\[-1.8ex] 
+ & \multicolumn{3}{c}{\textit{Dependent variable:}} \\ 
+\cline{2-4} 
+\\[-1.8ex] & \multicolumn{3}{c}{FN vote share in 2002} \\ 
+ & Bandwidth = 20000 & Bandwidth = 10000 & Bandwidth = 5000 \\ 
+\\[-1.8ex] & (1) & (2) & (3)\\ 
+\hline \\[-1.8ex] 
+ Treatment ZRR & $-$0.007$^{***}$ & $-$0.005$^{***}$ & $-$0.005$^{***}$ \\ 
+  & (0.001) & (0.001) & (0.001) \\ 
+  & & & \\ 
+ Distance to Frontier & 0.0002$^{*}$ & 0.0004$^{**}$ & 0.0004 \\ 
+  & (0.0001) & (0.0001) & (0.0003) \\ 
+  & & & \\ 
+\hline \\[-1.8ex] 
+Observations & 21,471 & 16,437 & 12,074 \\ 
+R$^{2}$ & 0.500 & 0.476 & 0.465 \\ 
+\hline 
+\hline \\[-1.8ex] 
+\end{tabular} 
+\parbox{\textwidth}{\footnotesize \textit{Notes:} Control variables and department fixed effects are added to each regression. Standard errors are clustered at the canton level.}
+
+\end{table} 
+
+% different specifications
+\begin{table}[!htbp]
+\caption{Main results when bandwidth is 10 km, different specifications (distance from border, not epicenter)} 
+\label{tab:rdd_results_10-noEpi}
+\centering
+\small
+\begin{tabular}{@{\extracolsep{3pt}}lccccc} 
+\\[-1.8ex]\hline 
+\hline \\[-1.8ex] 
+ & \multicolumn{5}{c}{\textit{Dependent variable:}} \\ 
+\cline{2-6} 
+\\[-1.8ex] & \multicolumn{5}{c}{FN vote share in 2002} \\ 
+\\[-1.8ex] & (1) & (2) & (3) & (4) & (5)\\ 
+\hline \\[-1.8ex] 
+ treatment ZRR & $-$0.013$^{***}$ & $-$0.012$^{***}$ & $-$0.008$^{***}$ & $-$0.010$^{***}$ & $-$0.005$^{***}$ \\ 
+  & (0.001) & (0.001) & (0.001) & (0.001) & (0.001) \\ 
+  & & & & & \\ 
+ Shortest distance from Frontier & 0.002$^{***}$ & 0.002$^{***}$ & 0.001$^{***}$ & 0.001$^{***}$ & 0.0004$^{**}$ \\ 
+  & (0.0002) & (0.0002) & (0.0001) & (0.0001) & (0.0001) \\ 
+  & & & & & \\ 
+ Municipality size &  & $-$0.006$^{***}$ & $-$0.004$^{***}$ & $-$0.008$^{***}$ & $-$0.003$^{***}$ \\ 
+  &  & (0.001) & (0.001) & (0.001) & (0.001) \\ 
+  & & & & & \\ 
+ Constant & 0.172$^{***}$ & 0.213$^{***}$ & 0.222$^{***}$ & 0.155$^{***}$ & 0.168$^{***}$ \\ 
+  & (0.001) & (0.005) & (0.006) & (0.012) & (0.012) \\ 
+  & & & & & \\ 
+\hline \\[-1.8ex] 
+Controls & False & False & False & True & True \\ 
+Dept FE & False & False & True & False & True \\ 
+Observations & 14,263 & 14,263 & 14,263 & 14,263 & 14,263 \\ 
+R$^{2}$ & 0.027 & 0.031 & 0.339 & 0.283 & 0.464 \\ 
+\hline 
+\hline \\[-1.8ex] 
+\end{tabular} 
+\parbox{\textwidth}{\footnotesize \textit{Notes:} I restrict the sample to the municipalities located 10km at most from the frontier program and run the specification with controls and place fixed effects. The standard errors are clustered at the county level. $^{*}$p$<$0.1; $^{**}$p$<$0.05; $^{***}$p$<$0.01}
+\end{table}
+
+
+
+%--- Section ---%
+\section{Matching Strategy for Border municipalities}
+\label{app:border-matching}
+
+To address the initial imbalance between the treated and control groups in my comparison of border municipalities, I employ propensity score matching (PSM). This method estimates the probability of each locality being included in the ZRR program based on observed covariates and then matches treated and control municipalities with similar propensity scores. To improve the quality of matches, I used a caliber parameter of 0.2, which restricts the maximum allowable difference in propensity scores between matched pairs to 0.2 standard deviations of the logit of the propensity scores. Using this procedure, I match 11,604 pairs of municipalities and remove 1,698 of them.
+
+
+Table \ref{tab:ttest-border-matching}, similarly to Table \ref{tab:ttest-border}, displays the balancing tests. The main variables of interest are quite well balanced, although some imbalances remain. Table \ref{tab:border-results-matching} presents the main results (similarly to Table \ref{tab:border-results}. The estimated effect of the ZRR program is similar, although slightly stronger (0.6 p.p. instead of 0.5 p.p. without matching).
+
+Table \ref{tab:border-results-matching}, similarly to Table \ref{tab:border-results}, presents the regression results of the effect of the ZRR program on the vote share for the FN in 2002, using a matched sample of 9,906 pairs of border municipalities. In all specifications, the treatment coefficient is negative and statistically significant at the 1\% level. 
+
+
+
+
+
+% ttest
+\begin{table}[!htbp] 
+\small
+\centering 
+  \caption{Comparison of Residual Means between Control and Treatment Groups with T-Test Results, after matching} 
+  \label{tab:ttest-border-matching} 
+\begin{tabular}{@{\extracolsep{5pt}} lcccc} 
+\\[-1.8ex]\hline 
+\hline \\[-1.8ex] 
+variable & Control & Treatment & p-value & Significance \\ 
+\hline \\[-1.8ex] 
+Unemployed (\%) & -8e-04 & 8e-04 & 0.2286 &  \\ 
+Vote share for FN in 1988 & 0 & 0 & 0.9526 &  \\ 
+Population change in p.p. 1982-1990 & 0.0027 & -0.0027 & 0.0833 &  \\ 
+Population & 6.9387 & -6.9387 & 0.2224 &  \\ 
+Employed (\%) & 3e-04 & -3e-04 & 0.8252 &  \\ 
+Foreigners (\%) & 2e-04 & -2e-04 & 0.43 &  \\ 
+OPI per 1000 inhabitants & -0.0278 & 0.0278 & 1e-04 & \textasteriskcentered \textasteriskcentered \textasteriskcentered  \\ 
+No diploma (\%) & 7e-04 & -7e-04 & 0.36 &  \\ 
+Academic education (\%) & 3e-04 & -3e-04 & 0.2386 &  \\ 
+Highschool education (\%) & 8e-04 & -8e-04 & 0.0106 & \textasteriskcentered  \\ 
+Technical education (\%) & 5e-04 & -5e-04 & 0.2742 &  \\ 
+Proportion of 20-40, men & 7e-04 & -7e-04 & 0.0902 &  \\ 
+Proportion of 20-40, women & 4e-04 & -4e-04 & 0.2675 &  \\ 
+Agriculture workers (\%) & -7e-04 & 7e-04 & 0.2096 &  \\ 
+Independant workers (\%) & -1e-04 & 1e-04 & 0.913 &  \\ 
+Intermediate occupations (\%) & 1e-04 & -1e-04 & 0.8638 &  \\ 
+Clerical workers (\%) & 2e-04 & -2e-04 & 0.6826 &  \\ 
+Manual workers (\%) & 0 & 0 & 0.9695 &  \\ 
+Altitude & -0.0088 & 0.0088 & 0.0116 & \textasteriskcentered  \\ 
+Locality size & -0.0153 & 0.0153 & 0.003 & \textasteriskcentered \textasteriskcentered  \\ 
+Distance to closest agglomeration & -0.0015 & 0.0015 & 0.6165 &  \\ 
+Proportion of vacant housing (log) & -3e-04 & 3e-04 & 0.5191 &  \\ 
+Fences per km2 & -0.014 & 0.014 & 0.1291 &  \\ 
+Vines per km2 & 0.0497 & -0.0497 & 6e-04 & \textasteriskcentered \textasteriskcentered \textasteriskcentered  \\ 
+\hline \\[-1.8ex] 
+\end{tabular} 
+\parbox{\textwidth}{\footnotesize \textit{Notes:} The table displays the means of the residuals of the regression of the variable on the department fixed effects along with the other set of controls. The right columns show the significance of the t-test to compare both groups among the border municipalities. The sample corresponds to the matched municipalities.}
+
+\end{table} 
+
+% results
+\begin{table}[!htbp] 
+\centering 
+\small
+  \caption{Border municipalities: regression Results} 
+  \label{tab:border-results-matching} 
+\begin{tabular}{@{\extracolsep{2pt}}lcccc} 
+\\[-1.8ex]\hline 
+\hline \\[-1.8ex] 
+ & \multicolumn{4}{c}{\textit{Dependent variable:}} \\ 
+\cline{2-5} 
+\\[-1.8ex] & \multicolumn{4}{c}{The vote share for FN in 2002} \\ 
+\\[-1.8ex] & (1) & (2) & (3) & (4)\\ 
+\hline \\[-1.8ex] 
+ treatmentZRR & $-$0.008$^{***}$ & $-$0.007$^{***}$ & $-$0.005$^{***}$ & $-$0.005$^{***}$ \\ 
+  & (0.001) & (0.001) & (0.001) & (0.001) \\ 
+  & & & & \\ 
+ Constant & 0.171$^{***}$ & 0.224$^{***}$ & 0.297$^{***}$ & 0.295$^{***}$ \\ 
+  & (0.001) & (0.021) & (0.021) & (0.083) \\ 
+  & & & & \\ 
+\hline \\[-1.8ex] 
+Controls & No & Yes & Yes & Yes \\ 
+Department Fixed Effects & No & No & Yes & No \\ 
+Border pair Fixed Effects & No & No & No & Yes \\ 
+Observations & 9,906 & 9,906 & 9,906 & 9,906 \\ 
+R$^{2}$ & 0.004 & 0.304 & 0.499 & 0.821 \\ 
+\hline 
+\hline \\[-1.8ex] 
+& \multicolumn{4}{r}{$^{*}$p$<$0.1; $^{**}$p$<$0.05; $^{***}$p$<$0.01} \\ 
+\end{tabular} 
+
+
+\parbox{\textwidth}{\footnotesize \textit{Notes:} The table presents the regression results of the effect of the ZRR program on the vote share for the FN in 2002, using a sample of 11,604 pairs of border municipalities that are in the same department. Specification (1) shows the simplest model with no controls. Specification (2) includes control variables. Specification (3) adds department fixed effects to the model. Specification (4) includes border pair fixed effects.}
+
+\end{table} 
+
+
+
+%--- Section ---%
+\section{Signal effect: 1995 Elections}
+\label{app:1995signal}
+
+I do not need to perform the balancing checks again and I immediately jump to the estimation of the effect of the ZRR program on the results of the 1995 presidential elections.
+
+Similarly to Figure \ref{fig:RDD_outcome_combined-2002}, Figure \ref{fig:RDD_outcome_combined-1995} shows the plots of the residuals of the FN vote share in the 1995 presidential elections, after regressing on the control variables and the place fixed effects (department) against the distance to the program frontier. I now estimate the main model as described in equation \ref{eq2}, this time with FN1995 as the dependant variable. I report the estimates in Table \ref{tab:rdd_results_outcomes_10-1995} with different specifications.  Table \ref{tab:rdd_results_diffbandwidth-1995} reports the estimates with different bandwidths. 
+
+%% RDD figures, FN1995
+\begin{figure}[htbp]
+    \caption{RDD: ZRR effect on 1995 FN Vote share}
+    \label{fig:RDD_outcome_combined-1995}
+    \centering
+        \includegraphics[width=\linewidth, height=0.5\textwidth]{figures/RDD_plots_conditional_outcomes1995.png}
+\parbox{\textwidth}{\footnotesize \textit{Notes:} I plot the residuals of the vote share for the FN in the 1995 presidential elections on the control variables, the department fixed effects. The chosen bandwidths are 20, 10 and 5 kilometers around the cutoff. The shaded areas around the trend lines represent confidence intervals.}
+    
+\end{figure}
+
+%% Main results, different specifications
+\begin{table}[!htbp]
+\centering
+\small
+\caption{Main results when bandwidth is 10 km, different specifications} 
+\label{tab:rdd_results_outcomes_10-1995}
+\begin{tabular}{@{\extracolsep{3pt}}lccccc} 
+\\[-1.8ex]\hline 
+\hline \\[-1.8ex] 
+ & \multicolumn{5}{c}{\textit{Dependent variable:}} \\ 
+\cline{2-6} 
+\\[-1.8ex] & \multicolumn{5}{c}{FN vote share in 2002} \\ 
+\\[-1.8ex] & (1) & (2) & (3) & (4) & (5)\\ 
+\hline \\[-1.8ex] 
+ treatment ZRR & $-$0.005$^{*}$ & $-$0.005$^{*}$ & $-$0.004$^{**}$ & $-$0.004$^{*}$ & $-$0.003$^{*}$ \\ 
+  & (0.002) & (0.002) & (0.002) & (0.002) & (0.001) \\ 
+  & & & & & \\ 
+ Distance to Frontier & 0.002$^{***}$ & 0.002$^{***}$ & 0.001$^{***}$ & 0.001$^{***}$ & 0.0002 \\ 
+  & (0.0002) & (0.0002) & (0.0002) & (0.0002) & (0.0001) \\ 
+  & & & & & \\ 
+ Municipality size &  & $-$0.005$^{***}$ & $-$0.004$^{***}$ & $-$0.006$^{***}$ & $-$0.002$^{*}$ \\ 
+  &  & (0.001) & (0.001) & (0.001) & (0.001) \\ 
+  & & & & & \\ 
+ Constant & 0.135$^{***}$ & 0.167$^{***}$ & 0.179$^{***}$ & 0.150$^{***}$ & 0.135$^{***}$ \\ 
+  & (0.001) & (0.005) & (0.006) & (0.012) & (0.011) \\ 
+  & & & & & \\ 
+\hline \\[-1.8ex] 
+Controls & False & False & False & True & True \\ 
+Dept FE & False & False & True & False & True \\ 
+Observations & 14,262 & 14,262 & 14,262 & 14,262 & 14,262 \\ 
+R$^{2}$ & 0.035 & 0.038 & 0.398 & 0.353 & 0.562 \\ 
+\hline 
+\hline \\[-1.8ex] 
+\end{tabular} 
+\parbox{\textwidth}{\footnotesize \textit{Notes:} I restrict the sample to the municipalities located 10km at most from the frontier program and run the specification with controls and place fixed effects. The standard errors are clustered at the county level. $^{*}$p$<$0.1; $^{**}$p$<$0.05; $^{***}$p$<$0.01}
+\end{table}
+
+%% Main results, different bandwidths
+\begin{table}[!htbp] 
+\centering 
+\small
+\caption{Main results, different bandwidths} 
+\label{tab:rdd_results_diffbandwidth-1995} 
+\begin{threeparttable}
+\begin{tabular}{@{\extracolsep{2pt}}lccc} 
+\\[-1.8ex]\hline 
+\hline \\[-1.8ex] 
+ & \multicolumn{3}{c}{\textit{Dependent variable: Vote Share for FN in 1995}} \\ 
+\cline{2-4} 
+ & Bandwidth = 20km & Bandwidth = 10km & Bandwidth = 5km \\ 
+\\[-1.8ex] & (1) & (2) & (3)\\ 
+\hline \\[-1.8ex] 
+ Treatment ZRR & $-$0.004$^{***}$ & $-$0.003$^{*}$ & $-$0.002 \\ 
+  & (0.001) & (0.001) & (0.002) \\ 
+  & & & \\ 
+ Distance to Frontier & 0.0002$^{***}$ & 0.0002 & 0.0003 \\ 
+  & (0.0001) & (0.0001) & (0.0004) \\ 
+  & & & \\ 
+ Constant & 0.137$^{***}$ & 0.135$^{***}$ & 0.137$^{***}$ \\ 
+  & (0.009) & (0.011) & (0.016) \\ 
+  & & & \\ 
+\hline \\[-1.8ex] 
+Observations & 20,363 & 14,262 & 8,972 \\ 
+R$^{2}$ & 0.591 & 0.562 & 0.552 \\ 
+\hline 
+\hline \\[-1.8ex] 
+\end{tabular} 
+\begin{tablenotes}
+  \footnotesize
+  \item \textit{Notes:} $^{*}$p$<$0.05; $^{**}$p$<$0.01; $^{***}$p$<$0.001. Standard errors are clustered at the county level. Controls and department fixe effects are included in all regressions.
+\end{tablenotes}
+\end{threeparttable}
+\end{table}
+
+
+Municipalities benefiting from the ZRR program seem to have experienced a 0.3-0.4 percentage point reduction in National Front (FN) vote share in the 1995 presidential election. However, the discontinuity is not visible on the graph, and the effects become less pronounced and statistically insignificant at narrower bandwidths (10,000 and 7,500). I conclude that there is no clear effect of the 1995 elections of the ZRR program, and that the "signaling effect", if it exists, is very small.
+
+
+%--- Section ---%
+\section{Heterogeneity}
+\label{app:hetero}
+
+Following \cite{athey2017}, I define the Conditional Average Treatment Effect (CATE) as:
+
+\begin{equation}
+\tau(x) = E[Y_{i1} - Y_{i0} | X_{i} =x ]
+\end{equation}
+
+where x denotes a specific value of or a range of values (representing a subspace of the feature space). CATEs represent ATEs for specific subgroups of municipalities. Since I restrict the sample to a sub-population, I expect my estimations to be more "noisy".
+
+A first naive approach is to estimate the following model:
+\begin{equation}
+Y_{i} = \alpha + \tau D_{i} + \beta X_{i} + \gamma D_{i}X{i} + u_{i}
+\end{equation}
+
+This method becomes unmanageable when the quantity of attributes and interaction terms significantly outweighs the number of observations. Instead, still following \cite{athey2017}, I use a regression tree to partition the attribute space. Meaning, I split my sample several times, following a consistent splitting rule. Then, I compute, for each of these groups, the CATE.  \cite{athey2017} propose several splitting rule to partition the sample. I follow the Honest causal tree approach, according to which the split must increase treatment effect heterogeneity and reduce the uncertainty about the estimated effect. More precisely, I implement the \cite{Wager2018} solution of Causal Forests.
+
+
+
+
+
+\end{appendices}

@@ -1,0 +1,66 @@
+\section{Introduction}
+
+% Motivation
+Can state policies reduce support for populism? The causes of populist voting have garnered significant interest in the scientific community (\cite{Guriev2022}). However, few studies have explored whether state policies can mitigate the rise of populism and directly address the underlying causes of social discontent.
+
+This literature suggests that feelings of being "left behind" economically, culturally, or geographically, may play a central role in the surge of populist support. When individuals perceive that they have been excluded from the benefits of globalization or national prosperity, they may become more susceptible to anti-establishment and populist appeals.
+
+I propose to evaluate the effect of a French Enterprise-Zone (EZ) on voting for the main right populist party, the FN. The ZRR (Zone de Revitalization Rurale) aimed to promote economic development, boost employment, and encourage population retention and attraction in low-density rural areas in France. The ZRR program, officially launched in September 1996, covered about 39\% of the French territory but only around 8\% of the population. The budgetary cost between 1995 and 2005 (first phase of the program) was approximately of 100 million euros and 400 million euros after 2005 (second phase). Although the ZRR program was not specifically designed to counter populism, it may influence populist voting through two potential mechanism. First, such a redistribution policy might enhance the socioeconomic and sociodemographic conditions of its recipients, thereby reducing social distress and discontent. Second, these transfers could reduce feelings of alienation and frustration among local communities toward the central state by affirming that they, too, share in the benefits of national growth. In turn, this may help to reduce populist sentiments in electoral outcomes.
+
+
+
+
+The causal channels can be summarized as follows:
+\vspace{0.5cm}
+
+\begin{tikzpicture}[
+  node distance=2cm and 3cm,
+  every node/.style={draw, align=center, minimum width=3cm, minimum height=1.5cm},
+  arrow/.style={-{Stealth}}
+]
+
+% Nodes
+\node (zrr) {ZRR program};
+\node (socio) [right=of zrr] {socioeconomic and \\ demographic \\ outcomes};
+\node (populist) [right=of socio] {populist support};
+
+\node (state) [below=1.5cm of zrr, xshift=1.5cm] {state signaling};
+\node (isolation) [right=of state] {sense of neglect and alienation};
+
+% Arrows
+\draw [arrow] (zrr) -- (socio);
+\draw [arrow] (socio) -- (zrr);
+\draw [arrow] (socio) -- (populist);
+\draw [arrow, dashed] (socio) -- (isolation);
+\draw [arrow] (zrr) -- (state);
+\draw [arrow] (state) -- (isolation);
+\draw [arrow] (isolation) -- (populist);
+
+\end{tikzpicture}
+
+The main obstacle to a clean identification of a causal effect of the ZRR program is that socioeconomic and demographic variables both influence the electoral behavior and the eligibility of the municipalities to the ZRR program. 
+
+I overcome this challenge by employing several complementary empirical strategies, the main one being a spatial regression discontinuity design (RDD). This approach leverages the fact that the program's criteria were applied at the county (\textit{canton}) and district (\textit{arrondissement}) levels, two administrative tiers above the municipal (\textit{commune}) level. Consequently, many small municipalities outside the program are in fact comparable to those within it. From 1990 to 2004, France had 4,055 counties with considerable population diversity, each containing an average of 9 municipalities and 14,723 inhabitants. In my baseline sample, which includes municipalities within a 10-kilometer radius of the program boundary, there were 1,833 counties, each with 8 municipalities and an average of 9,391 inhabitants.\footnote{See Table \ref{tab:summary_stats_combined}} My identification strategy relies on the assumption that, conditional on the demographic characteristics of the county that influenced its eligibility chances to the ZRR program, there should be no major differences between municipalities that are geographically close to each other but separated by the treatment frontier.
+
+The main finding is that the ZRR program reduced electoral support for the National Front (FN) by 0.3-0.5 percentage points, which, given the average FN vote share of 17\% in my sample, represents a decrease of 3-5\%. This result is sensitive but remains robust across different sample selections. Notably, the effect holds when narrowing the sample from municipalities within a 40km radius of the program boundary to those within just 10km. Further restricting the sample to only the municipalities directly on the border yields similar estimates. Eventually, the results provide causal evidence that geographic-based distribution can mitigate populist support. 
+
+Studying the mechanisms is challenging. I find no conclusive evidence that the ZRR had any effect on various socioeconomic outcomes. There are two possible explanations. First, the identification strategy may lack robustness, potentially insufficient in statistical power or affected by endogeneity, limiting its ability to detect a clear effect of the redistribution policy. Second, the ZRR may have been unsuccessful in improving the recipients' socioeconomic conditions, as shown in \cite{BEHAGHEL20151}, suggesting that the observed effect on the populist vote is not driven by the usual socioeconomic factors. How can we interpret this result, then? I propose the hypothesis of "state signaling" and provide some evidence. The ZRR program was seen as an attempt by the central state to reduce the socioeconomic isolation of rural areas and promote national equity. It was well-received by rural populations and their mayors. As I show below, when the parliament tried to reduce the program's size in 2013, rural mayors pressured to have it reinstated. This indicates that, although the economic impact of the program may have been limited, it was highly valued by elected officials and by rural populations. To the extent that feelings of alienation were a cause for populist voting, the central government inadvertently mitigated them by demonstrating that it cared for the treated counties, even if its efforts were ineffective. This state signaling effect could be the one that mitigates the populist support. 
+
+% Contribution
+This paper contributes to the rapidly expanding literature on the socioeconomic and demographic determinants of populism in Western countries. As noted by \cite{Inglehart2016}, it is challenging to disentangle economic causes (such as industrial decline, trade globalization, automation, the 2008-09 global financial crisis, and austerity) from cultural ones (such as reactions against cultural changes, social-status shifts, and immigration).\footnote{\cite{Inglehart2016}; \cite{Margalit2022}; \cite{Algan2017}; \cite{BACCINI_WEYMOUTH_2021}; \cite{Ferrara2023}; \cite{Colantone2018}; \cite{Autor2020}; \cite{Malgouyres}; \cite{Dippel2015} ; \cite{Fetzer2019}; and many more} However, in a context where these factors reinforce each other interactively (\cite{Gidron2017}), policies aimed at redistribution and reducing regional inequalities can address both causes simultaneously.
+
+Globalization creates a clear political divide between those left behind in rural or deindustrialized areas and the "trailblazers" in dense, cosmopolitan, and globalized cities.\footnote{"Les premiers de cordée" (the trailblazers), phrase used by E. Macron in 2018.} \cite{Goodhart} distinguishes between the "somewheres," who are more conservative and rooted in their local communities, and the "anywheres," who are more liberal and geographically mobile. Although this distinction does not fully capture the complexity and diversity of attitudes towards globalization, it is clear that rising social discontent is unevenly distributed across territories. This grants the welfare state a crucial role in addressing globalization-linked inequalities (\cite{Samuelson}, \cite{Stiglitz}, \cite{NBERw22676}).
+
+Firstly, austerity measures and public service closures are expected to increase support for populist parties. In the UK, \cite{Fetzer2019} showed that less austerity could have prevented Brexit, while \cite{Vries} argue that closures in the National Health Service increased support for populist right parties. Exploiting an Italian reform in 2010 that reduced access to local public services in municipalities with fewer than 5,000 residents, \cite{Cremaschi} show that public service deprivation plays a crucial role in the increasing support for far-right parties in small municipalities. Our paper also employs a Difference-in-Differences (DID) methodology to assess wether the ZRR program mitigated support for far-right parties. We further enhance the robustness of our findings by incorporating a spatial Regression Discontinuity Design (RDD) approach. Secondly, the main policy implication of the winner-loser analysis is that appropriate redistributive policies aimed at compensating the losers should mitigate electoral support for populist parties. Reducing inequalities between the "geo-social classes" (\cite{Piketty}) should reduce electoral polarization between these groups.\footnote{"What is called the geo-social class is a mix of classical social classes (wealth, property, etc.), but also the integration into a territorial and productive fabric. For the same wealth, for the same income, it is not the same to live in a metropolis or in a village. If you are a worker exposed to international competition living in towns and villages, you will have, for example, a perception of international economic integration and commercial competition that can, over time, make you very skeptical of the successive left and right governments that created the current Europe, leading you to vote for the FN (National Front) and RN (National Rally). According to us, this is not primarily an anti-immigrant vote but perhaps a vote expressing a feeling of abandonment on the economic front." (https://www.radiofrance.fr/franceinter/podcasts/grand-canal/grand-canal-du-mardi-19-septembre-2023-3850330, translated by the author)} 
+
+Less evidence exists regarding the state's ability to reduce support for populist parties by allocating resources or attention to the periphery.
+
+Evidence from Italy (\cite{ALBANESE2022}) showed that larger EU financing in the 2013 general election led to a drop in populism by about 9\% of the mean of the dependent variable. In the British context, \cite{Becker2017} found no correlation between EU Structural funds and the Leave share. Despite the apparent policy consensus emerging from this analysis, our understanding of the effectiveness of redistribution in mitigating populism remains quite limited. To my knowledge, the aforementioned papers are the only ones that provide causal evidence for the redistribution effect. 
+
+This paper aims to fill this gap in the French context by looking at a rural-oriented development program. Beyond providing evidence from a different country, this study contributes in three key ways. First, it evaluates a large-scale, nationally funded redistribution program, which covered approximately 8\% of the French population, about 4.5 million people. Second, the ZRR program targets rural areas based on demographic and economic thresholds, providing a natural and spatially precise setting for causal inference. Third, the study leverages a combination of Difference-in-Differences and spatial RDD designs, allowing for high internal validity. Notably, the ZRR program is the largest redistribution initiative for which electoral impacts have been measured. Additionally, this paper provides precise estimates of the ZRR effect because of the large sample of municipalities I build (France has about 35,000 communes).
+
+The remainder of the paper is structured as follows. Section \ref{background} describes the background details and the data. 
+Section \ref{fn-growth} presents some stylized facts on the FN growth. Section \ref{RDD} illustrates my identification framework and presents the main results as well as the robustness tests. I discuss these results in section \ref{results}. Section \ref{conclusion} concludes.
+
+
+

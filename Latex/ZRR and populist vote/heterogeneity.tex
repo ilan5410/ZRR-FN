@@ -1,0 +1,29 @@
+\subsection{Heterogeneity}
+
+[YS: This part needs a conclusion, and also a clearer motivation. Think of a concrete story that it tells. If it's hard to make up something, then this at best belongs in an appendix]
+
+IP: I suggest removing this part. Not sure what it adds.
+
+There are reasons to suspect that the ZRR treatment may impact municipalities differently. Younger populations might have a better response to the employment incentives, field owners may find it easier to create jobs in agriculture areas. In terms of policy implication, gaining insights into treatment effect heterogeneity allows for more effective treatment allocation. 
+
+I discuss and implement 4 different methods to estimate heterogeneous treatment effects: OLS with interaction terms, Post-selection Lasso, Causal Trees and Causal Forests.\footnote{See Appendix \ref{app:hetero} for more details on the methodology.} I compare the heterogeneity identified by each of these methods, and compare the Conditional Average Treatment Effect (CATE). Figure \ref{fig:heterogeneity} displays the distribution of the different CATEs for each method along with the mean values.\footnote{I follow \cite{Athey2015RecursivePF} and \cite{Wager2018} for the Causal Trees and Forests}
+
+Focusing on the Causal Forest CATEs, I first identify two distinct sub-samples based on the distribution of treatment effects estimated using the causal forest model. Specifically, I focus on the bottom 10\% and top 10\% of the distribution. The bottom 10\% group represents the observations most negatively affected by the treatment, while the top 10\% group represents those most positively affected. I report the descriptive statistics of those two groups in Table \ref{tab:heterogeneity} and perform t-tests to compare them. It looks like the main differences between the two groups are the share of employed residents, the number of OPI per inhabitants, the share of unqualified inhabitants, the proportion of vacant housing and the locality size.
+
+% heterogeneity figure
+\begin{figure}
+    \centering
+    \caption{Comparison of Heterogeneity Effects}
+    \includegraphics[width=1\linewidth]{figures/heterogeneity_effects.png}
+    \label{fig:heterogeneity}
+    \raggedright\footnotesize{\textit{Notes:} This figure presents histograms of the heterogeneity effects estimated by four different methods: OLS, Post-selection Lasso, Causal Tree, and Causal Forest. Each panel shows the distribution of these effects, with the mean value annotated at the top left of each histogram. }
+    
+\end{figure}
+
+% ttest top10 and bottom10 
+\input{tables/heterogeneity_causal.tex}
+
+
+\parbox{\textwidth}{\footnotesize \textit{Notes:} The table presents a comparison between the top 10\% and bottom 10\% of the treatment effect distribution as estimated by the Causal Forest Model. The columns display the mean values of key socioeconomic and demographic variables for both groups, the p-value from a t-test comparing the means, and significance levels indicated by stars (*** p < 0.01, ** p < 0.05, * p < 0.1). This comparison highlights the characteristics of the groups most and least affected by the treatment.}
+
+\end{table} 

@@ -1,0 +1,74 @@
+
+% Encoding and language
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage[british]{babel}
+\usepackage{csquotes} % Required for biblatex with APA style
+
+% Margins and spacing
+\usepackage[a4paper, top=2cm, bottom=2cm, left=2.5cm, right=2.5cm]{geometry}
+\usepackage{setspace}
+\onehalfspacing
+\usepackage{makecell}
+\usepackage{pdflscape}
+
+% Bibliography with APA style (only biblatex)
+\usepackage[style=apa, backend=biber]{biblatex}
+\addbibresource{references.bib}
+\DeclareLanguageMapping{british}{british-apa}
+
+% Maths
+\usepackage{amsmath, amsfonts, mathrsfs}
+
+% Tables and figures
+\usepackage{booktabs, threeparttable, caption, float, adjustbox, rotating, colortbl, diagbox}
+\captionsetup[table]{position=top}
+\usepackage{subcaption}
+\usepackage{tabularray}
+
+% Algorithms and code
+\usepackage{algorithm}
+\usepackage{algpseudocode}
+\usepackage{listings}
+
+% Graphics and plots
+\usepackage{graphicx, tikz}
+\usetikzlibrary{arrows.meta, positioning}
+\usepackage{pgfplots}
+\pgfplotsset{compat=1.18}
+
+% Other utilities
+\usepackage{authblk}
+\usepackage{enumitem}
+\usepackage{titlesec}
+\usepackage{hyperref}
+\hypersetup{colorlinks=true, allcolors=blue}
+\usepackage{lineno}
+\renewcommand\linenumberfont{\normalfont\scriptsize\sffamily\color{blue}}
+\rightlinenumbers
+% \linenumbers % Uncomment to enable line numbers
+
+% Optional: custom subsection style
+\titleformat{\section}{\normalfont\Large\bfseries}{\thesection.}{1em}{}
+
+% Custom fourth-level section
+\newcommand{\subsubsubsection}[1]{%
+  \vspace{\baselineskip}%
+  \noindent\textbf{#1\\}\quad%
+}
+
+% Unnumbered list
+\makeatletter
+\newenvironment{unlist}{%
+  \begin{list}{}{%
+    \setlength{\labelwidth}{0pt}%
+    \setlength{\labelsep}{0pt}%
+    \setlength{\leftmargin}{2em}%
+    \setlength{\itemindent}{-2em}%
+    \setlength{\topsep}{\medskipamount}%
+    \setlength{\itemsep}{3pt}%
+  }%
+}{%
+  \end{list}%
+}
+\makeatother

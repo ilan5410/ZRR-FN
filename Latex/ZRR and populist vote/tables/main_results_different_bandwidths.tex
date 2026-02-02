@@ -1,0 +1,34 @@
+\begin{table}[!htbp]
+\centering
+\small
+\caption{Main results, different bandwidths}
+\label{tab:rdd_results_diffbandwidth}
+\begin{threeparttable}
+\begin{tabular}{@{\extracolsep{2pt}}lccc}
+\\[-1.8ex]\hline
+\hline \\[-1.8ex]
+ & \multicolumn{3}{c}{\textit{Dependent variable: Vote Share for FN in 2002}} \\
+\cline{2-4}
+ & Bandwidth = 20,000 & Bandwidth = 10,000 & Bandwidth =  5,000 \\
+\\[-1.8ex] & (1) & (2) & (3)\\
+\hline \\[-1.8ex]
+ZRR & $-$0.0059*** & $-$0.0044* & $-$0.0035 \\
+  & (0.0017) & (0.0020) & (0.0028) \\
+  & & & \\
+Distance to Frontier (km) & 0.0005 & $-$0.0007 & $-$0.0020 \\
+  & (0.0012) & (0.0023) & (0.0057) \\
+  & & & \\
+Treatment $\times$ Distance & 0.0033 & 0.0080 & 0.0147 \\
+  & (0.0019) & (0.0036) & (0.0097) \\
+\hline \\[-1.8ex]
+Observations & 19,210 & 13,519 & 8,537 \\
+R$^{2}$ & 0.507 & 0.478 & 0.466 \\
+\hline
+\hline \\[-1.8ex]
+\end{tabular}
+\begin{tablenotes}
+  \footnotesize
+  \item \textit{Notes:} $^{*}$p$<$0.05; $^{**}$p$<$0.01; $^{***}$p$<$0.001. Distance to frontier is defined as the distance between the locality centroid and the closest point on the frontier. The regressions include controls and department fixed effects. Standard errors are clustered at the county level.
+\end{tablenotes}
+\end{threeparttable}
+\end{table}

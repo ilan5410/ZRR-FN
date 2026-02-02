@@ -1,0 +1,160 @@
+\subsection{Spatial RDD}
+
+Our main approach to evaluate the impact of the ZRR program, I employ a spatial regression discontinuity design (RDD) that leverages geographic proximity to the program boundary. Specifically, I use the distance from each locality's centroid to the nearest point on the program frontier as the running variable. This distance is negative for municipalities inside the program and positive for those outside, with the cutoff at zero. Figure \ref{fig:dist_distribution} shows the distribution of the running variable. This approach ensures that municipalities just inside and just outside the program boundary are comparable, thereby mimicking a natural experiment setting. The key assumption underpinning this strategy is that, conditional on county characteristics which affected the program eligibility, voting patterns change continuously around the border, allowing attributing any discontinuities in outcomes to the program effect. Specifically, as shown below in table \ref{tab:summary_stats_combined}, counties have a small number of municipalities (6 to 10 on average).
+
+[YS: we'll need to elaborate here. Specifically, mention that the cantons have a small number of municipalities]
+
+%% map and distribution of running VAR
+\begin{figure}
+    \centering
+    \caption{Map and distribution of the running variable}
+    \includegraphics[width=1\linewidth]{figures/map_dist_running_var.png}
+    \label{fig:dist_distribution}
+
+\parbox{\textwidth}{\footnotesize \textit{Notes:} The map displays the running variable, the distance to the program frontier, by three categories: outside the ZRR program and more than 5km away from the frontier; in a 5km range around the frontier, both inside and outside the ZRR program; inside the ZRR program and more than 5km away from the frontier. The bottom graph shows the distribution of the distance to program frontier in meters. If the distance is negative, the locality is inside the ZRR program, outside otherwise.}
+    
+\end{figure}
+
+I model the outcome variables as a linear function of treatment status, the running variable, and other control variables as follows:
+
+\begin{equation}
+\label{eq2}
+    \begin{aligned}
+    FN2002_{id} &= \beta_0 + \beta_1 ZRR_{i} + \beta_2 Dist_{i} + \gamma \text{X}_{i} \\
+    &\quad +  \eta_{d}  + \epsilon_{id}
+    \end{aligned}
+\end{equation}
+
+Where $FN2002_{id}$ is the dependent variable, representing the FN vote share in 2002 for locality $i$ in department $d$. $\beta_0$ is the intercept term. $\beta_1$ is the coefficient of interest capturing the effect of the treatment status ($ZRR_{i}$), which indicates whether a locality $i$ is treated or not. $\beta_2$ is the coefficient for the distance to the program frontier ($FrontierDistance_{i}$). $\gamma_k$ is the vector of coefficients for the set of control variables ($\text{X}_i$), representing locality characteristics. We add departmental fixed effects ($ \text{department}_d$) and the error term $\epsilon_{ijdr}$, capturing all other unobserved factors affecting the FN vote share in 2002. I estimate this model using different bandwidths, restricting my sample to municipalities that are within a 20, 10 and 5 kilometers from the program frontier. 
+
+\subsection{Validation checks}
+
+My main assumption is that, conditional on the county's characteristics that affected its eligibility to the ZRR program, absent the treatment the outcome would have changed continuously and linearly around the cutoff. Table \ref{tab:summary_stats_combined} shows that the closer we get to the program frontier, the more similar both groups are in terms of administrative and demographic characteristics, although differences remain. In Figure \ref{fig:RDD_balancing_combined}, We present the results from the balancing checks for each control variable. More specifically, we plot the residuals of the regression of each locality's characteristic on our set of controls and department fixed effects. We also report the coefficient of the treatment status at the top of each figure. It is mostly statistically insignificant. My identification works if there is no discontinuity around the cutoff, which We mostly observe. The figures show that, conditionally on the aforementioned variables, there is no discontinuity around the cutoff, implying that the municipalities below and above the cutoff are similar enough. Importantly, as figure \ref{fig:FN1988_rdd} shows, there is no discontinuity in the vote share for FN in 1988.
+
+
+%% Descriptive stat on counties and municipalities in sample
+\input{tables/summary_stats_bandwidth.tex}
+
+
+%% RDD figures, balancing check on fn1988
+\begin{figure}
+    \centering
+    \caption{Vote Share for FN in 1988 (placebo test)}
+    \includegraphics[width=1\linewidth]{figures/RDD_FN1988_placebo.png}
+
+\parbox{\textwidth}{\footnotesize \textit{Notes:} Balancing test for the vote share for FN in 1988. We plot the residuals of the vote share for FN in 1988 on the control variables, the department fixed effects and the treatment status (as in equation \ref{eq2}. We also report the estimate of the treatment effect (which should be null and not significant) at the top of the graph. The chosen bandwidth is 10 kilometers around the cutoff. [YS: why are the CI non linear? not sure]}
+
+    \label{fig:FN1988_rdd}
+\end{figure}
+
+%% RDD figures, balancing checks
+\begin{figure}[htbp]
+    \centering
+    \begin{subfigure}{1\textwidth}
+        \includegraphics[width=\linewidth]{figures/balancing_checks_1.png}
+        \caption{Balancing Tests: Part 1}
+        \label{fig:RDD_balancing_part1}
+    \end{subfigure}
+\end{figure}
+
+\begin{figure}[htbp]\ContinuedFloat
+    \centering
+    \begin{subfigure}{1\textwidth}
+        \includegraphics[width=\linewidth]{figures/balancing_checks_2.png}
+        \caption{Balancing Tests: Part 2}
+        \label{fig:RDD_balancing_part2}
+    \end{subfigure}
+    
+    
+    \begin{tablenotes}
+      \footnotesize
+      \item \textit{Notes:} Balancing tests: We plot the residuals of the control variable on the remaining control variables, the department fixed effects and the treatment status (as in equation \ref{eq2}. We also report the estimate of the treatment effect (which should be null and not significant) at the top of each graph. The chosen bandwidth is 10 kilometers around the cutoff.
+    \end{tablenotes}
+    
+    \caption{RDD: Balancing Checks}
+    \label{fig:RDD_balancing_combined}
+    
+\end{figure}
+
+
+
+
+\subsection{Voting outcomes}
+
+
+Figure \ref{fig:RDD_outcome_combined-2002} shows the plots of the residuals of the main outcome variables after regressing on the control variables and the place fixed effects (department) against the distance to the program frontier. The vertical line in the center demarcates the border, with municipalities on the left participating in the ZRR program and those on the right not participating. Notably for the FN vote shares in 2002, 2007 and 2012, there is a visible discontinuity at the border, suggesting a significant effect of the ZRR program on the FN vote share. The residuals are generally lower on the non-ZRR side compared to the ZRR side. The shaded areas around the trend lines, representing confidence intervals, indicate that these trends are statistically significant. There seems to be no discontinuity around the cutoff for the RPR vote share (the incumbent party) and for the turnout in 2002. These results suggest that the ZRR program primarily affects the populist voting.
+
+%% RDD figures, main outcomes
+\begin{figure}[h!]
+    \centering
+    % First subfigure
+    \begin{subfigure}[b]{0.95\textwidth}
+        \centering
+        \includegraphics[width=\textwidth, height=0.4\textheight]{figures/RDD_outcomes_20000.png}
+        \caption{Bandwidth of 20 kilometers}
+    \end{subfigure}
+    
+    \vspace{0.5cm} % Optional space between the subfigures
+    
+    % Second subfigure
+    \begin{subfigure}[b]{0.95\textwidth}
+        \centering
+        \includegraphics[width=\textwidth, height=0.4\textheight]{figures/RDD_outcomes_10000.png}
+        \caption{Bandwidth of 10 kilometers}
+    \end{subfigure}
+    
+    % Main caption
+    \caption{RDD: main results}
+    \label{fig:RDD_outcome_combined-2002}
+    
+    \begin{tablenotes}
+      \footnotesize
+      \item \textit{Notes:} We plot the residuals of the main outcome variables on the control variables, the department fixed effects. The chosen bandwidths are 20 and 10 kilometers around the cutoff. The shaded areas around the trend lines represent confidence intervals.
+    \end{tablenotes}
+    
+    
+\end{figure}
+
+
+
+
+\vspace{1.5pt}
+
+I now estimate the main model as described in equation \ref{eq2}. Table \ref{tab:rdd_results_diffbandwidth} reports the estimates of the LATE (local average treatment effect) with different bandwidths. Municipalities benefiting from the ZRR program experienced a 0.3-0.5 percentage point reduction in National Front (FN) vote share in the 2002 presidential election. Since the average vote share for FN in 2002, among the municipalities located as far as 10 kilometers from the frontier, was 17\%, this result converts into a 1.8-3\% decrease on average. However, the effects become less pronounced at narrower bandwidths (5,000), where the sample is reduced and the standard errors are larger. 
+
+
+%% Main results, different bandwidths
+\input{tables/main_results_different_bandwidths.tex}
+
+
+%% Main results, different specifications
+\input{tables/main_results_diff_specifications.tex}
+
+
+I report the estimates in Table \ref{tab:rdd_results_10} with different model specifications. Across all specifications, the ZRR program reduces the vote share for the FN. The point estimates range from –0.006 to –0.003, or a 0.3 to 0.6 percentage point drop. The treatment effect is robust: it survives inclusion of controls and fixed effects, and the effect remains statistically significant.
+
+Finally, in Table \ref{tab:rdd_results_outcomes_later}, I present the regression coefficients of the treatment indicator when the dependent variables are the vote share for the FN in 1988, for the incumbent party RPR in 2002, the overall turnout in 2002 and the FN vote shares in the later elections. 
+%In appendix \ref{??}, I present the different RDD graphs with all the different outcomes. 
+No matter the bandwidth we choose, we see no clear effect of the program on the FN vote share in 1988 (my placebo test), on the vote share for the incumbent party RPR in 2002, and on the overall turnout in 2002. As shown in figure \ref{later_elections} , which reports the coefficients of the effect of the ZRR program in the fully specified model on the FN vote shares on later presidential elections, the effect remains significant, but it almost disappears at the smallest bandwidth (5 km).
+
+%\textbf{TODO: add RDD graphs in the Appendix}
+
+%% Results on other outcomes
+\input{tables/main_results_diff_outcomes.tex}
+
+
+
+%% ZRR effect on later elections
+\begin{figure}
+    \centering
+    \caption{Effect of ZRR on FN vote share in later elections}
+    \includegraphics[width=1\linewidth]{figures/later_elections.png}
+
+\parbox{\textwidth}{\footnotesize \textit{Notes:} We plot the coefficients of the effect of the ZRR program from the fully specified model (with controls and place fixed effects, and standard errors clustered at the county level) on the FN vote shares in the presidential elections of 2007, 2012, 2017 and 2022.}
+
+    \label{fig:later_elections}
+\end{figure}
+
+
+
+

@@ -1,0 +1,17 @@
+\subsection{Border municipalities}
+
+A natural extension of my identification strategy is to restrict the sample to municipalities that share a border with the ZRR program 1995 frontier. Part of the motivation for that is the fact that around the border, we observe some non-linearity in the area of the municipalities. This subset includes 7,316 bordering municipalities, which allows for a more refined comparison between treated and non-treated areas. The identification assumption is that conditional on observable municipality characteristics, the FN vote share in 2002 should be the same in the two groups in the absence of treatment. This sample restriction allows us to reduce the band to a minimum, and to avoid the problem of diminishing area size as the distance to the border approaches zero. Further and similar to \cite{Spenkuch}, I restrict the sample to pairs of municipalities, which we define as having a shared border and belonging to the same department. We remain with 5,915 municipalities. I utilize border-pair fixed effects to control for unobserved heterogeneity across adjacent municipalities. 
+
+Table \ref{tab:ttest-border} presents results of balancing tests, comparing the treatment and control groups adjacent to the border. They consist of the means of the residuals of the regression of the variable on the department fixed effects along with the population density and the share of agriculture workers of the locality. As we see, the two groups are not perfectly well balanced. However,  they do not show significant differences in voting behavior for the FN in 1988. We now turn to the results displayed in Table \ref{tab:border-results}. They indicate that participation in the ZRR program is associated with a statistically significant decrease in the vote share for the FN in 2002. Specification (1) shows that being in the ZRR program reduces the FN vote share by 0.7 percentage point. When controlling for other variables and including department fixed effects (specification (2)), the reduction is 0.6 percentage points. In specifications (3), which includes controls, department fixed effects, and (4), which includes controls and border pairs fixed effects, the reduction is 0.5 percentage points. These results should be taken with precautions, since the control and test groups are not similar enough to make a clear comparison between. Nevertheless, they are consistent with the treatment effect I estimated in my RDD identification strategy.
+
+%% ttest
+\input{tables/balancing_tests.tex}
+
+
+%% Results
+\begin{landscape}
+\input{tables/border_muni_results.tex}
+\end{landscape}
+
+
+In Appendix \ref{app:border-matching}, we explore a matching strategy to restrict the sample to comparable municipalities only. The estimated effect of the ZRR program is similar, although slightly stronger (0.6 p.p. instead of 0.5 p.p. without matching).

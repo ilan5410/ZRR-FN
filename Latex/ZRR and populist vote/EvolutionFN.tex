@@ -1,0 +1,45 @@
+\section{Evolution of the FN electorate}\label{fn-growth}
+
+One of the main threats to the identification of the effects of the ZRR is that voting patterns in localities that were selected to the program were changing differentially. In particular, by the design of the program, these places were more rural, and in accordance with the shift in the constituency of the FN discussed above, one might suspect that these places were more likely to increase their share of votes for the FN during the period under discussion, thus causing a downward bias to the estimated effects. To assess such threats, I turn to presenting a range of stylized facts on how the determinants of FN vote have changed over time. Using data from the 1988 to 2022 presidential and European elections, I estimate the following regression:
+
+
+\begin{equation}
+y_{irt} = \alpha_i + \beta_{r,t} + \eta_0 X_{i,\text{baseline}}+ \sum_{t \neq 2002} \eta_t \times Year_t \times X_{i,baseline} + \gamma \mathds{1}_{EU} + \epsilon_{i,r,t}
+\end{equation}
+
+
+where $y_{irt}$ denotes FN vote shares in the election in municipality $i$ in region $r$ in election year $t$. The fixed effect $\alpha_i$ absorbs any time-invariant differences in political preferences or sentiment across departments. Region-by-time fixed effects $\beta_{rt}$ capture nonlinear time trends specific to each of the 27 regions across France. The main coefficients of interest are the interaction terms $\eta_{t}$ between baseline socioeconomic characteristics $X_i$, and a set of year fixed effects $Year_t$. $\mathds{1}_{EU}$ corresponds to a dummy for the European elections. In Figure \ref{fig:FE_figures}, I plot the estimated coefficients $\eta_t$ over time relative to 2002 as the reference year to capture how FN support differentially evolved as a function of $X_{i, baseline}$. I focus on five main characteristics of $X_{i, baseline}$: population size, proportion of non-educated individuals, proportion of employed individuals, proportion of manual workers, and distance to the closest agglomeration.
+
+
+% FE_figures
+\begin{figure}
+    \centering
+    \caption{TODO: remove double title. Nonparametric Effect of several Locality Characteristics, as of 2002 on Support for FN over Time}
+    \includegraphics[width=1\linewidth]{figures/FN_growth.png}
+    \label{fig:FE_figures}
+
+\parbox{\textwidth}{\footnotesize \textit{Notes:} The dependent variable is the percentage of votes for FN in the presidential and European elections from 1988–2022. Panel A uses the resident population as of 2002. Panel B uses the share of the resident population with no formal qualifications as of 1990. Panel C uses the share of the working-age resident population that is employed. Panel D uses the share of the resident working-age population employed as manual workers as per the classification of l'Insee, while panel E uses the distance to the closest agglomeration as defined above. The graph plots point estimates $\eta_t$ of the interaction between these cross-sectional measures and a set of year fixed effects.}
+
+    
+\end{figure}
+
+% Pop vs. FN
+\begin{figure}
+    \centering
+    \caption{TODO: remove double title.Population size and FN voting}
+    \includegraphics[width=1\linewidth]{figures/FN_versus_pop.png}
+    \label{fig:pop_vs_FN}
+
+\parbox{\textwidth}{\footnotesize \textit{Notes:} This figure presents scatter plots for various election years, illustrating the relationship between the FN vote share (y-axis) and the logarithm of the population size (x-axis) across French municipalities. Each panel, \textsl{•}labeled from Panel A to Panel E, corresponds to a specific election year (1988, 2002, 2012, 2017, and 2022). The x-axis values were divided into 50 bins. Each bin represents a range of population sizes, and for each bin, we calculated the average FN vote share and the mean population size within that bin. In red, the density plot of treated localities.}
+    
+\end{figure}
+
+[YS: Figure 6 is very interesting and gives a nuanced picture. It looks like the populist turn was particularly strong in middle-sized localities and not in the smallest rural places. Where, approximately on the support of these figures are the ZRR places situated?Could we somehow add to these figures the distribution of treated municipalities (e.g., a density plot)?]
+
+
+The analysis reveals a clear evolution in the factors driving FN support over time, reflecting a shift in the party's appeal. Panel A and E indicate that while the FN was initially an urban phenomenon, its electorate gradually expanded to peri-urban and even rural remote areas situated farther from agglomerations (as described by \cite{Guilly2014}). Figure \ref{fig:pop_vs_FN} shows that the linear specification obscure interesting non-monotonous trends. It shows that the FN gained votes particularly in middle-sized localities, and not in the smallest rural areas, while massively losing votes in urban centers. Back to Figure \ref{fig:FE_figures}, Panel B further highlights this shift, illustrating how the FN's base expanded from urban conservative "petit bourgeois" to a less educated demographic. In particular, regions with higher proportions of individuals without diplomas became more strongly associated with FN vote shares, especially after 2002. Meanwhile, Panel C shows that high employment areas, once correlated with FN support, saw this association decline over time, whereas areas with larger proportions of manual workers - traditionally left voters - began showing rising FN support, particularly after 2002. 
+
+
+The ZRR program was implemented during the early stages of this transformation of FN's support base. This means that the question at stake was whether the ZRR was able to offset the burgeoning populist turn in rural France rather than reverse it when it was fully mature.
+
+%Our study focuses on the 2002 elections. This means that the question at stake was whether the ZRR was able to offset the burgeoning populist turn in rural France rather than reverse it when it was fully mature. By providing economic  support, the ZRR program may have mitigated feelings of abandonment among rural populations within these zones, potentially slowing or weakening the FN's appeal in these areas. 

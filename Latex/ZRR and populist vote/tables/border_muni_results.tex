@@ -1,0 +1,32 @@
+
+% Table created by stargazer v.5.2.3 by Marek Hlavac, Social Policy Institute. E-mail: marek.hlavac at gmail.com
+% Date and time: Fri, Sep 12, 2025 - 21:27:20
+\begin{table}[!htbp] \centering 
+  \caption{TODO: landscape. Regression Results: Effect of ZRR on FN Vote Share in 2002 and Robustness Checks} 
+  \label{tab:border-results} 
+\begin{tabular}{@{\extracolsep{5pt}}lccccccc} 
+\\[-1.8ex]\hline 
+\hline \\[-1.8ex] 
+ & \multicolumn{7}{c}{\textit{Dependent variable:}} \\ 
+\cline{2-8} 
+\\[-1.8ex] & \multicolumn{5}{c}{\textit{OLS}} & \textit{panel} & \textit{OLS} \\ 
+ & \multicolumn{5}{c}{\textit{}} & \textit{linear} & \textit{} \\ 
+ \\[-1.8ex] & \multicolumn{6}{c}{The vote share for FN in 2002} & Placebo (1988)\\ 
+
+\\[-1.8ex] & (1) & (2) & (3) & (4) & (5) & (6) & (7)\\ 
+\hline \\[-1.8ex] 
+ treatmentZRR & $-$0.0060$^{***}$ & $-$0.0055$^{***}$ & $-$0.0059$^{***}$ & $-$0.0042$^{***}$ & $-$0.0042$^{***}$ & $-$0.0041$^{***}$ & $-$0.0014 \\ 
+  & (0.0011) & (0.0009) & (0.0011) & (0.0009) & (0.0009) & (0.0009) & (0.0008) \\ 
+  & & & & & & & \\ 
+\hline \\[-1.8ex] 
+Controls & No & Yes & Yes & Yes & Yes & Yes & Yes \\ 
+Department Fixed Effects & No & No & Yes & No & Yes & / & Yes \\ 
+Border Pair Fixed Effects & No & No & No & Yes & Yes & / & Yes \\ 
+Observations & 13,839 & 13,839 & 10,774 & 13,839 & 13,839 & 6,427 & 13,839 \\ 
+R$^{2}$ & 0.0022 & 0.2956 & 0.3130 & 0.7978 & 0.7978 & 0.1504 & 0.7690 \\ 
+\hline 
+\hline \\[-1.8ex] 
+\end{tabular} 
+\parbox{\textwidth}{\footnotesize \textit{Notes:} The table presents the regression results of the effect of the ZRR program on the vote share for the FN in 2002, using a sample of 7,412 pairs of border municipalities that are in the same department. Column (1) shows the simplest specification without controls. Specification (2) includes control variables. Specification (3) adds department fixed effects. Specification (4) includes border pair fixed effects. Specification (5) adds department fixed effects. Specification (6) captures change between 1988 and 2002 in a First Difference setting. Specification (7) uses the FN vote share in 1988 as the outcome as a placebo check.}
+
+\end{table} 
