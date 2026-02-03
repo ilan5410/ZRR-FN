@@ -336,8 +336,11 @@ generate_fn_population_analysis <- function(processed_data_path, path_figures,
       plots_list[[i]] <- p
       cat("          ✓ Created plot for", year, "\n")
     }
-    
-    cat("      ✓ Generated all individual plots\n")
+
+    # Remove any NULL entries from failed plots
+    plots_list <- Filter(Negate(is.null), plots_list)
+
+    cat("      ✓ Generated", length(plots_list), "individual plots\n")
     
     return(list(
       plots = plots_list,
@@ -421,18 +424,26 @@ generate_fn_population_analysis <- function(processed_data_path, path_figures,
   # --------------------------------------------------------------------------
   cat("\n7. Creating combined visualization layout...\n")
   
+  # Filter out NULL plots
+  plots_list <- Filter(Negate(is.null), plots_list)
+
   # Determine optimal grid layout
   n_plots <- length(plots_list)
+
+  if (n_plots == 0) {
+    stop("No valid plots were generated. Check data availability for analysis years.")
+  }
+
   n_cols <- ceiling(sqrt(n_plots))
   n_rows <- ceiling(n_plots / n_cols)
-  
+
   cat("  - Grid layout:", n_rows, "rows ×", n_cols, "columns\n")
-  
+
   # Create combined plot with professional layout
   combined_plot <- gridExtra::grid.arrange(
     gridExtra::arrangeGrob(
-      grobs = plots_list, 
-      nrow = n_rows, 
+      grobs = plots_list,
+      nrow = n_rows,
       ncol = n_cols
     ),
     bottom = grid::textGrob(
