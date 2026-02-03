@@ -451,14 +451,10 @@ generate_fn_population_analysis <- function(processed_data_path, path_figures,
       gp = grid::gpar(fontsize = 14, fontface = "bold")
     ),
     left = grid::textGrob(
-      "FN Vote Share", 
-      rot = 90, 
+      "FN Vote Share",
+      rot = 90,
       gp = grid::gpar(fontsize = 14, fontface = "bold")
-    ),
-    # top = grid::textGrob(
-    #   "Front National Vote Share vs Population Size Over Time",
-    #   gp = grid::gpar(fontsize = 16, fontface = "bold")
-    # )
+    )
   )
   
   cat("✓ Created combined visualization\n")
