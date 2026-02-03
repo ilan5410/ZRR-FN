@@ -342,8 +342,8 @@ generate_rdd_balance_analysis <- function(processed_data_path, path_figures,
         "Residuals (Standardized)", 
         rot = 90, 
         gp = grid::gpar(fontsize = 12, fontfamily = "serif", fontface = "bold")
-      ),
-      # top = grid::textGrob(
+      )
+    # top = grid::textGrob(
       #   "Balance Tests: Predetermined Characteristics",
       #   gp = grid::gpar(fontsize = 14, fontfamily = "serif", fontface = "bold")
       # )

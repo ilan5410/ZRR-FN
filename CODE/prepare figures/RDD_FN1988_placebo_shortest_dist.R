@@ -301,7 +301,7 @@ generate_rdd_placebo_analysis <- function(processed_data_path, path_figures,
       "Residuals", 
       rot = 90, 
       gp = grid::gpar(fontsize = 14, fontface = "bold")
-    ),
+    )
     # top = grid::textGrob(
     #   paste0("Regression Discontinuity Analysis: ", outcome_variable),
     #   gp = grid::gpar(fontsize = 16, fontface = "bold")

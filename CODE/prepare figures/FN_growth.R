@@ -416,7 +416,7 @@ generate_fn_growth_analysis <- function(processed_data_path, path_figures,
     bottom = grid::textGrob(
       "Years", 
       gp = grid::gpar(fontsize = 15, fontface = "bold")
-    ),
+    )
     # top = grid::textGrob(
     #   paste("Nonparametric Effect of Locality Characteristics on FN Support Over Time\n(Reference Year:", reference_year, ")"),
     #   gp = grid::gpar(fontsize = 14, fontface = "bold")
