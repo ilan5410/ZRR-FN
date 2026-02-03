@@ -40,6 +40,11 @@ if (requireNamespace("here", quietly = TRUE)) {
   main_path <- paste0(getwd(), "/")
 }
 
+
+main_path <- "/Users/ilanpargamin/Desktop/ECONOMICS/thesis/THESIS_REPRO February 2026/"
+
+
+
 # Verify path exists
 if (!dir.exists(paste0(main_path, "CODE"))) {
   stop("ERROR: Could not find CODE folder. Please set your working directory to the project root folder.")

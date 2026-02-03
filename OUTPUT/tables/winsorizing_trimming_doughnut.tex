@@ -1,9 +1,11 @@
 
 % Table created by stargazer v.5.2.3 by Marek Hlavac, Social Policy Institute. E-mail: marek.hlavac at gmail.com
-% Date and time: Mon, Feb 02, 2026 - 09:50:29
+% Date and time: Mon, Feb 02, 2026 - 23:46:02
 \begin{table}[!htbp] \centering 
   \caption{Winsorizing, trimming and doughnut: Estimation of Treatment Effect} 
   \label{tab:robustness-wtd} 
+\footnotesize
+\resizebox{\textwidth}{!}{%
 \begin{tabular}{@{\extracolsep{5pt}}lccc} 
 \\[-1.8ex]\hline 
 \hline \\[-1.8ex] 
@@ -28,7 +30,7 @@ R$^{2}$ & 0.5160 & 0.5381 & 0.5531 \\
 Adjusted R$^{2}$ & 0.5131 & 0.5340 & 0.5483 \\ 
 \hline 
 \hline \\[-1.8ex] 
-\textit{Note:}  & \multicolumn{3}{r}{$^{*}$p$<$0.05; $^{**}$p$<$0.01; $^{***}$p$<$0.001} \\ 
- & \multicolumn{3}{r}{Winsorizing: outliers replaced with 1th and 99th percentile values .  Trimming: observations outside 1th and 99th percentiles removed .  Doughnut: observations within 5km of the frontier border removed . All specifications include control variables and department fixed effects. Standard errors are heteroskedasticity-robust.} \\ 
-\end{tabular} 
+\textit{Note:}  & \multicolumn{3}{l}{\parbox{0.9\textwidth}{\footnotesize Winsorizing: outliers replaced with 1th and 99th percentile values. Trimming: observations outside 1th and 99th percentiles removed. Doughnut: observations within 5km of the frontier border removed. All specifications include control variables and department fixed effects. Standard errors are heteroskedasticity-robust.}} \\ 
+\end{tabular}
+}% end resizebox 
 \end{table} 
