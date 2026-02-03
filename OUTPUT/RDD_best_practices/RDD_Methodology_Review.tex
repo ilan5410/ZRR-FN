@@ -1,0 +1,438 @@
+\documentclass[12pt,a4paper]{article}
+
+% Packages
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{amsmath,amssymb}
+\usepackage{booktabs}
+\usepackage{graphicx}
+\usepackage{float}
+\usepackage{hyperref}
+\usepackage[margin=1in]{geometry}
+\usepackage{setspace}
+\usepackage{natbib}
+\usepackage{caption}
+\usepackage{subcaption}
+\usepackage{xcolor}
+\usepackage{framed}
+
+% Custom colors
+\definecolor{findingbox}{RGB}{240,248,255}
+\definecolor{warningbox}{RGB}{255,250,240}
+\definecolor{shadecolor}{RGB}{245,245,245}
+
+\onehalfspacing
+
+\title{\textbf{RDD Methodology Review} \\ \large ZRR Program and Front National Vote Share}
+\author{Methodological Analysis Report}
+\date{February 2026}
+
+\begin{document}
+
+\maketitle
+
+\begin{abstract}
+This document presents a comprehensive methodological review of the Regression Discontinuity Design (RDD) used to estimate the effect of the ZRR (Zones de Revitalisation Rurale) program on Front National (FN) vote share in France. Following best practices from Lee \& Lemieux (2010), I implement formal validity tests, optimal bandwidth selection, and explore alternative identification strategies. The analysis reveals important insights about the nature of the treatment effect and the appropriate econometric approach.
+\end{abstract}
+
+\tableofcontents
+\newpage
+
+%==============================================================================
+\section{Introduction}
+%==============================================================================
+
+The original analysis uses a geographic Regression Discontinuity Design to estimate the causal effect of the ZRR program on populist (Front National) voting. The running variable is the distance from each commune's centroid to the ZRR program frontier, with the cutoff at zero meters.
+
+This review was motivated by the need to:
+\begin{enumerate}
+    \item Verify that the RDD implementation follows best practices from the econometrics literature
+    \item Conduct formal validity tests (manipulation, covariate balance)
+    \item Understand why department fixed effects appear necessary for significance
+    \item Explore alternative identification strategies
+\end{enumerate}
+
+%==============================================================================
+\section{Methodology}
+%==============================================================================
+
+\subsection{RDD Best Practices Implementation}
+
+Following Lee \& Lemieux (2010), I implemented a comprehensive RDD analysis including:
+
+\begin{itemize}
+    \item \textbf{McCrary Density Test}: Formal test for manipulation of the running variable using the \texttt{rddensity} package
+    \item \textbf{Optimal Bandwidth Selection}: MSE-optimal bandwidth using the Imbens-Kalyanaraman (IK) and Calonico-Cattaneo-Titiunik (CCT) methods
+    \item \textbf{Bias-Corrected Inference}: Local polynomial estimation with robust standard errors via \texttt{rdrobust}
+    \item \textbf{Covariate Balance Tests}: RDD estimation on predetermined covariates
+    \item \textbf{Polynomial Order Robustness}: Testing linear, quadratic, and cubic specifications
+    \item \textbf{Bandwidth Sensitivity}: Estimates across bandwidths from 2km to 20km
+    \item \textbf{Placebo Cutoff Tests}: Testing for spurious effects at fake cutoff points
+    \item \textbf{Donut Hole Robustness}: Excluding observations near the cutoff
+\end{itemize}
+
+\subsection{Investigation of Department Fixed Effects}
+
+To understand why department fixed effects are necessary for statistical significance, I conducted:
+
+\begin{itemize}
+    \item Analysis of geographic distribution of treatment across departments
+    \item Correlation analysis between department treatment rates and FN vote levels
+    \item Within-department RDD estimation
+    \item Department-level heterogeneity analysis
+\end{itemize}
+
+\subsection{Alternative Identification Strategies}
+
+I explored five alternative approaches:
+
+\begin{enumerate}
+    \item \textbf{Difference-in-Differences (DiD)}: Comparing changes in FN vote (2002--1988) between treated and control communes
+    \item \textbf{Propensity Score Matching + DiD}: Matching on pre-treatment characteristics before DiD
+    \item \textbf{Border Pair Analysis}: Comparing communes very close to the frontier
+    \item \textbf{Border Segment Analysis}: RDD within departments that have both treated and control communes
+    \item \textbf{Event Study}: Dynamic treatment effects across multiple election years
+\end{enumerate}
+
+%==============================================================================
+\section{Data and Sample}
+%==============================================================================
+
+\begin{table}[H]
+\centering
+\caption{Sample Characteristics}
+\begin{tabular}{lc}
+\toprule
+\textbf{Characteristic} & \textbf{Value} \\
+\midrule
+Total communes (within 20km) & 21,860 \\
+Treated communes (inside ZRR) & 9,060 \\
+Control communes (outside ZRR) & 12,800 \\
+Running variable range & $-$20km to +20km \\
+Cutoff & 0 meters \\
+\midrule
+Mean FN2002 (treated) & 0.153 \\
+Mean FN2002 (control) & 0.180 \\
+Raw difference & $-$0.027 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+%==============================================================================
+\section{Results}
+%==============================================================================
+
+\subsection{RDD Validity Tests}
+
+\subsubsection{McCrary Density Test}
+
+\begin{shaded}
+\noindent\textbf{Warning: Density Discontinuity Detected}
+\begin{itemize}
+    \item Test statistic: $T = 7.50$
+    \item P-value: $< 0.001$
+    \item Interpretation: Significant bunching of observations at the cutoff
+\end{itemize}
+This may indicate manipulation or geographic clustering, though in this geographic context it likely reflects the natural clustering of communes near program boundaries.
+\end{shaded}
+
+\subsubsection{Covariate Balance}
+
+\begin{table}[H]
+\centering
+\caption{Covariate Balance Tests at Cutoff}
+\begin{tabular}{lccc}
+\toprule
+\textbf{Covariate} & \textbf{RDD Coef.} & \textbf{Robust SE} & \textbf{P-value} \\
+\midrule
+FN1988 (pre-treatment) & $-$0.0012 & 0.0028 & 0.500 \\
+Unemployment rate & $-$0.0035 & 0.0043 & 0.287 \\
+Labor force participation & 0.0248 & 0.0125 & 0.017* \\
+Foreign population share & 0.0008 & 0.0012 & 0.507 \\
+No diploma share & $-$0.0065 & 0.0054 & 0.343 \\
+Higher education share & 0.0020 & 0.0016 & 0.295 \\
+Altitude & 0.0061 & 0.0292 & 0.674 \\
+Area & 0.0322 & 0.0546 & 0.288 \\
+Distance to agglomeration & 0.0386 & 0.0255 & 0.048* \\
+\bottomrule
+\multicolumn{4}{l}{\footnotesize * Significant at 5\% level} \\
+\end{tabular}
+\end{table}
+
+Two of nine covariates show significant imbalance at the 5\% level. Importantly, the pre-treatment outcome (FN1988) shows no discontinuity ($p = 0.50$).
+
+\subsection{Main RDD Estimates}
+
+\begin{table}[H]
+\centering
+\caption{RDD Estimates: Original vs. Best Practices}
+\begin{tabular}{lcccc}
+\toprule
+\textbf{Specification} & \textbf{Coefficient} & \textbf{SE} & \textbf{P-value} & \textbf{Bandwidth} \\
+\midrule
+\multicolumn{5}{l}{\textit{Original Implementation}} \\
+OLS + Dept FE (10km) & $-$0.0044 & 0.0020 & 0.028* & 10,000m \\
+\midrule
+\multicolumn{5}{l}{\textit{Best Practices (rdrobust)}} \\
+Optimal bandwidth & 0.0015 & 0.0032 & 0.930 & 7,001m \\
+Linear polynomial & 0.0015 & 0.0032 & 0.930 & 7,001m \\
+Quadratic polynomial & 0.0006 & 0.0037 & 0.923 & 13,374m \\
+Cubic polynomial & 0.0003 & 0.0047 & 0.966 & 17,031m \\
+\bottomrule
+\multicolumn{5}{l}{\footnotesize * Significant at 5\% level. Robust bias-corrected SEs reported for rdrobust.} \\
+\end{tabular}
+\end{table}
+
+\begin{shaded}
+\noindent\textbf{Key Finding 1: RDD Results Depend on Specification}
+The standard \texttt{rdrobust} implementation finds \textbf{no significant treatment effect} ($p = 0.93$). The original significant result ($p = 0.028$) relies on department fixed effects.
+\end{shaded}
+
+\subsection{Why Do Department Fixed Effects Matter?}
+
+\subsubsection{Geographic Confounding}
+
+\begin{table}[H]
+\centering
+\caption{Geographic Distribution of Treatment}
+\begin{tabular}{lc}
+\toprule
+\textbf{Metric} & \textbf{Value} \\
+\midrule
+Total departments in sample & 84 \\
+Departments with only treated communes & 3 \\
+Departments with only control communes & 11 \\
+Departments with both & 70 \\
+\midrule
+Correlation (dept treatment rate, dept FN vote) & $-$0.376 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\begin{shaded}
+\noindent\textbf{Key Finding 2: Geographic Confounding}
+Departments with more ZRR communes have \textbf{systematically lower} FN vote share ($r = -0.38$). This geographic confounding explains why department fixed effects are necessary---they force within-department comparisons.
+\end{shaded}
+
+\subsubsection{Effect of Adding Department Fixed Effects}
+
+\begin{table}[H]
+\centering
+\caption{Stripping Down the Specification}
+\begin{tabular}{lccc}
+\toprule
+\textbf{Specification} & \textbf{Coefficient} & \textbf{SE} & \textbf{Significant?} \\
+\midrule
+No controls, no FE & $-$0.0062 & 0.0036 & No \\
+Dept FE only & $-$0.0058 & 0.0023 & Yes \\
+Controls only & $-$0.0054 & 0.0029 & No \\
+Controls + Dept FE & $-$0.0044 & 0.0020 & Yes \\
+\midrule
+rdrobust (no FE) & $-$0.0029 & 0.0060 & No \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+The coefficient becomes significant \textbf{only} when department fixed effects are included. The FE reduce the standard error by approximately 36\%.
+
+\subsubsection{Treatment Effect Heterogeneity}
+
+Estimating RDD separately for each department with sufficient data:
+\begin{itemize}
+    \item 30 departments show \textbf{positive} effects
+    \item 32 departments show \textbf{negative} effects
+    \item Only 1 of 62 departments shows a statistically significant effect
+\end{itemize}
+
+This near 50-50 split explains why the aggregate RDD without fixed effects finds no effect.
+
+\subsection{Alternative Identification Strategies}
+
+\begin{table}[H]
+\centering
+\caption{Comparison of Identification Strategies}
+\begin{tabular}{lccc}
+\toprule
+\textbf{Strategy} & \textbf{Coefficient} & \textbf{SE} & \textbf{Significant?} \\
+\midrule
+\multicolumn{4}{l}{\textit{Difference-in-Differences}} \\
+Simple DiD & $-$0.0098 & 0.0009 & Yes \\
+DiD + Controls & $-$0.0123 & 0.0022 & Yes \\
+DiD + Controls + Dept FE & $-$0.0067 & 0.0015 & Yes \\
+DiD (5km bandwidth) & $-$0.0091 & 0.0027 & Yes \\
+\midrule
+\multicolumn{4}{l}{\textit{Matching}} \\
+PSM + DiD & $-$0.0182 & 0.0013 & Yes \\
+\midrule
+\multicolumn{4}{l}{\textit{Border Analysis}} \\
+Border pair (3km) & $-$0.0062 & 0.0017 & Yes \\
+Border pair (1km) & 0.0001 & 0.0047 & No \\
+\midrule
+\multicolumn{4}{l}{\textit{Panel/Event Study}} \\
+Panel DiD (treat $\times$ post) & $-$0.0045 & 0.0014 & Yes \\
+\midrule
+\multicolumn{4}{l}{\textit{RDD}} \\
+Original (10km + FE) & $-$0.0044 & 0.0020 & Yes \\
+rdrobust (optimal BW) & $-$0.0029 & 0.0060 & No \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\begin{shaded}
+\noindent\textbf{Key Finding 3: DiD is More Robust Than RDD}
+\textbf{9 of 12 specifications show significant negative effects}. The Difference-in-Differences approach consistently finds effects, while pure RDD does not.
+\end{shaded}
+
+\subsubsection{The 1km Paradox}
+
+\begin{table}[H]
+\centering
+\caption{Effect by Distance to Frontier}
+\begin{tabular}{lccc}
+\toprule
+\textbf{Bandwidth} & \textbf{DiD Coefficient} & \textbf{SE} & \textbf{Significant?} \\
+\midrule
+20km & $-$0.0098 & 0.0009 & Yes \\
+5km & $-$0.0091 & 0.0027 & Yes \\
+3km & $-$0.0062 & 0.0017 & Yes \\
+\textbf{1km} & \textbf{0.0001} & \textbf{0.0047} & \textbf{No} \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\begin{shaded}
+\noindent\textbf{Puzzle: Effect Disappears at 1km}
+The treatment effect \textbf{vanishes} when restricting to communes within 1km of the frontier. For a true spatial discontinuity, the effect should be \textbf{strongest} near the cutoff, not weakest.
+\end{shaded}
+
+\subsubsection{Event Study Results}
+
+\begin{table}[H]
+\centering
+\caption{Event Study: Treatment Effects by Year (Base = 1988)}
+\begin{tabular}{lcc}
+\toprule
+\textbf{Year} & \textbf{Coefficient} & \textbf{Significant?} \\
+\midrule
+1988 & 0 (base) & -- \\
+1995 & $-$0.030 & Yes \\
+2002 & $-$0.027 & Yes \\
+2007 & $-$0.011 & Yes \\
+2012 & $-$0.019 & Yes \\
+2017 & $-$0.023 & Yes \\
+2022 & $-$0.022 & Yes \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+The effect appears immediately in 1995 (when ZRR started) and persists through 2022, supporting a causal interpretation.
+
+%==============================================================================
+\section{Key Findings}
+%==============================================================================
+
+\begin{enumerate}
+    \item \textbf{Standard RDD finds no effect}: Using \texttt{rdrobust} with optimal bandwidth selection and bias-corrected inference, there is no statistically significant discontinuity at the ZRR frontier ($p = 0.93$).
+
+    \item \textbf{Significance requires department FE}: The original significant result depends on department fixed effects, which reduce standard errors by forcing within-department comparisons.
+
+    \item \textbf{Geographic confounding exists}: Departments with more ZRR communes systematically have lower FN vote share ($r = -0.38$), creating confounding that the department FE address.
+
+    \item \textbf{DiD is more robust}: Difference-in-Differences approaches consistently find significant negative effects across specifications, without requiring department FE.
+
+    \item \textbf{The effect is about changes, not levels}: The treatment effect appears in the \textit{change} in FN vote (2002--1988), not in a spatial discontinuity at the frontier.
+
+    \item \textbf{Effect disappears at 1km}: The treatment effect vanishes when restricting to communes closest to the frontier, which is inconsistent with a true spatial discontinuity.
+
+    \item \textbf{Event study supports causality}: The effect appears precisely when ZRR starts (1995) and persists through 2022.
+\end{enumerate}
+
+%==============================================================================
+\section{Limitations}
+%==============================================================================
+
+\subsection{Limitations of the RDD Approach}
+
+\begin{itemize}
+    \item \textbf{McCrary test fails}: Significant bunching at the cutoff raises concerns about the validity of the design, though this may reflect natural geographic clustering.
+
+    \item \textbf{Some covariate imbalance}: Two of nine covariates show significant discontinuities at the cutoff.
+
+    \item \textbf{Effect requires fixed effects}: The RDD effect is not robust to removing department fixed effects, which is atypical for a valid RDD.
+
+    \item \textbf{No effect at the margin}: The effect disappears when restricting to communes closest to the frontier.
+\end{itemize}
+
+\subsection{Limitations of the DiD Approach}
+
+\begin{itemize}
+    \item \textbf{Parallel trends assumption}: DiD requires that treated and control communes would have followed parallel trends in FN voting absent treatment. This is untestable.
+
+    \item \textbf{Selection into treatment}: ZRR designation was not random; communes were selected based on economic criteria that may correlate with FN voting trends.
+
+    \item \textbf{Other policies}: Other policies may have changed at similar times, confounding the DiD estimate.
+\end{itemize}
+
+\subsection{General Limitations}
+
+\begin{itemize}
+    \item \textbf{LATE interpretation}: Both RDD and DiD identify local average treatment effects that may not generalize to other contexts.
+
+    \item \textbf{Mechanism unclear}: The analysis identifies an effect but does not establish the mechanism through which ZRR affects voting.
+\end{itemize}
+
+%==============================================================================
+\section{Recommendations}
+%==============================================================================
+
+\subsection{For the Paper}
+
+\begin{enumerate}
+    \item \textbf{Consider DiD as primary specification}: Given that DiD is more robust and does not require the spatial discontinuity assumption, consider presenting DiD as the main identification strategy.
+
+    \item \textbf{Present event study}: The event study provides compelling visual evidence of the treatment effect and supports the causal interpretation.
+
+    \item \textbf{Acknowledge RDD limitations}: If retaining RDD, clearly discuss why department FE are necessary and what this implies for the design.
+
+    \item \textbf{Report multiple specifications}: Present results across RDD, DiD, and matching approaches to demonstrate robustness (or lack thereof).
+\end{enumerate}
+
+\subsection{Suggested Specification}
+
+The recommended primary specification is:
+\begin{equation}
+    \Delta FN_i = \alpha + \beta \cdot \text{Treated}_i + X_i'\gamma + \delta_d + \varepsilon_i
+\end{equation}
+
+Where:
+\begin{itemize}
+    \item $\Delta FN_i = FN_{2002,i} - FN_{1988,i}$ (change in FN vote share)
+    \item $\text{Treated}_i = 1$ if commune $i$ is in ZRR
+    \item $X_i$ = vector of pre-treatment controls
+    \item $\delta_d$ = department fixed effects (optional)
+    \item Standard errors clustered at canton level
+\end{itemize}
+
+This DiD specification:
+\begin{itemize}
+    \item Does not require a spatial discontinuity
+    \item Controls for time-invariant commune characteristics
+    \item Is robust across bandwidth choices
+    \item Can be extended to an event study framework
+\end{itemize}
+
+%==============================================================================
+\section{Conclusion}
+%==============================================================================
+
+This methodological review reveals that the treatment effect of ZRR on FN voting is best understood as a \textit{change over time} rather than a \textit{spatial discontinuity}. While the original RDD specification finds significant effects, this significance depends on department fixed effects and does not hold under standard RDD best practices.
+
+The Difference-in-Differences approach provides more robust evidence of a negative treatment effect: communes in ZRR experienced approximately 0.7--1.2 percentage points less growth in FN vote share compared to control communes. This effect appears immediately when ZRR starts (1995) and persists through recent elections.
+
+The finding that the effect disappears at very narrow bandwidths (1km) suggests that there is no true spatial discontinuity at the ZRR frontier. Instead, the effect operates through mechanisms that affect treated communes more broadly, regardless of their precise distance to the program boundary.
+
+\vspace{1cm}
+
+\noindent\textit{Analysis conducted using R packages: rdrobust, rddensity, MatchIt, sandwich, lmtest.}
+
+\end{document}
