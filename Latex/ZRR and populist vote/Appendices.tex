@@ -104,7 +104,7 @@ After presenting the balancing checks in Figure \ref{fig:RDD_balancing_combined_
 \begin{figure}
     \centering
     \caption{Map and distribution of the running variable}
-    \includegraphics[width=1\linewidth]{figures/distanceMapAndDistribution_epi.png}
+    \includegraphics[width=1\linewidth]{figures/map_dist_running_var_shortest_dist.png}
     \raggedright\footnotesize{\textit{Notes:} The map displays the running variable, the distance to the program frontier, by three categories: outside the ZRR program and more than 5km away from the frontier; in a 5km range around the frontier, both inside and outside the ZRR program; inside the ZRR program and more than 5km away from the frontier. The bottom graph shows the distribution of the distance to program frontier in meters. If the distance is negative, the locality is inside the ZRR program, outside otherwise.}
     \label{fig:dist_distribution-noEpi}
 \end{figure}
@@ -120,7 +120,7 @@ Figure \ref{fig:RDD_balancing_combined_noEpi} shows the balancing checks. There 
     \label{fig:RDD_balancing_combined_noEpi}
 
     \begin{subfigure}{1\textwidth}
-        \includegraphics[width=\linewidth]{figures/RDD_plots_conditional_part1_noEpi.png}
+        \includegraphics[width=\linewidth]{figures/balancing_checks_shortest_dist_1.png}
         \subcaption{Balancing Tests: Part 1}
         \label{fig:RDD_balancing_part1_noEpi}
     \end{subfigure}
@@ -128,7 +128,7 @@ Figure \ref{fig:RDD_balancing_combined_noEpi} shows the balancing checks. There 
 \end{figure}    
 \begin{figure}\ContinuedFloat
     \begin{subfigure}{1\textwidth}
-        \includegraphics[width=\linewidth]{figures/RDD_plots_conditional_part2_noEpi.png}
+        \includegraphics[width=\linewidth]{figures/balancing_checks_shortest_dist_2.png}
         \subcaption{Balancing Tests: Part 2}
         \label{fig:RDD_balancing_part2_noEpi}
     \end{subfigure}
@@ -141,7 +141,7 @@ Figure \ref{fig:RDD_balancing_combined_noEpi} shows the balancing checks. There 
 \begin{figure}
     \centering
     \caption{Vote Share for FN in 1988 (placebo test)}
-    \includegraphics[width=1\linewidth]{figures/RDD_plots_conditional_FN1988_noEpi.png}
+    \includegraphics[width=1\linewidth]{figures/RDD_FN1988_placebo_shortest_dist.png}
     
     \label{fig:FN1988_rdd_noEpi}
 \parbox{\textwidth}{\footnotesize \textit{Notes:} Balancing test for the vote share for FN in 1988. Remarkably, there is no big discontinuity around the cutoff.}
@@ -159,7 +159,7 @@ Figure \ref{fig:RDD_outcome_combined-noEpi} shows the main discontinuity results
     % First subfigure
     \begin{subfigure}[b]{0.95\textwidth}
         \centering
-        \includegraphics[width=\textwidth]{figures/RDD_plots_conditional_outcomes_20000_noEpi.png}
+        \includegraphics[width=\textwidth]{figures/RDD_outcomes_shortest_dist_20000.png}
         \caption{Bandwidth of 20 kilometers}
     \end{subfigure}
     
@@ -168,7 +168,7 @@ Figure \ref{fig:RDD_outcome_combined-noEpi} shows the main discontinuity results
     % Second subfigure
     \begin{subfigure}[b]{0.95\textwidth}
         \centering
-        \includegraphics[width=\textwidth]{figures/RDD_plots_conditional_outcomes_10000_noEpi.png}
+        \includegraphics[width=\textwidth]{figures/RDD_outcomes_shortest_dist_10000.png}
         \caption{Bandwidth of 10 kilometers}
     \end{subfigure}
     
@@ -189,7 +189,8 @@ Figure \ref{fig:RDD_outcome_combined-noEpi} shows the main discontinuity results
 % Main results, different bandwidths
 \begin{table}[!htbp] \centering 
   \caption{Main results, different bandwidths (shortest distance between borders, not epicenters)} 
-  \label{tab:rdd_results_diffbandwidth-noEpi} 
+  \label{tab:rdd_results_diffbandwidth-noEpi}
+\footnotesize
 \begin{tabular}{@{\extracolsep{5pt}}lccc} 
 \\[-1.8ex]\hline 
 \hline \\[-1.8ex] 
@@ -220,7 +221,7 @@ R$^{2}$ & 0.500 & 0.476 & 0.465 \\
 \caption{Main results when bandwidth is 10 km, different specifications (distance from border, not epicenter)} 
 \label{tab:rdd_results_10-noEpi}
 \centering
-\small
+\footnotesize
 \begin{tabular}{@{\extracolsep{3pt}}lccccc} 
 \\[-1.8ex]\hline 
 \hline \\[-1.8ex] 
@@ -361,7 +362,7 @@ Similarly to Figure \ref{fig:RDD_outcome_combined-2002}, Figure \ref{fig:RDD_out
     \caption{RDD: ZRR effect on 1995 FN Vote share}
     \label{fig:RDD_outcome_combined-1995}
     \centering
-        \includegraphics[width=\linewidth, height=0.5\textwidth]{figures/RDD_plots_conditional_outcomes1995.png}
+        \includegraphics[width=\linewidth, height=0.5\textwidth]{figures/RDD_FN1995_signal.png}
 \parbox{\textwidth}{\footnotesize \textit{Notes:} I plot the residuals of the vote share for the FN in the 1995 presidential elections on the control variables, the department fixed effects. The chosen bandwidths are 20, 10 and 5 kilometers around the cutoff. The shaded areas around the trend lines represent confidence intervals.}
     
 \end{figure}

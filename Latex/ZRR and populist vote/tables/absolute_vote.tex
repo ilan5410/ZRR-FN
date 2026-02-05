@@ -1,15 +1,17 @@
 
 % Table created by stargazer v.5.2.3 by Marek Hlavac, Social Policy Institute. E-mail: marek.hlavac at gmail.com
-% Date and time: Fri, Sep 12, 2025 - 21:34:53
+% Date and time: Thu, Feb 05, 2026 - 23:14:40
 \begin{table}[!htbp] \centering 
   \caption{ZRR effect on absolute number of votes (log) for FN, different bandwidths} 
   \label{tab:absolute-vote} 
+\footnotesize
+\resizebox{\textwidth}{!}{%
 \begin{tabular}{@{\extracolsep{5pt}}lccc} 
 \\[-1.8ex]\hline 
 \hline \\[-1.8ex] 
  & \multicolumn{3}{c}{\textit{Dependent variable:}} \\ 
 \cline{2-4} 
-\\[-1.8ex] & \multicolumn{3}{c}{Absolute number of votes for FN in 2002} \\ 
+\\[-1.8ex] & \multicolumn{3}{c}{FN2002abs} \\ 
  & Bandwidth = 20 km & Bandwidth = 10 km & Bandwidth = 5 km \\ 
 \\[-1.8ex] & (1) & (2) & (3)\\ 
 \hline \\[-1.8ex] 
@@ -23,6 +25,9 @@
   & (0.226) & (0.260) & (0.356) \\ 
   & & & \\ 
 \hline \\[-1.8ex] 
+Controls & Yes & Yes & Yes \\ 
+Department fixed effects & Yes & Yes & Yes \\ 
+Region fixed effects & No & No & No \\ 
 Observations & 19,210 & 13,519 & 8,537 \\ 
 R$^{2}$ & 0.870 & 0.861 & 0.829 \\ 
 Adjusted R$^{2}$ & 0.870 & 0.860 & 0.827 \\ 
@@ -30,6 +35,6 @@ Adjusted R$^{2}$ & 0.870 & 0.860 & 0.827 \\
 \hline \\[-1.8ex] 
 \textit{Note:}  & \multicolumn{3}{r}{$^{*}$p$<$0.05; $^{**}$p$<$0.01; $^{***}$p$<$0.001} \\ 
  & \multicolumn{3}{r}{Standard errors are clustered at the canton level} \\ 
-  & \multicolumn{3}{r}{All specifications include controls and department fixed effects.} \\ 
-\end{tabular} 
+\end{tabular}
+}% end resizebox 
 \end{table} 

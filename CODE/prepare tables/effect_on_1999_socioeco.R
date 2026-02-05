@@ -250,13 +250,23 @@ generate_zrr_socioeconomic_analysis <- function(processed_data_path, path_tables
   
   # Generate LaTeX table
   kable_output <- summary_table %>%
-    kable(format = "latex", booktabs = TRUE, 
+    kable(format = "latex", booktabs = TRUE,
           caption = paste("Effect of the ZRR program on the", target_year, "socioeconomic variables"),
           label = paste0("tab:effect_", target_year)) %>%
-    kable_styling()
-  
+    kable_styling(latex_options = c("hold_position"), font_size = 9)
+
   output_file <- file.path(path_tables, paste0("effect_on_", target_year, "_socioeco.tex"))
   save_kable(kable_output, file = output_file)
+
+  # Post-process: add notes below tabular
+  lines <- readLines(output_file, warn = FALSE)
+  note_text <- "\\parbox{\\textwidth}{\\footnotesize \\textit{Notes:} The table displays the coefficient of the treatment status indicator estimated by the regression of the variable in 1999 on the set of controls in 1990, department fixed effects, across different bandwidths.}"
+  idx_end_tab <- max(grep("\\\\end\\{tabular\\}", lines))
+  idx_end_tbl <- max(grep("\\\\end\\{table\\}", lines))
+  if (length(idx_end_tab) > 0 && length(idx_end_tbl) > 0) {
+    lines <- c(lines[1:idx_end_tab], note_text, lines[idx_end_tbl:length(lines)])
+  }
+  writeLines(lines, output_file)
   
   cat("✓ Generated output table\n")
   cat("  - Output file:", output_file, "\n")

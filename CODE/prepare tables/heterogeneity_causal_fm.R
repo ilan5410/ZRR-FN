@@ -207,7 +207,7 @@ generate_causal_forest_heterogeneity <- function(processed_data_path, path_table
   # Build notes with parbox for proper text wrapping
   notes_text <- paste0(
     "\\parbox{0.95\\textwidth}{\\footnotesize ",
-    "The table presents a comparison between the top 10\\\\% and bottom 10\\\\% ",
+    "The table presents a comparison between the top 10\\% and bottom 10\\% ",
     "of the treatment effect distribution as estimated by the Causal Forest Model. ",
     "The columns display the mean values of key socioeconomic and demographic variables ",
     "for both groups, the corresponding p-value, and significance levels indicated by stars ",

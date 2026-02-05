@@ -304,17 +304,17 @@ build_descriptive_1990 <- function(processed_data_path,
     label    = "descriptive",
     escape   = FALSE
   ) %>%
-    kableExtra::kable_styling(latex_options = "hold_position") %>%
+    kableExtra::kable_styling(latex_options = c("hold_position", "scale_down")) %>%
     kableExtra::add_header_above(c(" " = 1, "Groups" = 3))
-  
+
   for (sec in unique(summary_table_part1$Section)) {
     idx <- which(summary_table_part1$Section == sec)
     kb1 <- kb1 %>% kableExtra::pack_rows(sec, min(idx), max(idx))
   }
-  
+
   # Reduce the size
   kb1 <- kb1 %>%
-    kableExtra::column_spec(1, width = "7cm") 
+    kableExtra::column_spec(1, width = "7cm")
   
   # Replace "%" by "\%" for LaTeX
   kb1 <- gsub("%", "\\\\%", kb1)
@@ -334,21 +334,21 @@ build_descriptive_1990 <- function(processed_data_path,
     caption  = "Descriptive Statistics in 1990 (continued)",  # caption for continuation
     escape   = FALSE
   ) %>%
-    kableExtra::kable_styling(latex_options = "hold_position") %>%
+    kableExtra::kable_styling(latex_options = c("hold_position", "scale_down")) %>%
     kableExtra::add_header_above(c(" " = 1, "Groups" = 3)) %>%
     kableExtra::footnote(
       general = "Cells report the mean (first line) and standard deviation (in parentheses, second line). Some variables are taken from nearby years: taxable income (1994) and young/old ratio (1995).",
       threeparttable = TRUE
     )
-  
+
   for (sec in unique(summary_table_part2$Section)) {
     idx <- which(summary_table_part2$Section == sec)
     kb2 <- kb2 %>% kableExtra::pack_rows(sec, min(idx), max(idx))
   }
-  
+
   # Reduce the size
   kb2 <- kb2 %>%
-    kableExtra::column_spec(1, width = "7cm") 
+    kableExtra::column_spec(1, width = "7cm")
   
   # Replace "%" by "\%" for LaTeX
   kb2 <- gsub("%", "\\\\%", kb2)
@@ -372,19 +372,21 @@ build_descriptive_1990 <- function(processed_data_path,
 
   # Add the Julia Cagé & Piketty footnote as specified in PLAN.md
   cage_piketty_footnote <- paste0(
-    "\\\\item[a] In the socio-economic database assembled by Julia Cag\\'e and Thomas Piketty (2023), ",
+    "\\item[a] In the socio-economic database assembled by Julia Cag\\'e and Thomas Piketty (2023), ",
     "the average income per municipality is defined as the total income reported on tax declarations ",
     "(before any deductions or allowances) divided by the total number of inhabitants (including children). ",
-    "Source: \\\\url{https://www.unehistoireduconflitpolitique.fr/glossaire.html}, the website associated with ",
-    "the book by Julia Cag\\'e and Thomas Piketty (2023): \\\\textit{Une histoire du conflit politique. ",
+    "Source: \\url{https://www.unehistoireduconflitpolitique.fr/glossaire.html}, the website associated with ",
+    "the book by Julia Cag\\'e and Thomas Piketty (2023): \\textit{Une histoire du conflit politique. ",
     "\\'{E}lections et in\\'{e}galit\\'{e}s sociales en France, 1789--2022}, Paris, Le Seuil."
   )
 
   # Insert the footnote before the last \end{tablenotes}
-  full_table_tex <- gsub(
-    "(\\\\end\\{tablenotes\\})",
-    paste0(cage_piketty_footnote, "\n\\1"),
-    full_table_tex
+  # Use fixed = TRUE to avoid regex escaping issues with LaTeX backslashes
+  full_table_tex <- sub(
+    "\\end{tablenotes}",
+    paste0(cage_piketty_footnote, "\n\\end{tablenotes}"),
+    full_table_tex,
+    fixed = TRUE
   )
 
   # --------------------------------------------------------------------------

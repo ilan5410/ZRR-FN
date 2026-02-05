@@ -180,8 +180,12 @@ generate_zrr_voting_analysis <- function(processed_data_path, raw_data_path, pat
     star.cutoffs = c(0.05, 0.01, 0.001), 
     notes = "Standard errors are clustered at the canton level",
     label = "tab:absolute-vote",
+    font.size = "footnotesize",
     out = output_file
   )
+
+  # Post-process for width management
+  format_latex_table(output_file, use_resizebox = TRUE, font_size = "footnotesize")
   
   cat("✓ Generated publication-ready table\n")
   cat("  - Output file:", output_file, "\n")

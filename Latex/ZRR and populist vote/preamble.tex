@@ -16,9 +16,11 @@
 \usepackage[style=apa, backend=biber]{biblatex}
 \addbibresource{references.bib}
 \DeclareLanguageMapping{british}{british-apa}
+\setcounter{biburllcpenalty}{7000}
+\setcounter{biburlucpenalty}{8000}
 
 % Maths
-\usepackage{amsmath, amsfonts, mathrsfs}
+\usepackage{amsmath, amsfonts, mathrsfs, dsfont}
 
 % Tables and figures
 \usepackage{booktabs, threeparttable, caption, float, adjustbox, rotating, colortbl, diagbox}
@@ -38,6 +40,7 @@
 \pgfplotsset{compat=1.18}
 
 % Other utilities
+\usepackage{appendix}
 \usepackage{authblk}
 \usepackage{enumitem}
 \usepackage{titlesec}

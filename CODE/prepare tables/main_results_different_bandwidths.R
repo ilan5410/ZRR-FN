@@ -203,7 +203,7 @@ build_main_results_by_bandwidth <- function(processed_data_path,
   latex_table <- c(
     "\\begin{table}[!htbp]",
     "\\centering",
-    "\\small",
+    "\\footnotesize",
     "\\caption{Main results, different bandwidths}",
     "\\label{tab:rdd_results_diffbandwidth}",
     "\\begin{threeparttable}",

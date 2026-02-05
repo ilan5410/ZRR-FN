@@ -50,9 +50,10 @@ format_latex_table <- function(tex_file,
       "\\\\resizebox{\\\\textwidth}{!}{%\n\\1",
       content
     )
+    # Close resizebox right after \end{tabular} (regardless of what follows)
     content <- gsub(
-      "(\\\\end\\{tabular\\})(\\s*\n\\\\end\\{table\\})",
-      "\\1\n}% end resizebox\\2",
+      "(\\\\end\\{tabular\\})",
+      "\\1\n}% end resizebox",
       content
     )
   }

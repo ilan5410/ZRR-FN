@@ -255,6 +255,7 @@ generate_rdd_multiple_outcomes <- function(processed_data_path, path_tables,
   latex_lines <- c(
     "\\begin{table}",
     "\\centering",
+    "\\footnotesize",
     "\\caption{RDD main specification results on other outcomes}",
     "\\begin{tabular}{llll}",
     "\\toprule"

@@ -210,6 +210,8 @@ generate_results_table <- function(models, controls, path_tables) {
   #   keep.stat = c("n", "rsq"),
   # )
   
+  output_file <- paste0(path_tables, "DID_results.tex")
+
   stargazer(
     models$models,
     type = "latex",
@@ -219,8 +221,7 @@ generate_results_table <- function(models, controls, path_tables) {
     add.lines = list(c("Controls", "No", "Yes")),
     dep.var.labels = "Vote share for FN (2002)",
     dep.var.labels.include = TRUE,
-    column.labels = c("(1)", "(2)"),
-    model.names = FALSE,
+    model.numbers = TRUE,
     label = "tab:did_result",
     keep.stat = c("n", "rsq"),
     omit.stat = c("adj.rsq", "ser", "f"),
@@ -228,12 +229,33 @@ generate_results_table <- function(models, controls, path_tables) {
     no.space = TRUE,
     font.size = "footnotesize",
     column.sep.width = "0pt",
-    covariate.labels = c("Post × Treat"),
-    out = paste0(path_tables, "DID_results.tex"),
-    notes = "\\parbox{0.85\\textwidth}{All models are estimated using a first-difference approach between 1988 and 2002, comparing localities that entered the ZRR program in 1988 with the ones that entered after 2004. Control variables are unemployment rate, FN vote share in 1988, population size, association density, educational attainment (share with no diploma, with higher education, with a baccalaureate, and with a vocational diploma), number of men and women aged 20--40, agricultural employment, independent workers, intermediate occupations, total employment, poverty rate, altitude, area, housing vacancy rate (log), land use (fences and vines per km\\textsuperscript{2}), and typology of the municipality. Standard errors are clustered at the county (canton) level.}",
-    notes.append = FALSE,
-    notes.align = "l"
+    covariate.labels = c("Post $\\times$ Treat"),
+    out = output_file
   )
+
+  # Post-process: add notes below the tabular (not inside it) to avoid overflow
+  lines <- readLines(output_file, warn = FALSE)
+  note_text <- paste0(
+    "\\parbox{\\textwidth}{\\footnotesize \\textit{Notes:} ",
+    "$^{*}$p$<$0.1; $^{**}$p$<$0.05; $^{***}$p$<$0.01. ",
+    "All models are estimated using a first-difference approach between 1988 and 2002, ",
+    "comparing localities that entered the ZRR program in 1988 with the ones that entered after 2004. ",
+    "Control variables are unemployment rate, FN vote share in 1988, population size, association density, ",
+    "educational attainment (share with no diploma, with higher education, with a baccalaureate, ",
+    "and with a vocational diploma), number of men and women aged 20--40, agricultural employment, ",
+    "independent workers, intermediate occupations, total employment, poverty rate, altitude, area, ",
+    "housing vacancy rate (log), land use (fences and vines per km\\textsuperscript{2}), and typology ",
+    "of the municipality. Standard errors are clustered at the county (canton) level.}"
+  )
+  # Insert the note between \end{tabular} and \end{table}
+  idx_end_tabular <- grep("\\\\end\\{tabular\\}", lines)
+  idx_end_table <- grep("\\\\end\\{table\\}", lines)
+  if (length(idx_end_tabular) > 0 && length(idx_end_table) > 0) {
+    end_tab <- max(idx_end_tabular)
+    end_tbl <- max(idx_end_table)
+    lines <- c(lines[1:end_tab], note_text, lines[end_tbl:length(lines)])
+  }
+  writeLines(lines, output_file)
   
   
   
