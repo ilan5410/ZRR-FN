@@ -240,9 +240,9 @@ geom_density(data = df_treated, aes(x = log_pop),
 
 | Task | Status | Notes |
 |------|--------|-------|
-| 1.1 Figure captions | Pending | |
-| 1.2 IGN reference | Pending | |
-| 2.1 Uncomment appendix | Pending | |
+| 1.1 Figure captions | **DONE** | Fixed 6 captions in Background.tex, EvolutionFN.tex, robustness.tex |
+| 1.2 IGN reference | **DONE** | Added IGN2020 to references.bib, updated Data.tex |
+| 2.1 Uncomment appendix | **DONE** | Removed \mycomment{} wrapper, tab:1988-2002 now resolves |
 | 2.2 DID paragraph | Pending | |
 | 2.3 Discussion paragraph | Pending | |
 | 3.1 DID restructure | Pending | Requires author decision |
@@ -252,3 +252,14 @@ geom_density(data = df_treated, aes(x = log_pop),
 | 4.2 ΔFN figure | Pending | New R script |
 | 4.3 CI investigation | Pending | |
 | 5.1-5.3 Clarifications | Pending | |
+
+---
+
+## Completed: 2026-02-06
+
+**Phase 1 completed.** All quick fixes applied:
+- 6 figure captions fixed (removed "TODO: remove double title" text)
+- IGN reference added to references.bib and cited in Data.tex
+- Appendix table tab:1988-2002 uncommented and now compiles
+
+PDF compiles cleanly: 62 pages, 0 undefined references, 0 errors.
