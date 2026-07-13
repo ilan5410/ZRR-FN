@@ -8,7 +8,7 @@ import logging
 import time
 from joblib import Parallel, delayed
 from tqdm import tqdm
-from config import get_path, PARAMS, PROJECT_ROOT
+from config import get_path, PARAMS, PROJECT_ROOT, standardize_commune_codes
 
 # Configuration constants (using shared config)
 CONFIG = {
@@ -42,23 +42,29 @@ def load_and_preprocess_data():
     logging.info('Loading shape file...')
     shp_path = os.path.join(CONFIG['raw_data_path'], CONFIG['shapefile_dir'], CONFIG['shapefile_name'])
     dfSHP = gpd.read_file(shp_path)
-    dfSHP["codecommune"] = dfSHP["insee"].astype(str).str.lstrip('0')
+    dfSHP["codecommune"] = standardize_commune_codes(dfSHP["insee"])
     dfSHP.drop(["insee", "wikipedia", "surf_ha"], axis=1, inplace=True)
 
     logging.info('Loading ZRR data...')
     zrr_path = os.path.join(CONFIG['raw_data_path'], CONFIG['zrr_file'])
     dfZRR = pd.read_csv(zrr_path)
     dfZRR = dfZRR[dfZRR.year == CONFIG['year']]
-    dfZRR["codecommune"] = dfZRR["codecommune"].astype(str).str.lstrip('0')
+    dfZRR["codecommune"] = standardize_commune_codes(dfZRR["codecommune"])
     dfZRR.drop(["nom", "treatmentLong"], axis=1, inplace=True)
 
     logging.info('Loading canton data...')
     canton_path = os.path.join(CONFIG['raw_data_path'], CONFIG['canton_file'])
     dfCanton = gpd.read_file(canton_path)
-    dfCanton["codecommune"] = (dfCanton["DEP"].astype(str) + dfCanton["COM"].astype(str)).str.lstrip('0')
+    dfCanton["codecommune"] = standardize_commune_codes(dfCanton["DEP"].astype(str) + dfCanton["COM"].astype(str))
     dfCanton["codecanton"] = dfCanton["DEP"].astype(str) + dfCanton["CT"].astype(str)
     dfCanton["dep"] = dfCanton["DEP"].astype(str)
-    dfCanton = dfCanton[['codecommune', 'codecanton', 'dep']].dropna(subset=['codecanton', 'codecommune'])
+    dfCanton = (
+        dfCanton[['codecommune', 'codecanton', 'dep']]
+        .dropna(subset=['codecanton', 'codecommune'])
+        .drop_duplicates()
+        .sort_values(['codecommune', 'codecanton'])
+        .drop_duplicates(subset=['codecommune'], keep='first')
+    )
 
     pre_merge_len = len(dfZRR)
     dfZRR = dfZRR.merge(dfCanton[["codecommune", "codecanton"]], on=["codecommune"], how="inner")

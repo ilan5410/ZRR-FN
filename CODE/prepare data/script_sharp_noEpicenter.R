@@ -43,6 +43,7 @@ process_sharp_rdd_data <- function(processed_data_path, treatment_year = 1995, c
     file.path(processed_data_path, "dataGeoRDDnoEpicenter1.xlsx")
   ) %>%
     select(-year)
+  assert_unique_key(dfDistance, "codecommune", "dataGeoRDDnoEpicenter1")
   
   cat("✓ Loaded geographic RDD data\n")
   cat("  - Distance observations:", nrow(dfDistance), "\n")
@@ -121,6 +122,7 @@ process_sharp_rdd_data <- function(processed_data_path, treatment_year = 1995, c
     mutate(codecommune = standardize_commune_codes(codecommune)) %>%
     filter(year == control_year) %>%
     select(-year, -FN1995, -FN1988)
+  assert_unique_key(df_merged_to_merge, "codecommune", "df_merged no-epicenter controls")
   
   cat("✓ Prepared control variables\n")
   cat("  - Control observations:", nrow(df_merged_to_merge), "\n")
@@ -133,7 +135,7 @@ process_sharp_rdd_data <- function(processed_data_path, treatment_year = 1995, c
   cat("\n6. Merging ZRR with control variables...\n")
   
   dfZRRControls <- dfZRR %>%
-    left_join(df_merged_to_merge, by = "codecommune")
+    left_join(df_merged_to_merge, by = "codecommune", relationship = "one-to-one")
   
   cat("✓ Merged datasets\n")
   cat("  - Merged observations:", nrow(dfZRRControls), "\n")
@@ -186,7 +188,8 @@ process_sharp_rdd_data <- function(processed_data_path, treatment_year = 1995, c
       x = distance_to_border,  # Running variable
       z = treatment            # Treatment indicator
     ) %>%
-    unique()
+    drop_identical_rows("script_sharp_noEpicenter dfZRRControls")
+  assert_unique_key(dfZRRControls, "codecommune", "script_sharp_noEpicenter dfZRRControls")
   
   cat("✓ Created RDD variables (x = running variable, z = treatment)\n")
   

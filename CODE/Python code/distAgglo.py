@@ -6,7 +6,7 @@ from shapely.ops import unary_union
 from pyproj import Proj, transform
 import shapely
 from scipy.spatial import cKDTree
-from config import get_path, PARAMS
+from config import get_path, PARAMS, standardize_commune_codes
 
 tqdm.pandas()
 
@@ -24,15 +24,13 @@ if __name__ == '__main__':
     # load shp file (communes)
     pathSHP = get_path('shapefile')
     dfSHP = gpd.read_file(pathSHP)
-    dfSHP["codecommune"] = dfSHP["insee"].astype(str)
-    dfSHP['codecommune'] = dfSHP['codecommune'].str.lstrip('0')
+    dfSHP["codecommune"] = standardize_commune_codes(dfSHP["insee"])
     dfSHP.drop(["insee", "wikipedia", "surf_ha"], axis=1, inplace=True)
 
     # load pop data
     path = pathRawData + "popcommunes.csv"
     dfPop = pd.read_csv(path)
-    dfPop['codecommune'] = dfPop['codecommune'].astype(str)
-    dfPop['codecommune'] = dfPop['codecommune'].str.lstrip('0')
+    dfPop['codecommune'] = standardize_commune_codes(dfPop['codecommune'])
     # popCols = [i for i in dfPop if (i.startswith("pop") and len(i) < 9)]
     var = "pop1995"
     dfPop = dfPop[["codecommune", "reg"] + [var]]

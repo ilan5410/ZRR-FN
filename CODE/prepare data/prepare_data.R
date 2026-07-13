@@ -13,14 +13,75 @@
 #' @param codes Character vector of commune codes
 #' @return Character vector with leading zeros removed
 standardize_commune_codes <- function(codes) {
-  sub("^0+", "", as.character(codes))
+  codes <- trimws(as.character(codes))
+  codes <- sub("\\.0$", "", codes)
+  codes[codes %in% c("", "NA", "NaN")] <- NA_character_
+  sub("^0+", "", codes)
+}
+
+#' Format commune codes as 5-character INSEE strings for audit output
+#' @param codes Character vector of commune codes
+#' @return Character vector with numeric codes left-padded to 5 characters
+format_insee_codes <- function(codes) {
+  codes <- trimws(as.character(codes))
+  codes <- sub("\\.0$", "", codes)
+  codes[codes %in% c("", "NA", "NaN")] <- NA_character_
+  ifelse(
+    grepl("^[0-9]+$", codes) & nchar(codes) < 5,
+    stringr::str_pad(codes, width = 5, side = "left", pad = "0"),
+    codes
+  )
+}
+
+#' Assert that a data frame has at most one row per key
+#' @param df Data frame to check
+#' @param keys Character vector of key columns
+#' @param dataset_name Human-readable name used in error messages
+assert_unique_key <- function(df, keys, dataset_name) {
+  missing_keys <- setdiff(keys, names(df))
+  if (length(missing_keys) > 0) {
+    stop(
+      dataset_name, " is missing key column(s): ",
+      paste(missing_keys, collapse = ", "),
+      call. = FALSE
+    )
+  }
+
+  duplicate_groups <- df %>%
+    count(across(all_of(keys)), name = "n") %>%
+    filter(n > 1)
+
+  if (nrow(duplicate_groups) > 0) {
+    examples <- capture.output(head(duplicate_groups, 10))
+    stop(
+      dataset_name, " has ", nrow(duplicate_groups),
+      " duplicate key group(s) for [", paste(keys, collapse = ", "), "].\n",
+      paste(examples, collapse = "\n"),
+      call. = FALSE
+    )
+  }
+
+  invisible(df)
+}
+
+#' Drop fully duplicated rows before key checks
+#' @param df Data frame to deduplicate
+#' @param dataset_name Human-readable name used in log messages
+drop_identical_rows <- function(df, dataset_name) {
+  n_before <- nrow(df)
+  df <- distinct(df)
+  n_removed <- n_before - nrow(df)
+  if (n_removed > 0) {
+    cat("Removed", n_removed, "fully duplicated row(s) from", dataset_name, "\n")
+  }
+  df
 }
 
 #' Interpolate time series variables for communes
 #' @param df Data frame containing commune data
 #' @param vars Character vector of variable prefixes to interpolate
 #' @return Long format data frame with interpolated values
-interpolate_variable <- function(df, vars) {
+interpolate_variable <- function(df, vars, year_min = 1975, year_max = 2020) {
   results <- lapply(vars, function(var) {
     # Reshape to long format
     df_long <- df %>%
@@ -36,10 +97,17 @@ interpolate_variable <- function(df, vars) {
         year = as.numeric(year),
         value = as.numeric(value)
       )
+
+    df_long <- df_long %>%
+      group_by(codecommune, year) %>%
+      summarise(value = first(value), .groups = "drop")
     
     
-    # Define complete year range
-    years_range <- seq(min(df_long$year), max(df_long$year))
+    # Define complete year range used by the commune-year control panel.
+    years_range <- seq(
+      max(min(df_long$year), year_min),
+      min(max(df_long$year), year_max)
+    )
     
     # Complete missing years and interpolate
     df_long %>%
@@ -130,7 +198,14 @@ fill_missing_from_alternative_year <- function(df, source_df, variable, alternat
   
   alternative_data <- source_df %>%
     filter(year == alternative_year) %>%
-    select(codecommune, !!sym(variable))
+    select(codecommune, !!sym(variable)) %>%
+    drop_identical_rows(paste0(variable, "_", alternative_year, "_fallback"))
+
+  assert_unique_key(
+    alternative_data,
+    "codecommune",
+    paste0(variable, "_", alternative_year, "_fallback")
+  )
   
   result <- df %>%
     left_join(alternative_data, by = "codecommune", suffix = c("", paste0("_", alternative_year))) %>%
@@ -172,10 +247,13 @@ source(paste0(path_code_prepare_data, "dataDes.R"))
 ## eco_outcomes.R
 source(paste0(path_code_prepare_data, "eco_outcomes.R"))
 
+## Merge integrity checks
+source(paste0(path_code_prepare_data, "check_commune_merges.R"))
+run_commune_merge_checks(processed_data_path)
+
 ## Cleaning
 source(paste0(main_path, "CODE/configurations.R"))
 
 cat("\n===============================================\n")
 cat("DATA LOADING AND PROCESSING COMPLETED SUCCESSFULLY\n")
 cat("===============================================\n")
-

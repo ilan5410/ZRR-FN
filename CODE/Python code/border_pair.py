@@ -7,7 +7,7 @@ import shapely
 from shapely.geometry import MultiPolygon, LineString
 from shapely.ops import nearest_points
 import matplotlib.pyplot as plt
-from config import get_path, PARAMS
+from config import get_path, PARAMS, standardize_commune_codes
 
 tqdm.pandas()
 
@@ -20,16 +20,14 @@ if __name__ == '__main__':
     pathSHP = get_path('shapefile')
 
     dfSHP = gpd.read_file(pathSHP)
-    dfSHP["codecommune"] = dfSHP["insee"].astype(str)
-    # dfSHP['codecommune'] = dfSHP['codecommune'].str.lstrip('0')
+    dfSHP["codecommune"] = standardize_commune_codes(dfSHP["insee"])
     dfSHP.drop(["insee", "wikipedia", "surf_ha"], axis=1, inplace=True)
 
 
     # load processed data
     pathZRR = pathProcessedData + "dataGeoRDD1.xlsx"
     dfZRR = pd.read_excel(pathZRR)
-    dfZRR["codecommune"] = dfZRR["codecommune"].astype(str)
-    # dfZRR['codecommune'] = dfZRR['codecommune'].str.lstrip('0')
+    dfZRR["codecommune"] = standardize_commune_codes(dfZRR["codecommune"])
 
     # merge both
     gdf = dfZRR.merge(dfSHP, on=["codecommune", "nom"], how="inner")
@@ -102,5 +100,4 @@ if __name__ == '__main__':
 
     dfExport = gdf_combined.drop(["geometry", "level_0", "Unnamed: 0", "index"], axis=1)
     dfExport.to_excel(pathProcessedData + "border_pair.xlsx")
-
 

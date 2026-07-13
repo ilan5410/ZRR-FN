@@ -29,6 +29,12 @@ def get_path(key):
     """Get path as string for compatibility with pandas/geopandas."""
     return str(PATHS[key])
 
+def standardize_commune_codes(series):
+    """Return commune codes in the legacy unpadded format used by the R pipeline."""
+    codes = series.astype(str).str.strip().str.replace(r"\.0$", "", regex=True)
+    codes = codes.str.lstrip("0")
+    return codes.where(codes != "", None)
+
 def verify_paths():
     """Verify that required paths exist."""
     missing = []
