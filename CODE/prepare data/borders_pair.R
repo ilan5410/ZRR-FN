@@ -45,6 +45,7 @@ process_borders_pair_data <- function(processed_data_path, year_control = 1990) 
       codecommune = standardize_commune_codes(codecommune)
     ) %>%
     select(-dep, -nom, -year)
+  assert_unique_key(dfDistance, c("codecommune", "border_pair"), "border_pair distance data")
   
   n_border_pairs <- length(unique(dfDistance$border_pair))
   cat("✓ Processed border distance data\n")
@@ -80,9 +81,14 @@ process_borders_pair_data <- function(processed_data_path, year_control = 1990) 
   # 4. ADD CONTROL VARIABLES
   # --------------------------------------------------------------------------
   cat("\n4. Adding control variables...\n")
+
+  df_merged_controls <- df_merged %>%
+    filter(year == year_control) %>%
+    drop_identical_rows("border pair controls")
+  assert_unique_key(df_merged_controls, "codecommune", "border pair controls")
   
   dfZRRControls <- dfZRR %>%
-    left_join(df_merged, by = "codecommune", relationship = "many-to-many")
+    left_join(df_merged_controls, by = "codecommune", relationship = "many-to-one")
   
   cat("✓ Added control variables from df_merged\n")
   
@@ -113,7 +119,7 @@ process_borders_pair_data <- function(processed_data_path, year_control = 1990) 
   
   # Define all variables to keep and clean
   variables_to_clean <- c(
-    "x", "y", "z", controls, "year", "border_pair", "canton", "dep", "reg",
+    "codecommune", "x", "y", "z", controls, "year", "border_pair", "canton", "dep", "reg",
     "deltaFN", "RPR2002", "turnout_2002", "FN2007", "FN2012", "FN2017", 
     "FN2022", "same_department"
   )
@@ -142,6 +148,7 @@ process_borders_pair_data <- function(processed_data_path, year_control = 1990) 
       RPR2002 = as.numeric(RPR2002)
     ) %>%
     filter(!is.na(y), year == year_control)
+  assert_unique_key(dfZRRControls, c("codecommune", "border_pair"), "borders_pair dfZRRControls")
   
   final_rows <- nrow(dfZRRControls)
   final_border_pairs <- length(unique(dfZRRControls$border_pair))
@@ -169,7 +176,7 @@ process_borders_pair_data <- function(processed_data_path, year_control = 1990) 
   cat("\n9. Cleaning up and saving...\n")
   
   # Remove intermediate objects to save space
-  rm(dfZRR_raw, df_merged, dfZRR, dfDistance, controls, variables_to_clean,
+  rm(dfZRR_raw, df_merged, df_merged_controls, dfZRR, dfDistance, controls, variables_to_clean,
      excluded_vars, final_rows, final_communes, final_border_pairs, n_border_pairs,
      envir = .GlobalEnv)
   

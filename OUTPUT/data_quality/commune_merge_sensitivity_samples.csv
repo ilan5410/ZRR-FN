@@ -1,0 +1,4 @@
+dataset,rows,communes,split_canton_rows,missing_canton_rows,nonstandard_canton_rows,split_canton_communes,missing_canton_communes,nonstandard_canton_communes
+script_sharp,36565,36565,314,0,314,314,0,314
+script_sharp_noEpicenter,36565,36565,314,0,314,314,0,314
+eco_outcomes,69126,34563,678,56,734,339,28,367

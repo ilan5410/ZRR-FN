@@ -12,7 +12,7 @@ Scripts executed (in order):
     1. defineBorders.py      -> Creates dataGeoRDD1.xlsx
     2. border_pair.py        -> Creates border_pair.xlsx
     3. distAgglo.py          -> Creates distAgglo.xlsx
-    4. defineBordersNotEpicenter1.py -> Creates dataGeoRDD_noEpicenter.xlsx
+    4. defineBordersNotEpicenter1.py -> Creates dataGeoRDDnoEpicenter1.xlsx
 
 Optional (slow, run separately if needed):
     5. defineBorders_randomZRR.py -> Creates randomization files
@@ -30,7 +30,7 @@ SCRIPTS = [
     ("defineBorders.py", "dataGeoRDD1.xlsx"),
     ("border_pair.py", "border_pair.xlsx"),
     ("distAgglo.py", "distAgglo.xlsx"),
-    ("defineBordersNotEpicenter1.py", "dataGeoRDD_noEpicenter.xlsx"),
+    ("defineBordersNotEpicenter1.py", "dataGeoRDDnoEpicenter1.xlsx"),
 ]
 
 def run_script(script_name):

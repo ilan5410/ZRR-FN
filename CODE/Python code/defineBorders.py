@@ -8,7 +8,7 @@ from shapely.geometry import MultiPolygon, LineString
 from shapely.ops import nearest_points
 import matplotlib.pyplot as plt
 from libpysal.weights import Queen
-from config import get_path, PARAMS
+from config import get_path, PARAMS, standardize_commune_codes
 
 tqdm.pandas()
 
@@ -20,16 +20,14 @@ if __name__ == '__main__':
     # load shp file (communes)
     pathSHP = get_path('shapefile')
     dfSHP = gpd.read_file(pathSHP)
-    dfSHP["codecommune"] = dfSHP["insee"].astype(str)
-    # dfSHP['codecommune'] = dfSHP['codecommune'].str.lstrip('0')
+    dfSHP["codecommune"] = standardize_commune_codes(dfSHP["insee"])
     dfSHP.drop(["insee", "wikipedia", "surf_ha"], axis=1, inplace=True)
 
     # load ZRR data (for now, only year 1995)
     pathZRR = pathRawData + "ZRR.csv"
     dfZRR = pd.read_csv(pathZRR)
     dfZRR = dfZRR[dfZRR.year == 1995]
-    dfZRR["codecommune"] = dfZRR["codecommune"].astype(str)
-    # dfZRR['codecommune'] = dfZRR['codecommune'].str.lstrip('0')
+    dfZRR["codecommune"] = standardize_commune_codes(dfZRR["codecommune"])
     dfZRR.drop(["nom", "treatmentLong"], axis=1, inplace=True)
 
     # merge both

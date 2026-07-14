@@ -14,13 +14,13 @@
 #' This function reads a .tex table file and applies formatting fixes:
 #' - Wraps table in resizebox for width management
 #' - Fixes long notes with parbox
-#' - Optionally adds landscape mode
+#' - Optionally rotates wide tables
 #' - Changes font size
 #'
 #' @param tex_file Path to the .tex file to process
 #' @param use_resizebox Wrap tabular in resizebox (default: TRUE)
 #' @param font_size Font size: "footnotesize", "scriptsize", "small" (default: "footnotesize")
-#' @param use_landscape Wrap in landscape environment (default: FALSE)
+#' @param use_landscape Rotate the table as a sidewaystable (default: FALSE)
 #' @param notes_width Width for notes parbox as fraction of textwidth (default: 0.9)
 #' @return NULL (modifies file in place)
 format_latex_table <- function(tex_file,
@@ -64,16 +64,16 @@ format_latex_table <- function(tex_file,
   notes_replacement <- paste0("\\1\\\\parbox{", notes_width, "\\\\textwidth}{\\\\", font_size, " \\2}\\3")
   content <- gsub(notes_pattern, notes_replacement, content, perl = TRUE)
 
-  # Add landscape wrapper if needed
+  # Rotate wide tables without nesting a table float inside a landscape page.
   if (use_landscape) {
     content <- gsub(
       "\\\\begin\\{table\\}\\[!htbp\\]",
-      "\\\\begin{landscape}\n\\\\begin{table}[!htbp]",
+      "\\\\begin{sidewaystable}[!htbp]",
       content
     )
     content <- gsub(
       "\\\\end\\{table\\}\\s*$",
-      "\\\\end{table}\n\\\\end{landscape}\n",
+      "\\\\end{sidewaystable}\n",
       content
     )
   }
@@ -230,4 +230,3 @@ source(paste0(path_code_prepare_tables, "annex_main_results_1995.R"))
 cat("\n===============================================\n")
 cat("TABLES PRODUCED SUCCESSFULLY\n")
 cat("===============================================\n")
-

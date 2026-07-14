@@ -9,18 +9,13 @@
 # HELPER FUNCTIONS
 # ==============================================================================
 
-#' Standardize commune codes by removing leading zeros
-#' @param codes Character vector of commune codes
-#' @return Character vector with leading zeros removed
-standardize_commune_codes <- function(codes) {
-  sub("^0+", "", as.character(codes))
-}
+source(file.path(path_code_prepare_data, "data_quality_helpers.R"))
 
 #' Interpolate time series variables for communes
 #' @param df Data frame containing commune data
 #' @param vars Character vector of variable prefixes to interpolate
 #' @return Long format data frame with interpolated values
-interpolate_variable <- function(df, vars) {
+interpolate_variable <- function(df, vars, year_min = 1975, year_max = 2020) {
   results <- lapply(vars, function(var) {
     # Reshape to long format
     df_long <- df %>%
@@ -35,11 +30,21 @@ interpolate_variable <- function(df, vars) {
       mutate(
         year = as.numeric(year),
         value = as.numeric(value)
-      )
+      ) %>%
+      select(codecommune, year, value)
+
+    df_long <- collapse_duplicate_key_groups(
+      df_long,
+      c("codecommune", "year"),
+      paste0("interpolate_variable::", var)
+    )
     
     
-    # Define complete year range
-    years_range <- seq(min(df_long$year), max(df_long$year))
+    # Define complete year range used by the commune-year control panel.
+    years_range <- seq(
+      max(min(df_long$year), year_min),
+      min(max(df_long$year), year_max)
+    )
     
     # Complete missing years and interpolate
     df_long %>%
@@ -130,7 +135,14 @@ fill_missing_from_alternative_year <- function(df, source_df, variable, alternat
   
   alternative_data <- source_df %>%
     filter(year == alternative_year) %>%
-    select(codecommune, !!sym(variable))
+    select(codecommune, !!sym(variable)) %>%
+    drop_identical_rows(paste0(variable, "_", alternative_year, "_fallback"))
+
+  assert_unique_key(
+    alternative_data,
+    "codecommune",
+    paste0(variable, "_", alternative_year, "_fallback")
+  )
   
   result <- df %>%
     left_join(alternative_data, by = "codecommune", suffix = c("", paste0("_", alternative_year))) %>%
@@ -172,10 +184,13 @@ source(paste0(path_code_prepare_data, "dataDes.R"))
 ## eco_outcomes.R
 source(paste0(path_code_prepare_data, "eco_outcomes.R"))
 
+## Merge integrity checks
+source(paste0(path_code_prepare_data, "check_commune_merges.R"))
+run_commune_merge_checks(processed_data_path)
+
 ## Cleaning
 source(paste0(main_path, "CODE/configurations.R"))
 
 cat("\n===============================================\n")
 cat("DATA LOADING AND PROCESSING COMPLETED SUCCESSFULLY\n")
 cat("===============================================\n")
-

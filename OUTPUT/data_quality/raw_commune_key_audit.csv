@@ -1,0 +1,22 @@
+source,path,level,status,rows,unique_communes,missing_commune_codes,duplicate_commune_rows,exact_duplicate_key_groups,compatible_duplicate_key_groups,conflicting_duplicate_key_groups,unique_commune_years,duplicate_commune_year_rows
+ZRR,ZRR.csv,commune_year,ok,400857,36724,0,364133,0,0,0,400857,0
+1999 canton bridge,france1999.dbf,commune,ok,40288,39150,0,1138,0,0,342,NA,NA
+FN presidential vote,pvoixFNpres.xlsx,commune,ok,34867,34506,361,0,0,0,1,NA,NA
+FN European vote,EU.xlsx,commune,ok,36118,35758,360,0,0,0,1,NA,NA
+RPR presidential vote,pvoixRPRpres.xlsx,commune,ok,36579,36219,360,0,0,0,1,NA,NA
+turnout,df_turnout.csv,commune,ok,53803,36668,0,17135,0,0,16614,NA,NA
+population,popcommunes.csv,commune,ok,34856,34856,0,0,0,0,0,NA,NA
+age-sex population,agesexcommunes.csv,commune,ok,37985,37985,0,0,0,0,0,NA,NA
+CSP,cspcommunes.csv,commune,ok,37985,37985,0,0,0,0,0,NA,NA
+education,educProcessed.xlsx,commune,ok,35232,34855,0,377,0,0,377,NA,NA
+foreigners,etrangers.csv,commune,ok,37261,37261,0,0,0,0,0,NA,NA
+employment,txEmploi.csv,commune,ok,34928,34928,0,0,0,0,0,NA,NA
+taxable income,revenuImposable.csv,commune,ok,36843,36605,238,0,1,0,0,NA,NA
+housing vacancy,logVac.xlsx,commune,ok,34945,34945,0,0,0,0,0,NA,NA
+altitude/surface,altitudeAndMore.xlsx,commune,ok,36742,36742,0,0,0,0,0,NA,NA
+rural-urban typology,typoRuralUrbain.xlsx,commune,ok,34968,34968,0,0,0,0,0,NA,NA
+2022 commune shapefile,communes-20220101-shp/communes-20220101.dbf,commune,ok,34955,34955,0,0,0,0,0,NA,NA
+distance to ZRR border,../processed data/dataGeoRDD1.xlsx,commune,ok,34798,34798,0,0,0,0,0,34798,0
+border pairs,../processed data/border_pair.xlsx,commune_pair,ok,15492,7331,0,8161,0,0,4413,7331,8161
+distance to agglomeration,../processed data/distAgglo.xlsx,commune,ok,34826,34826,0,0,0,0,0,NA,NA
+distance no epicenter,../processed data/dataGeoRDDnoEpicenter1.xlsx,commune,ok,34798,34798,0,0,0,0,0,34798,0

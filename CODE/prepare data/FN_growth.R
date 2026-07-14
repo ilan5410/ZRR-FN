@@ -43,6 +43,7 @@ process_fn_growth_data <- function(processed_data_path, reference_year = 1995, d
     file.path(processed_data_path, "dataGeoRDD1.xlsx")
   ) %>%
     select(-year)
+  assert_unique_key(dfDistance, "codecommune", "dataGeoRDD1")
   
   cat("✓ Loaded geographic RDD data\n")
   cat("  - Observations:", nrow(dfDistance), "\n")
@@ -54,10 +55,11 @@ process_fn_growth_data <- function(processed_data_path, reference_year = 1995, d
   cat("\n3. Merging and preparing FN electoral data...\n")
   
   dfZRR <- dfZRR_raw %>%
-    left_join(dfDistance, by = "codecommune") %>%
+    left_join(dfDistance, by = "codecommune", relationship = "many-to-one") %>%
     filter(year == reference_year) %>%
     select(codecommune, distance_to_border, treatment, canton, starts_with("FN")) %>%
     mutate(across(starts_with("FN"), as.numeric))
+  assert_unique_key(dfZRR, "codecommune", "FN reference-year data")
   
   # Remove specific FN years that are not needed
   excluded_fn_years <- c("FN2019", "FN2014", "FN2004", "FN1999", "FN1994")
@@ -85,6 +87,7 @@ process_fn_growth_data <- function(processed_data_path, reference_year = 1995, d
       values_to = "FN"          
     ) %>%
     mutate(year = as.integer(year))
+  assert_unique_key(dfZRR, c("codecommune", "year"), "FN long data")
   
   years_available <- sort(unique(dfZRR$year))
   cat("✓ Reshaped to long format\n")
@@ -100,6 +103,7 @@ process_fn_growth_data <- function(processed_data_path, reference_year = 1995, d
   df_merged <- df_merged %>%
     mutate(codecommune = standardize_commune_codes(codecommune)) %>%
     mutate(year = ifelse(year == data_substitute_year, data_substitute_year + 2, year))
+  assert_unique_key(df_merged, c("codecommune", "year"), "FN growth controls")
   
   cat("✓ Applied year substitution:", data_substitute_year, "->", data_substitute_year + 2, "\n")
   
@@ -109,7 +113,7 @@ process_fn_growth_data <- function(processed_data_path, reference_year = 1995, d
   cat("\n6. Merging with control variables...\n")
   
   dfZRRControls <- dfZRR %>%
-    left_join(df_merged, by = c("codecommune", "year"), relationship = "many-to-many")
+    left_join(df_merged, by = c("codecommune", "year"), relationship = "one-to-one")
   
   # Remove unnecessary variables
   variables_to_remove <- c("nomcommune", "FN1995", "FN1988", "popYoungOld", "revenuPerK")
@@ -133,6 +137,7 @@ process_fn_growth_data <- function(processed_data_path, reference_year = 1995, d
   # Clean all variables
   variables_to_clean <- names(dfZRRControls)
   dfZRRControls <- clean_data_variables(dfZRRControls, variables_to_clean)
+  assert_unique_key(dfZRRControls, c("codecommune", "year"), "FN_growth dfZRRControls")
   
   # Convert treatment to logical
   dfZRRControls$treatment <- as.logical(dfZRRControls$treatment)

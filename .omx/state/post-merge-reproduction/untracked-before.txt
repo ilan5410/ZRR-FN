@@ -1,0 +1,7 @@
+.omx/plans/overnight-post-merge-reproduction.md
+.omx/state/post-merge-reproduction/dirty-status-before.txt
+.omx/state/post-merge-reproduction/dirty-worktree-before.patch
+.omx/state/post-merge-reproduction/untracked-before.txt
+CODE/DiD_main.R
+Latex/ZRR and populist vote/figures/event_study.png
+Latex/ZRR and populist vote/main.pdf

@@ -138,11 +138,12 @@ generate_zrr_socioeconomic_analysis <- function(processed_data_path, path_tables
       # Filter data by bandwidth
       filtered_data <- df %>%
         filter(x >= -bw & x <= bw) %>%
-        select(any_of(c(c(y, "z", "x", "dep", "codecanton"), controls_clean))) %>%
-        filter(
-          if_all(everything(), ~ !is.na(.x)),
-          if_all(where(is.numeric), ~ is.finite(.x))
-        )
+        select(any_of(c(c(y, "z", "x", "dep", "codecanton"), controls_clean)))
+
+      numeric_cols <- names(filtered_data)[vapply(filtered_data, is.numeric, logical(1))]
+      filtered_data <- filtered_data %>%
+        filter(if_all(everything(), ~ !is.na(.x))) %>%
+        filter(if_all(all_of(numeric_cols), ~ is.finite(.x)))
       
       nobs_vector <- c(nobs_vector, nrow(filtered_data))
       

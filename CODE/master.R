@@ -40,11 +40,6 @@ if (requireNamespace("here", quietly = TRUE)) {
   main_path <- paste0(getwd(), "/")
 }
 
-
-main_path <- "/Users/ilanpargamin/Desktop/ECONOMICS/thesis/THESIS_REPRO February 2026/"
-
-
-
 # Verify path exists
 if (!dir.exists(paste0(main_path, "CODE"))) {
   stop("ERROR: Could not find CODE folder. Please set your working directory to the project root folder.")
@@ -80,6 +75,11 @@ source(paste0(path_code_prepare_tables, "prepare_tables.R"))
 # Produce figures
 
 source(paste0(path_code_prepare_figures, "prepare_figures.R"))
+
+# Produce the publication DiD table and figures used by the current manuscript.
+# This script writes to OUTPUT and mirrors the three generated artifacts into
+# the LaTeX tables/figures folders.
+source(paste0(raw_code_path, "DiD_main.R"))
 
 cat("\n===============================================\n")
 cat("ALL FINAL OUTPUTS PRODUCED SUCCESSFULLY\n")

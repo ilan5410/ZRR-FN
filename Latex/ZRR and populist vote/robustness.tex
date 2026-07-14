@@ -38,32 +38,6 @@ The stability of the estimated coefficients additionally suggests that spatial s
 \input{tables/winsorizing_trimming_doughnut.tex}
 
 
-\subsubsection{ Randomization of ZRR boundary}
-[YS: This needs to be developed further. It could be that in any case it is better to place it in an appendix. There are two issues here: (i) 33\% is arbitrary (ii) the counties that receive a placebo treatment don't have the same spatial correlation that characterizes the ZRR assignment. it will be a pain to try and replicate this process, but at least the difference should be acknowledged]
+\subsubsection{Randomization of ZRR boundary}
 
-To provide further evidence that the discontinuous jump in the FN 2002 vote share is not driven by potential endogeneity of the ZRR boundary and unobservable differences between localities in my estimation sample, I perform a permutation inference exercise where I randomly remove 33\% (1177 out of 3532) treated counties out of treatment and inversely, add 33\% untreated counties to the program. As an illustration, I display the map of a "new" program in Figure \ref{fig:map-placebo} along with the distribution of the distance to the program frontier, my running variable. I then estimate the same model as in Equation 2. After repeating this exercise 100 times, I report the results in Figure \ref{fig:coeff-placebo}. 
-
-% Map and Distribution of the running variable - Placebo
-\begin{figure}
-    \centering
-    \includegraphics[width=1\linewidth]{figures/map_dist_running_var_random.png}
-    \caption{Map and Distribution of the running variable - Placebo}
-    \label{fig:coeff-placebo}
-
-\parbox{\textwidth}{\footnotesize \textit{Notes:} The map displays the running variable, the distance to the randomized program frontier, by three categories: outside the ZRR program and more than 5km away from the frontier; in a 5km range around the frontier, both inside and outside the ZRR program; inside the ZRR program and more than 5km away from the frontier. The bottom graph shows the distribution of the distance to program frontier in meters. If the distance is negative, the locality is inside the randomized program, outside otherwise.}
-    
-\end{figure}
-
-%% Main results, different bandwidths - placebo
-\begin{landscape}
-
-\begin{figure}
-    \centering
-    \includegraphics[width=1\linewidth]{figures/RDD_randomization.png}
-    \caption{Permutation Test Results}
-    \label{fig:map-placebo}
-
-\parbox{\textwidth}{\footnotesize \textit{Notes:} The placebo test consists in randomly switching treatment status of one third of the counties. The figure displays the coefficient of the treatment effect of the ZRR on the FN vote share in 2002. The red dotted line corresponds to the "true" coefficient. The grey ones to that of the randomized permutations.}
-    
-\end{figure}
-\end{landscape}
+As a final check, I perform a permutation inference exercise in which I randomly reassign the treatment status of one third of the counties and re-estimate the model 100 times. The distribution of placebo coefficients is centered on zero and the true estimate lies in its far left tail, indicating that the estimated effect is unlikely to arise from arbitrary boundary placement. The full exercise, along with a discussion of its limitations --- the share of reassigned counties is arbitrary, and the placebo boundaries do not reproduce the spatial correlation of the actual ZRR assignment --- is presented in Appendix \ref{app:randomization}.

@@ -37,6 +37,7 @@ process_zrr_data <- function(processed_data_path, raw_data_path, reference_year 
     file.path(raw_data_path, "ZRR.csv"),
     select_cols = c("codecommune", "nom", "treatment", "year")
   )
+  assert_unique_key(zrr_raw, c("codecommune", "year"), "ZRR treatment raw")
   
   cat("✓ Loaded ZRR treatment data:", nrow(zrr_raw), "observations\n")
   
@@ -45,18 +46,20 @@ process_zrr_data <- function(processed_data_path, raw_data_path, reference_year 
   # --------------------------------------------------------------------------
   cat("\n2. Merging datasets and calculating treatment years...\n")
   
-  dfZRR <- merge(dfZRR_raw, zrr_raw, by = c("codecommune", "year")) %>%
+  dfZRR <- dfZRR_raw %>%
+    left_join(zrr_raw, by = c("codecommune", "year"), relationship = "one-to-one") %>%
     group_by(codecommune) %>%
     # Calculate treatment year: first year when commune received ZRR designation
     mutate(
-      year_treat = case_when(
-        any(treatment == 1 & !is.na(year)) ~ min(year[treatment == 1 & !is.na(year)], na.rm = TRUE),
-        TRUE ~ NA_real_
-      )
+      year_treat = {
+        treated_years <- year[treatment == 1 & !is.na(year)]
+        if (length(treated_years) > 0) min(treated_years) else NA_real_
+      }
     ) %>%
     ungroup() %>%
     # Remove electoral data columns not needed for analysis
     select(-matches("^FN(2019|2014|2004|1999|1994)$"))
+  assert_unique_key(dfZRR, c("codecommune", "year"), "dfZRR treatment panel")
   
   cat("✓ Treatment year calculation complete\n")
   cat("  - Communes with treatment:", sum(!is.na(unique(dfZRR$year_treat))), "\n")
@@ -79,6 +82,7 @@ process_zrr_data <- function(processed_data_path, raw_data_path, reference_year 
       },
       treatment_in_1995 = treatment
     )
+  assert_unique_key(dfZRR_baseline, "codecommune", "dfZRR_baseline")
   
   cat("✓ Baseline data prepared for", nrow(dfZRR_baseline), "communes\n")
   
@@ -100,6 +104,7 @@ process_zrr_data <- function(processed_data_path, raw_data_path, reference_year 
       year_treat = replace_na(year_treat, 0)
     ) %>%
     arrange(nom)
+  assert_unique_key(dfZRRlong, c("codecommune", "year"), "dfZRRlong")
   
   years_available <- sort(unique(dfZRRlong$year))
   cat("✓ Long format dataset created\n")
@@ -114,8 +119,8 @@ process_zrr_data <- function(processed_data_path, raw_data_path, reference_year 
   
   dfZRRControls <- df_merged %>%
     # Merge with ZRR electoral data
-    left_join(dfZRRlong, by = c("codecommune", "year")) %>%
-    distinct() %>%
+    left_join(dfZRRlong, by = c("codecommune", "year"), relationship = "one-to-one") %>%
+    drop_identical_rows("dfZRRControls") %>%
     # Restrict to analysis period
     filter(year <= max_year) %>%
     # Data cleaning and type conversion
@@ -134,6 +139,7 @@ process_zrr_data <- function(processed_data_path, raw_data_path, reference_year 
     ungroup() %>%
     # Compute treatment from year_treat (no need to down-fill treatment)
     mutate(treatment = if_else(!is.na(year_treat) & year >= year_treat, 1L, 0L))
+  assert_unique_key(dfZRRControls, c("codecommune", "year"), "dfZRRControls")
   
   
   cat("✓ Final dataset created\n")

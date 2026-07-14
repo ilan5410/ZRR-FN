@@ -120,7 +120,11 @@ build_main_results_by_bandwidth <- function(processed_data_path,
   note_text <- "Standard errors clustered at the canton level (HC1)."
   
   
-  ms <- modelsummary::modelsummary(
+  if (file.exists(out_path)) {
+    unlink(out_path)
+  }
+
+  modelsummary::modelsummary(
     models,
     vcov      = vcovs,
     estimate  = "{estimate} ({std.error}){stars}",
@@ -130,16 +134,9 @@ build_main_results_by_bandwidth <- function(processed_data_path,
     gof_omit  = "IC|Log|Adj|p\\.value|statistic|se_type|Std|RMSE",
     stars     = c("*" = 0.05, "**" = 0.01, "***" = 0.001),
     fmt       = 4,
-    output    = "kableExtra"
-  ) %>%
-    kableExtra::kable_styling(full_width = FALSE) %>%
-    kableExtra::footnote(
-      general = note_text,
-      threeparttable = TRUE
-    )
-  
-  
-  kableExtra::save_kable(ms, out_path)
+    notes     = note_text,
+    output    = out_path
+  )
   cat("✓ Saved LaTeX table to: ", out_path, "\n", sep = "")
   
   cat("\n===============================================\n")
