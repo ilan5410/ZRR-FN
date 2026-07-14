@@ -14,6 +14,10 @@ library(stringr)
 library(stargazer)
 library(rlang)
 
+if (!exists("latex_escape_cell", mode = "function")) {
+  source(file.path(main_path, "CODE", "publication_formatting.R"))
+}
+
 # ==============================================================================
 # MAIN ANALYSIS FUNCTION
 # ==============================================================================
@@ -314,6 +318,7 @@ generate_balance_tests <- function(processed_data_path, path_tables,
   # Format the output dataframe
   df_out <- balance_summary_formatted %>%
     mutate(
+      variable = latex_escape_cell(variable),
       `Control (mean)` = sapply(`Control (mean)`, format_number),
       `Treatment (mean)` = sapply(`Treatment (mean)`, format_number),
       `p-value` = formatC(`p-value`, format = "f", digits = 4)
