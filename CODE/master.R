@@ -81,6 +81,10 @@ source(paste0(path_code_prepare_figures, "prepare_figures.R"))
 # the LaTeX tables/figures folders.
 source(paste0(raw_code_path, "DiD_main.R"))
 
+# Keep the artifacts consumed by LaTeX synchronized with the canonical outputs.
+source(paste0(raw_code_path, "publish_artifacts.R"))
+sync_publication_artifacts(main_path)
+
 cat("\n===============================================\n")
 cat("ALL FINAL OUTPUTS PRODUCED SUCCESSFULLY\n")
 cat("===============================================\n")
