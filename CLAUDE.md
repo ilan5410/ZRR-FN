@@ -181,6 +181,20 @@ Rscript CODE/master.R
 
 ## SESSION NOTES
 
+### Session 11 - 2026-07-14
+**Figure 4 (FN map) rebuilt at canton level, moved to appendix**
+- New script `CODE/prepare figures/map_FN_canton.R`: canton-level pop-weighted FN shares,
+  dissolved canton polygons, OrRd palette, two panels (1988/2002), shared capped scale
+- Built official commune→canton bridge from `france1999.dbf` →
+  `DATA/processed data/commune_canton_1999.csv` (36,679 communes)
+- **Data bug found & handled:** codecommune in FN_growth.RData lost leading zeros
+  (deps 01-09 are 4-char) and Corsica coded "20" not 2A/2B — normalized in script.
+  NOTE: other scripts using FN_growth.RData codecommune may suffer the same bug — worth auditing
+- Corsica omitted from map (no commune-level FN returns); Meurthe-et-Moselle blank in 1988 panel
+- Figure moved Background → new Appendix section app:fn-map (label fig:FN1988_2002 kept);
+  Background now has 1-sentence pointer describing the geographic pattern
+- Caches for fast re-runs: canton_geom.rds, canton_fn.rds (delete to force rebuild)
+
 ### Session 10 - 2026-07-14
 **Voice fix ("we") + git cleanup after Ilan's codex branches**
 - **Correction from Ilan: Yannay Spitzer is CO-AUTHOR → paper voice must be "we", not "I"**
