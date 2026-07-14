@@ -102,3 +102,8 @@ Desktop.ini
 # Build artifacts
 Latex/ZRR and populist vote/main.pdf
 .claude/
+
+# Agent tool state
+.omx/
+# Large derived diagnostic dump (78MB)
+OUTPUT/data_quality/commune_history_code_flags.csv

@@ -1,0 +1,7 @@
+check,ok,value,source_url
+local_france1999_matches_official_insee_archive,TRUE,local_md5=2e8ab556851a139168e5bb6de82c42ff; official_md5=2e8ab556851a139168e5bb6de82c42ff,https://www.insee.fr/fr/statistiques/fichier/2560686/france1999-dbf.zip
+local_france1999_rows,TRUE,40288,https://www.insee.fr/fr/statistiques/fichier/2560686/france1999-dbf.zip
+official_france1999_rows,TRUE,40288,https://www.insee.fr/fr/statistiques/fichier/2560686/france1999-dbf.zip
+commune_history_rows,TRUE,42333,https://www.insee.fr/fr/statistiques/fichier/8740222/v_commune_depuis_1943.csv
+commune_movement_rows,TRUE,13734,https://www.insee.fr/fr/statistiques/fichier/8740222/v_mvt_commune_2026.csv
+current_2026_commune_rows,TRUE,34875,https://www.insee.fr/fr/statistiques/fichier/8740222/v_commune_2026.csv

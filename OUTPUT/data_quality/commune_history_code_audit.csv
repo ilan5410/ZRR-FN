@@ -1,0 +1,22 @@
+source,relative_path,unique_codes,codes_known_to_official_history,codes_active_2026,codes_needing_crosswalk,codes_unknown_to_official_history,codes_inactive_at_observed_year
+1999 canton bridge,DATA/raw data/france1999.dbf,39150,39135,34858,4232,15,0
+CSP,DATA/raw data/cspcommunes.csv,37985,37979,34745,3214,6,0
+age-sex population,DATA/raw data/agesexcommunes.csv,37985,37979,34745,3214,6,0
+foreigners,DATA/raw data/etrangers.csv,37261,37261,34693,2548,0,0
+turnout,DATA/raw data/df_turnout.csv,36668,36651,34746,1860,17,0
+taxable income,DATA/raw data/revenuImposable.csv,36605,36605,34707,1853,0,0
+ZRR,DATA/raw data/ZRR.csv,36724,36724,34875,1849,0,108
+RPR presidential vote,DATA/raw data/pvoixRPRpres.xlsx,36219,36218,34357,1841,1,0
+altitude/surface,DATA/raw data/altitudeAndMore.xlsx,36742,36742,34869,1828,0,0
+FN European vote,DATA/raw data/EU.xlsx,35758,35758,33956,1782,0,0
+rural-urban typology,DATA/raw data/typoRuralUrbain.xlsx,34968,34968,34864,104,0,0
+education,DATA/raw data/educProcessed.xlsx,34855,34855,34733,102,0,0
+population,DATA/raw data/popcommunes.csv,34856,34856,34734,102,0,0
+FN presidential vote,DATA/raw data/pvoixFNpres.xlsx,34506,34505,34368,92,1,0
+2022 commune shapefile,DATA/raw data/communes-20220101-shp/communes-20220101.dbf,34955,34955,34863,92,0,0
+distance no epicenter,DATA/processed data/dataGeoRDDnoEpicenter1.xlsx,34798,34798,34706,92,0,12
+distance to ZRR border,DATA/processed data/dataGeoRDD1.xlsx,34798,34798,34706,92,0,12
+distance to agglomeration,DATA/processed data/distAgglo.xlsx,34826,34826,34734,92,0,0
+employment,DATA/raw data/txEmploi.csv,34928,34928,34847,81,0,0
+housing vacancy,DATA/raw data/logVac.xlsx,34945,34945,34864,81,0,0
+border pairs,DATA/processed data/border_pair.xlsx,7331,7331,7306,25,0,2

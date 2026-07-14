@@ -181,6 +181,25 @@ Rscript CODE/master.R
 
 ## SESSION NOTES
 
+### Session 10 - 2026-07-14
+**Voice fix ("we") + git cleanup after Ilan's codex branches**
+- **Correction from Ilan: Yannay Spitzer is CO-AUTHOR → paper voice must be "we", not "I"**
+  (Session 9 standardized the wrong way). Converted I/my→we/our across all 14 .tex files,
+  fixed footnote-initial caps, "translated by the authors". Yannay already in \author block.
+- Git state on arrival: main = origin/main = 5ed7f15 (PR #1 merge). Ilan's codex branches
+  (commune-merge-audit, post-merge-reproduction, publication-readiness) all fully merged.
+  Session 9 work was preserved in commit 657bd1d before integration.
+- Note: 7896b15 softened event-study causal language (1995 law/1996 decree timing) and
+  demoted the 1995 signal test — do NOT re-strengthen without resolving provenance directives
+- Cleanup done: deleted 3 merged local branches, pruned stale worktree, cleared stranded
+  .git lock files, gitignored .omx/ + 78MB diagnostic CSV, committed untracked audit
+  script + small data-quality outputs. Commit: ac368d7 on main.
+- **Pending for Ilan (no GitHub creds in sandbox):**
+  `git push origin main` and
+  `git push origin --delete codex/commune-merge-audit codex/post-merge-reproduction`
+- New untracked file appeared during session (commune_history_analysis_sample_audit.csv) —
+  possibly another tool still running; left uncommitted
+
 ### Session 9 - 2026-07-13
 **Full plan implemented (Workstreams A-D)**
 - **A (reframe identification):** Created `CODE/DiD_main.R`; installed R in sandbox (micromamba)
