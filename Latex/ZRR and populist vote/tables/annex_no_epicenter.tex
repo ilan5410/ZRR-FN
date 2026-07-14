@@ -1,0 +1,23 @@
+\begin{table}
+\centering
+\begin{talltblr}[         %% tabularray outer open
+entry=none,label=none,
+note{}={Standard errors clustered at the canton level (HC1).},
+]                     %% tabularray outer close
+{                     %% tabularray inner open
+colspec={Q[]Q[]Q[]Q[]},
+column{1}={halign=l,},
+column{2}={halign=c,},
+column{3}={halign=c,},
+column{4}={halign=c,},
+hline{4}={1,2,3,4}{solid, 0.05em, black},
+}                     %% tabularray inner close
+\toprule
+& Bandwidth = 20000 & Bandwidth = 10000 & Bandwidth = 5000 \\ \midrule %% TinyTableHeader
+Treatment ZRR                & \num{-0.0073} (\num{0.0015})*** & \num{-0.0060} (\num{0.0015})*** & \num{-0.0054} (\num{0.0015})*** \\
+Distance to Frontier (10 km) & \num{0.0015} (\num{0.0009})     & \num{0.0030} (\num{0.0015})*    & \num{0.0019} (\num{0.0030})     \\
+Num.Obs.                     & \num{20238}                      & \num{15523}                      & \num{11455}                      \\
+R2                           & \num{0.514}                      & \num{0.490}                      & \num{0.480}                      \\
+\bottomrule
+\end{talltblr}
+\end{table}

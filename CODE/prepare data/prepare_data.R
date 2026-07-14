@@ -9,73 +9,7 @@
 # HELPER FUNCTIONS
 # ==============================================================================
 
-#' Standardize commune codes by removing leading zeros
-#' @param codes Character vector of commune codes
-#' @return Character vector with leading zeros removed
-standardize_commune_codes <- function(codes) {
-  codes <- trimws(as.character(codes))
-  codes <- sub("\\.0$", "", codes)
-  codes[codes %in% c("", "NA", "NaN")] <- NA_character_
-  sub("^0+", "", codes)
-}
-
-#' Format commune codes as 5-character INSEE strings for audit output
-#' @param codes Character vector of commune codes
-#' @return Character vector with numeric codes left-padded to 5 characters
-format_insee_codes <- function(codes) {
-  codes <- trimws(as.character(codes))
-  codes <- sub("\\.0$", "", codes)
-  codes[codes %in% c("", "NA", "NaN")] <- NA_character_
-  ifelse(
-    grepl("^[0-9]+$", codes) & nchar(codes) < 5,
-    stringr::str_pad(codes, width = 5, side = "left", pad = "0"),
-    codes
-  )
-}
-
-#' Assert that a data frame has at most one row per key
-#' @param df Data frame to check
-#' @param keys Character vector of key columns
-#' @param dataset_name Human-readable name used in error messages
-assert_unique_key <- function(df, keys, dataset_name) {
-  missing_keys <- setdiff(keys, names(df))
-  if (length(missing_keys) > 0) {
-    stop(
-      dataset_name, " is missing key column(s): ",
-      paste(missing_keys, collapse = ", "),
-      call. = FALSE
-    )
-  }
-
-  duplicate_groups <- df %>%
-    count(across(all_of(keys)), name = "n") %>%
-    filter(n > 1)
-
-  if (nrow(duplicate_groups) > 0) {
-    examples <- capture.output(head(duplicate_groups, 10))
-    stop(
-      dataset_name, " has ", nrow(duplicate_groups),
-      " duplicate key group(s) for [", paste(keys, collapse = ", "), "].\n",
-      paste(examples, collapse = "\n"),
-      call. = FALSE
-    )
-  }
-
-  invisible(df)
-}
-
-#' Drop fully duplicated rows before key checks
-#' @param df Data frame to deduplicate
-#' @param dataset_name Human-readable name used in log messages
-drop_identical_rows <- function(df, dataset_name) {
-  n_before <- nrow(df)
-  df <- distinct(df)
-  n_removed <- n_before - nrow(df)
-  if (n_removed > 0) {
-    cat("Removed", n_removed, "fully duplicated row(s) from", dataset_name, "\n")
-  }
-  df
-}
+source(file.path(path_code_prepare_data, "data_quality_helpers.R"))
 
 #' Interpolate time series variables for communes
 #' @param df Data frame containing commune data
@@ -96,11 +30,14 @@ interpolate_variable <- function(df, vars, year_min = 1975, year_max = 2020) {
       mutate(
         year = as.numeric(year),
         value = as.numeric(value)
-      )
+      ) %>%
+      select(codecommune, year, value)
 
-    df_long <- df_long %>%
-      group_by(codecommune, year) %>%
-      summarise(value = first(value), .groups = "drop")
+    df_long <- collapse_duplicate_key_groups(
+      df_long,
+      c("codecommune", "year"),
+      paste0("interpolate_variable::", var)
+    )
     
     
     # Define complete year range used by the commune-year control panel.

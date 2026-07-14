@@ -102,7 +102,8 @@ process_sharp_rdd_data <- function(processed_data_path, treatment_year = 1995, c
       y = FN2002  # Outcome variable
     ) %>%
     select(
-      codecommune, distance_to_border, treatment, canton, deltaFN, border,
+      codecommune, distance_to_border, treatment, canton,
+      is_multi_canton, has_missing_canton, deltaFN, border,
       starts_with("FN"), starts_with("RPR"), starts_with("turnout")
     )
   

@@ -6,6 +6,7 @@
 # DATA FILES (large/sensitive - do not commit)
 # ------------------------------------------------------------------------------
 DATA/raw data/
+DATA/raw data
 DATA/processed data/*.RData
 DATA/processed data/*.xlsx
 *.RData
@@ -67,6 +68,8 @@ venv/
 *.bcf
 *.run.xml
 *-blx.bib
+Rplots.pdf
+Latex/ZRR and populist vote/main.pdf
 
 # ------------------------------------------------------------------------------
 # OS Files

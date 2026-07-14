@@ -21,22 +21,14 @@ suppressPackageStartupMessages({
   library(tibble)
 })
 
+source(file.path("CODE", "prepare data", "data_quality_helpers.R"))
+
 standardize_commune_codes_audit <- function(codes) {
-  codes <- trimws(as.character(codes))
-  codes <- sub("\\.0$", "", codes)
-  codes[codes %in% c("", "NA", "NaN")] <- NA_character_
-  sub("^0+", "", codes)
+  standardize_commune_codes(codes)
 }
 
 format_insee_codes_audit <- function(codes) {
-  codes <- trimws(as.character(codes))
-  codes <- sub("\\.0$", "", codes)
-  codes[codes %in% c("", "NA", "NaN")] <- NA_character_
-  ifelse(
-    grepl("^[0-9]+$", codes) & nchar(codes) < 5,
-    str_pad(codes, width = 5, side = "left", pad = "0"),
-    codes
-  )
+  format_insee_codes(codes)
 }
 
 read_audit_file <- function(path) {
@@ -65,6 +57,14 @@ extract_key_data <- function(df, key_col) {
   }
 }
 
+attach_audit_key <- function(df, key_col) {
+  key_data <- extract_key_data(df, key_col)
+  df %>%
+    mutate(.audit_row = row_number()) %>%
+    select(-any_of("codecommune")) %>%
+    bind_cols(key_data)
+}
+
 audit_one_source <- function(root, source_name, relative_path, key_col, level) {
   path <- file.path(root, relative_path)
   if (!file.exists(path)) {
@@ -78,19 +78,38 @@ audit_one_source <- function(root, source_name, relative_path, key_col, level) {
         unique_communes = NA_integer_,
         missing_commune_codes = NA_integer_,
         duplicate_commune_rows = NA_integer_,
+        exact_duplicate_key_groups = NA_integer_,
+        compatible_duplicate_key_groups = NA_integer_,
+        conflicting_duplicate_key_groups = NA_integer_,
         unique_commune_years = NA_integer_,
         duplicate_commune_year_rows = NA_integer_
       ),
-      duplicates = tibble()
+      duplicates = tibble(),
+      semantic_duplicates = tibble()
     ))
   }
 
   df <- read_audit_file(path)
-  key_data <- extract_key_data(df, key_col)
+  audit_df <- attach_audit_key(df, key_col)
+  key_data <- audit_df %>% select(codecommune)
   if ("year" %in% names(df)) {
     key_data <- key_data %>% mutate(year = suppressWarnings(as.integer(df$year)))
+    audit_df <- audit_df %>% mutate(year = suppressWarnings(as.integer(df$year)))
   }
   key_data <- key_data %>% mutate(code_insee = format_insee_codes_audit(codecommune))
+
+  declared_keys <- if (level == "commune_year" && "year" %in% names(audit_df)) {
+    c("codecommune", "year")
+  } else {
+    "codecommune"
+  }
+  semantic_duplicates <- classify_duplicate_key_groups(audit_df, declared_keys) %>%
+    mutate(
+      source = source_name,
+      path = relative_path,
+      duplicate_type = paste(declared_keys, collapse = "_"),
+      .before = 1
+    )
 
   duplicate_communes <- key_data %>%
     filter(!is.na(codecommune)) %>%
@@ -134,19 +153,23 @@ audit_one_source <- function(root, source_name, relative_path, key_col, level) {
   duplicates <- bind_rows(duplicate_tables)
 
   list(
-    summary = tibble(
-      source = source_name,
-      path = relative_path,
-      level = level,
-      status = "ok",
-      rows = nrow(df),
-      unique_communes = n_distinct(key_data$codecommune, na.rm = TRUE),
-      missing_commune_codes = sum(is.na(key_data$codecommune)),
-      duplicate_commune_rows = ifelse(nrow(duplicate_communes) == 0, 0L, sum(duplicate_communes$n - 1)),
-      unique_commune_years = unique_commune_years,
-      duplicate_commune_year_rows = duplicate_commune_year_rows
-    ),
-    duplicates = duplicates
+      summary = tibble(
+        source = source_name,
+        path = relative_path,
+        level = level,
+        status = "ok",
+        rows = nrow(df),
+        unique_communes = n_distinct(key_data$codecommune, na.rm = TRUE),
+        missing_commune_codes = sum(is.na(key_data$codecommune)),
+        duplicate_commune_rows = ifelse(nrow(duplicate_communes) == 0, 0L, sum(duplicate_communes$n - 1)),
+        exact_duplicate_key_groups = sum(semantic_duplicates$duplicate_class == "exact", na.rm = TRUE),
+        compatible_duplicate_key_groups = sum(semantic_duplicates$duplicate_class == "compatible", na.rm = TRUE),
+        conflicting_duplicate_key_groups = sum(semantic_duplicates$duplicate_class == "conflicting", na.rm = TRUE),
+        unique_commune_years = unique_commune_years,
+        duplicate_commune_year_rows = duplicate_commune_year_rows
+      ),
+    duplicates = duplicates,
+    semantic_duplicates = semantic_duplicates
   )
 }
 
@@ -196,12 +219,18 @@ run_commune_key_audit <- function(project_root = getwd()) {
 
   summaries <- bind_rows(map(c(raw_results, processed_results), "summary"))
   duplicates <- bind_rows(map(c(raw_results, processed_results), "duplicates"))
+  semantic_duplicates <- bind_rows(map(c(raw_results, processed_results), "semantic_duplicates"))
+  conflicts <- semantic_duplicates %>%
+    filter(duplicate_class == "conflicting")
 
   write_csv(summaries, file.path(output_dir, "raw_commune_key_audit.csv"))
+  write_csv(summaries, file.path(output_dir, "raw_source_profile.csv"))
   write_csv(duplicates, file.path(output_dir, "raw_commune_key_duplicates.csv"))
+  write_csv(semantic_duplicates, file.path(output_dir, "raw_key_duplicate_classes.csv"))
+  write_csv(conflicts, file.path(output_dir, "raw_key_conflicts.csv"))
 
   cat("Wrote commune-key audit to", output_dir, "\n")
-  invisible(list(summary = summaries, duplicates = duplicates))
+  invisible(list(summary = summaries, duplicates = duplicates, semantic_duplicates = semantic_duplicates, conflicts = conflicts))
 }
 
 if (sys.nframe() == 0) {

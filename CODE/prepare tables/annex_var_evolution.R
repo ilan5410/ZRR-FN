@@ -52,7 +52,9 @@ generate_socioeconomic_evolution_analysis <- function(processed_data_path, path_
   # Variables to exclude from analysis
   exclude_vars <- c("nomcommune", "reg", "nom", "time_since_open", "year_treat", 
                     "FN_log", "treatment", "FN1995", "RPR", "deltaFN", "turnout_2002", 
-                    "canton", "popYoungOld", "revenuPerK", "treatment_in_1995", "dep")
+                    "canton", "canton_primary_audit", "canton_list", "n_cantons",
+                    "is_multi_canton", "has_missing_canton",
+                    "popYoungOld", "revenuPerK", "treatment_in_1995", "dep")
   
   # Process and filter data
   df_did <- dfZRRControls %>%
@@ -62,8 +64,13 @@ generate_socioeconomic_evolution_analysis <- function(processed_data_path, path_
       post = if_else(year >= treatment_year, 1, 0),
       did = post * treated
     ) %>%
-    select(-any_of(exclude_vars)) %>%
-    filter(across(.cols = -c(codecommune, year), .fns = ~ !is.na(.x) & !is.infinite(.x))) %>%
+    select(-any_of(exclude_vars))
+
+  numeric_cols <- names(df_did)[vapply(df_did, is.numeric, logical(1))]
+  numeric_cols <- setdiff(numeric_cols, c("codecommune", "year"))
+  df_did <- df_did %>%
+    filter(if_all(-c(codecommune, year), ~ !is.na(.x))) %>%
+    filter(if_all(all_of(numeric_cols), ~ is.finite(.x))) %>%
     distinct(codecommune, year, .keep_all = TRUE)
   
   cat("✓ Processed and filtered data\n")
