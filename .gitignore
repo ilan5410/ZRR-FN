@@ -95,3 +95,7 @@ Desktop.ini
 *.tmp
 *.temp
 *.bak
+
+# Build artifacts
+Latex/ZRR and populist vote/main.pdf
+.claude/

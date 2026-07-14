@@ -187,6 +187,15 @@ Rscript CODE/master.R
 
 ## SESSION NOTES
 
+### Session 10 - 2026-07-13
+**Overnight post-merge reproduction plan prepared (awaiting approval)**
+- Wrote `.omx/plans/overnight-post-merge-reproduction.md`
+- Scoped an isolated A/B rebuild from the pre-fix parent and corrected merge branch
+- Identified the next data-quality gap: the raw audit counts duplicate keys but does not yet distinguish exact duplicates from conflicting values
+- Identified a substantive remaining issue: `main.R` prevents row multiplication by selecting the first sorted canton for 342 multi-canton communes; 150 of these enter the 20 km sharp sample, so canton clustering needs explicit sensitivity analysis
+- Identified a DiD claim risk: the current draft describes the dynamic figure as validating parallel trends despite apparently having only one pre-treatment presidential election
+- Confirmed the overnight run will preserve the current dirty manuscript, regenerate all evidence, compile, commit with Lore messages, and push a dedicated branch only after Ilan approves the plan
+
 ### Session 9 - 2026-07-13
 **Commune-level data merge audit and fixes**
 - Added raw/processed commune-key audit reports in `OUTPUT/data_quality/`
@@ -295,16 +304,25 @@ Rscript CODE/master.R
 
 ---
 
-## NEXT ACTIONS — NEW PLAN (Session 8, 2026-07-13)
+## NEXT ACTIONS — OVERNIGHT REPRODUCTION (Session 10, 2026-07-13)
 
-**Strategy decision (made after full re-read of paper + RDD review):** Reframe the paper around
+**Approval status:** Awaiting Ilan's approval of
+`.omx/plans/overnight-post-merge-reproduction.md`. Once approved, execute the full
+data audit, multi-canton sensitivity analysis, Python/R rebuild, result comparison,
+DiD validation, manuscript reconciliation, LaTeX compilation, Lore commits, and push.
+
+The workstreams below remain the paper-finalization direction, but numerical and
+causal wording must follow the regenerated evidence. In particular, DiD-first framing
+is provisional until the sample, controls, timing, clustering, and sensitivity checks
+in the overnight plan pass.
+
+**Provisional strategy after full re-read of paper + RDD review:** Reframe the paper around
 DiD (ΔFN specification + event study) as the PRIMARY identification strategy, with the spatial
 RDD/border analysis as supporting evidence. Rationale: (a) the RDD review showed the RDD effect
 depends entirely on dept FE and vanishes at 1km (no true spatial discontinuity), while DiD is
 robust (0.7–1.2 pp, timing matches 1995 launch); (b) YS's comments already push this way
 ("start by presenting Figure 7", requests for ΔFN figures); (c) the Intro's contribution section
 already describes the paper as DiD-first ("We further enhance robustness... spatial RDD").
-**Awaiting Ilan's confirmation before restructuring.**
 
 ### Workstream A — Reframe identification (core, ~2-3 sessions)
 1. Promote `alternative_identification.R` exploratory DiD into a formal script producing
