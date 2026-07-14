@@ -26,7 +26,7 @@ The target coefficient is the association between initial ZRR entry and this cha
 - The 1999 canton bridge is no longer collapsed by selecting the first sorted canton.
 - Communes split across multiple canton rows receive commune-specific split-cluster IDs.
 - Communes with missing canton codes receive commune-specific missing-canton cluster IDs.
-- Until external documentation is fully recovered, canton clustering should be described as an analysis convention, not as proof that every commune has a unique historical canton.
+- The 1999 canton bridge is verified as INSEE COG 1999 `france1999.dbf`. INSEE documents multi-canton communes as one row per canton fraction plus a `canton non precise` row, so canton clustering should still be described as an analysis convention for split/missing cases rather than as proof that every commune has a unique historical canton.
 - Split/missing canton exclusion sensitivities are required for any claim that depends materially on canton clustering.
 
 ## Evidence Status
@@ -35,6 +35,7 @@ The target coefficient is the association between initial ZRR entry and this cha
 - DiD model manifest: `OUTPUT/data_quality/model_manifest.csv`.
 - Merge/canton sensitivity: `OUTPUT/data_quality/commune_merge_sensitivity_summary.md`.
 - Raw-data provenance: `OUTPUT/data_quality/raw_data_provenance.csv` and `OUTPUT/data_quality/raw_data_external_documentation.md`.
+- Official commune-history applicability: `OUTPUT/data_quality/official_commune_history_applicability.md` and `OUTPUT/data_quality/commune_history_analysis_sample_audit.csv`.
 
 ## Claim Discipline
 

@@ -1,6 +1,6 @@
 # Official INSEE Commune-History Applicability Audit
 
-Generated: 2026-07-14 14:40:44 CEST
+Generated: 2026-07-14 14:47:49 CEST
 
 ## Official Sources Checked
 
@@ -93,8 +93,27 @@ Generated: 2026-07-14 14:40:44 CEST
 - Keep the manuscript's caution that canton clustering is an analysis convention for split/missing canton cases, but now cite the official INSEE 1999 row convention.
 - Add a next-step requirement: build an actual movement-based harmonization layer from `v_mvt_commune_2026.csv` before final submission, then compare estimates with and without harmonizing historical commune codes.
 
+## Analysis-Sample Exposure
+
+The raw-source flag counts above are intentionally conservative because old geography files naturally include communes that no longer exist in 2026. In the processed analysis objects, the exposure is smaller:
+
+```text
+# A tibble: 4 × 8
+  dataset       path       rows unique_codes flagged_codes needs_crosswalk_codes
+  <chr>         <chr>     <int>        <int>         <int>                 <int>
+1 df_merged     DATA/pr… 1.59e6        34563            94                    81
+2 dfZRR_raw     DATA/pr… 4.01e5        36724          1862                  1849
+3 dfDistance    DATA/pr… 3.48e4        34798           105                    92
+4 dfZRRControls DATA/pr… 3.66e4        36565          1860                  1847
+# ℹ 2 more variables: unknown_to_official_history_codes <int>,
+#   inactive_at_observed_year_codes <int>
+```
+
+The primary merged panel has a much smaller flagged-code exposure than the broader treatment/control universe. This warrants an explicit crosswalk sensitivity, but it does not invalidate the current merge audit by itself.
+
 ## Machine-Readable Outputs
 
 - `OUTPUT/data_quality/official_commune_history_source_check.csv`
 - `OUTPUT/data_quality/commune_history_code_audit.csv`
 - `OUTPUT/data_quality/commune_history_code_flags.csv`
+- `OUTPUT/data_quality/commune_history_analysis_sample_audit.csv`

@@ -1,0 +1,5 @@
+dataset,path,rows,unique_codes,flagged_codes,needs_crosswalk_codes,unknown_to_official_history_codes,inactive_at_observed_year_codes
+df_merged,DATA/processed data/main.RData,1589898,34563,94,81,0,13
+dfZRR_raw,DATA/processed data/main.RData,400857,36724,1862,1849,0,108
+dfDistance,DATA/processed data/script_sharp.RData,34798,34798,105,92,0,13
+dfZRRControls,DATA/processed data/script_sharp.RData,36565,36565,1860,1847,0,108

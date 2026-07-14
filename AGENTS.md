@@ -168,6 +168,7 @@ Repository: https://github.com/ilan5410/ZRR-FN
 
 ### Data Pipeline QA
 - `CODE/prepare data/audit_commune_keys.R` - audits raw/processed commune keys and duplicate patterns
+- `CODE/prepare data/audit_official_commune_history.R` - verifies INSEE COG 1999 provenance and audits official commune-history applicability
 - `CODE/prepare data/check_commune_merges.R` - asserts expected commune and commune-year merge cardinality
 - `DATA/processed data/multi_canton_communes.csv` - communes with multiple 1999 canton fragments
 
@@ -189,6 +190,15 @@ Rscript CODE/master.R
 ---
 
 ## SESSION NOTES
+
+### Session 12 - 2026-07-14
+**Official commune-history crosswalk applicability check**
+- Switched from the deleted `codex/publication-readiness` remote branch to `main` after `git fetch --prune`; `origin/main` now contains the merged publication-readiness PR.
+- Found the official INSEE COG 1999 page and verified that checked-in `DATA/raw data/france1999.dbf` is byte-for-byte identical to INSEE's `france1999-dbf.zip`.
+- Confirmed INSEE's 1999 documentation explicitly says multi-canton communes are represented by one row per canton fraction plus one `canton non precise` row, so the split-canton rows are official, not a GIS artifact.
+- Added `CODE/prepare data/audit_official_commune_history.R` plus outputs `official_commune_history_applicability.md`, `official_commune_history_source_check.csv`, `commune_history_code_audit.csv`, `commune_history_code_flags.csv`, and `commune_history_analysis_sample_audit.csv`.
+- Found that official 2026 INSEE commune-history files apply as validation/crosswalk inputs: raw sources contain many historical/non-current commune codes, but the primary `df_merged` analysis panel has 94 flagged codes and the RDD distance sample has 105.
+- Next implication: the paper can remove the unrecovered-source caveat for `france1999.dbf`, but should still run a movement-based harmonization sensitivity using `v_mvt_commune_2026.csv` before final submission.
 
 ### Session 11 - 2026-07-14
 **Publication-readiness implementation and full verified rebuild**
@@ -324,8 +334,8 @@ Rscript CODE/master.R
 
 ### Workstream A — Source and geography validation
 1. Recover exact original download URLs/vintages for every raw election, census, ZRR, JOAFE, income, and geography file.
-2. Replace the current inferred 1999 canton bridge assumption with an official INSEE COG archive citation and extraction rule.
-3. Apply or document an official commune-history crosswalk across election/control years, then rerun `check_commune_merges.R`.
+2. Use the verified INSEE COG 1999 citation and extraction rule in the manuscript/replication README: `france1999.dbf` comes from https://www.insee.fr/fr/statistiques/fichier/2560686/france1999-dbf.zip.
+3. Build and apply a movement-based official commune-history crosswalk using INSEE `v_mvt_commune_2026.csv`, then rerun `check_commune_merges.R` and compare estimates with/without harmonization.
 
 ### Workstream B — Identification hardening
 4. Investigate the 1995 placebo/signal results directly; the current manuscript correctly treats 1995 as a warning, but the diagnostics need a referee-ready appendix explanation.

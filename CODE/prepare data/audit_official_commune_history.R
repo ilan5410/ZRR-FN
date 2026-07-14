@@ -123,7 +123,54 @@ collect_project_codes <- function(project_root) {
     filter(!is.na(code_insee), code_insee != "")
 }
 
-write_applicability_note <- function(path, source_check, source_summary, flagged_codes) {
+summarise_analysis_object <- function(dataset, object, path, flagged_codes) {
+  if (!is.data.frame(object) || !"codecommune" %in% names(object)) return(NULL)
+  codes <- unique(format_insee_codes(object$codecommune))
+  flagged <- flagged_codes %>%
+    filter(
+      .data$code_insee %in% codes,
+      .data$needs_crosswalk | .data$unknown_to_official_history | .data$inactive_at_observed_year
+    )
+  tibble(
+    dataset = dataset,
+    path = path,
+    rows = nrow(object),
+    unique_codes = length(codes),
+    flagged_codes = n_distinct(flagged$code_insee),
+    needs_crosswalk_codes = n_distinct(flagged$code_insee[flagged$needs_crosswalk]),
+    unknown_to_official_history_codes = n_distinct(flagged$code_insee[flagged$unknown_to_official_history]),
+    inactive_at_observed_year_codes = n_distinct(flagged$code_insee[flagged$inactive_at_observed_year])
+  )
+}
+
+collect_analysis_sample_summary <- function(project_root, flagged_codes) {
+  outputs <- list()
+  main_path <- file.path(project_root, "DATA", "processed data", "main.RData")
+  if (file.exists(main_path)) {
+    env <- new.env(parent = emptyenv())
+    load(main_path, envir = env)
+    for (dataset in c("df_merged", "dfZRR_raw")) {
+      if (exists(dataset, envir = env)) {
+        outputs <- append(outputs, list(summarise_analysis_object(dataset, get(dataset, envir = env), "DATA/processed data/main.RData", flagged_codes)))
+      }
+    }
+  }
+
+  sharp_path <- file.path(project_root, "DATA", "processed data", "script_sharp.RData")
+  if (file.exists(sharp_path)) {
+    env <- new.env(parent = emptyenv())
+    load(sharp_path, envir = env)
+    for (dataset in c("dfDistance", "dfZRRControls")) {
+      if (exists(dataset, envir = env)) {
+        outputs <- append(outputs, list(summarise_analysis_object(dataset, get(dataset, envir = env), "DATA/processed data/script_sharp.RData", flagged_codes)))
+      }
+    }
+  }
+
+  bind_rows(outputs)
+}
+
+write_applicability_note <- function(path, source_check, source_summary, flagged_codes, analysis_summary) {
   exact_1999 <- source_check$ok[source_check$check == "local_france1999_matches_official_insee_archive"]
   exact_text <- ifelse(isTRUE(exact_1999), "Yes", "No")
   needs_crosswalk_total <- sum(source_summary$codes_needing_crosswalk, na.rm = TRUE)
@@ -174,11 +221,22 @@ write_applicability_note <- function(path, source_check, source_summary, flagged
     "- Keep the manuscript's caution that canton clustering is an analysis convention for split/missing canton cases, but now cite the official INSEE 1999 row convention.",
     "- Add a next-step requirement: build an actual movement-based harmonization layer from `v_mvt_commune_2026.csv` before final submission, then compare estimates with and without harmonizing historical commune codes.",
     "",
+    "## Analysis-Sample Exposure",
+    "",
+    "The raw-source flag counts above are intentionally conservative because old geography files naturally include communes that no longer exist in 2026. In the processed analysis objects, the exposure is smaller:",
+    "",
+    "```text",
+    if (nrow(analysis_summary) == 0) "No processed analysis objects found." else paste(capture.output(print(analysis_summary, n = nrow(analysis_summary))), collapse = "\n"),
+    "```",
+    "",
+    "The primary merged panel has a much smaller flagged-code exposure than the broader treatment/control universe. This warrants an explicit crosswalk sensitivity, but it does not invalidate the current merge audit by itself.",
+    "",
     "## Machine-Readable Outputs",
     "",
     "- `OUTPUT/data_quality/official_commune_history_source_check.csv`",
     "- `OUTPUT/data_quality/commune_history_code_audit.csv`",
-    "- `OUTPUT/data_quality/commune_history_code_flags.csv`"
+    "- `OUTPUT/data_quality/commune_history_code_flags.csv`",
+    "- `OUTPUT/data_quality/commune_history_analysis_sample_audit.csv`"
   )
   writeLines(lines, path)
 }
@@ -292,6 +350,8 @@ run_official_commune_history_audit <- function(project_root = getwd()) {
     ) %>%
     arrange(desc(codes_needing_crosswalk), desc(codes_unknown_to_official_history), source)
 
+  analysis_summary <- collect_analysis_sample_summary(project_root, flagged_codes)
+
   source_check <- tibble(
     check = c(
       "local_france1999_matches_official_insee_archive",
@@ -330,11 +390,13 @@ run_official_commune_history_audit <- function(project_root = getwd()) {
   write_csv(source_check, file.path(output_dir, "official_commune_history_source_check.csv"))
   write_csv(source_summary, file.path(output_dir, "commune_history_code_audit.csv"))
   write_csv(flagged_codes, file.path(output_dir, "commune_history_code_flags.csv"))
+  write_csv(analysis_summary, file.path(output_dir, "commune_history_analysis_sample_audit.csv"))
   write_applicability_note(
     file.path(output_dir, "official_commune_history_applicability.md"),
     source_check,
     source_summary,
-    flagged_codes
+    flagged_codes,
+    analysis_summary
   )
 
   cat("Wrote official commune-history applicability audit to", output_dir, "\n")
