@@ -191,6 +191,15 @@ Rscript CODE/master.R
 
 ## SESSION NOTES
 
+### Session 13 - 2026-07-14
+**Comprehensive PDF-review remediation plan prepared (awaiting approval)**
+- Consolidated every substantive and presentation issue from the 66-page review in `Latex/ZRR and populist vote/PDF_REVIEW_PAGE_BY_PAGE_2026-07-14.md`.
+- Wrote `.omx/plans/pdf-review-remediation-plan.md`, with page-range coverage, empirical gates, generator-level fixes, acceptance criteria, full reproduction, visual QA, documentation, Lore commits, and push.
+- Accounted for the new `33ca835` baseline, which postdates the reviewed `2d270cd` PDF and moves the FN map to the appendix.
+- Traced critical generated artifacts to their sources. Important new findings: legacy scripts generally do not synchronize `OUTPUT/` with the manuscript; Tables 18-20 are hardcoded and disagree with dormant generated outputs; Figure 1 has both a hardcoded TikZ source and an unused R-generated alternative.
+- Identified additional correctness checks for implementation: Table 9 breaks on an unescaped percent label; the border object contains 6,378 communes, 7,412 unique pairs, and 13,646 commune-pair observations; matching scripts use inconsistent calipers; the heterogeneity table mixes `W1`/`W2` samples; permutation p-values need finite-sample correction.
+- No manuscript, analysis code, table, or figure was modified. Implementation is explicitly gated on Ilan's approval.
+
 ### Session 12 - 2026-07-14
 **Official commune-history crosswalk applicability check**
 - Switched from the deleted `codex/publication-readiness` remote branch to `main` after `git fetch --prune`; `origin/main` now contains the merged publication-readiness PR.
@@ -328,28 +337,19 @@ Rscript CODE/master.R
 
 ---
 
-## NEXT ACTIONS — PUBLICATION READINESS (Session 11, 2026-07-14)
+## NEXT ACTIONS — PDF REVIEW REMEDIATION (Session 13, 2026-07-14)
 
-**Current status:** The draft now uses the early-versus-later treated first-difference design as the primary evidence, with spatial/RDD estimates as supporting evidence. The full Python/R/LaTeX reproduction path runs, and the empirical caveats are documented. The paper is closer to publishable, but not yet submission-ready.
+**Approval status:** Awaiting Ilan's approval of `.omx/plans/pdf-review-remediation-plan.md`. Do not begin implementation before approval.
 
-### Workstream A — Source and geography validation
-1. Recover exact original download URLs/vintages for every raw election, census, ZRR, JOAFE, income, and geography file.
-2. Use the verified INSEE COG 1999 citation and extraction rule in the manuscript/replication README: `france1999.dbf` comes from https://www.insee.fr/fr/statistiques/fichier/2560686/france1999-dbf.zip.
-3. Build and apply a movement-based official commune-history crosswalk using INSEE `v_mvt_commune_2026.csv`, then rerun `check_commune_merges.R` and compare estimates with/without harmonization.
+After approval, execute the plan in this order:
 
-### Workstream B — Identification hardening
-4. Investigate the 1995 placebo/signal results directly; the current manuscript correctly treats 1995 as a warning, but the diagnostics need a referee-ready appendix explanation.
-5. Explore whether additional pre-treatment presidential/legislative data can create a real pre-trend check; otherwise keep the one-pre-period caveat prominent.
-
-### Workstream C — Manuscript finishing
-6. Rewrite the remaining stale `Discussion.tex` absolute-vote paragraph using the regenerated `absolute_vote.tex` results.
-7. Finish YS comment cleanup: heterogeneity and randomization should likely be appendix-first, with modest main-text interpretation.
-8. Add the remaining minor clarifications: post-2004 eligibility wording, fence-density limitation, balancing-test CI/nonlinearity note.
-9. Standardize voice (`I` vs `we`) and do a full proofread for causal overclaiming.
-
-### Workstream D — Submission polish
-10. Fix bibliography warnings (duplicate `Fetzer2019`, month formatting) and remaining layout warnings, especially the oversized appendix float.
-11. Rebuild from a clean worktree immediately before submission and record the exact verification commands in the replication README.
+1. Recompile the current `33ca835` baseline and create a one-row-per-comment remediation tracker.
+2. Freeze chronology, terminology, design claims, and the official commune-history sensitivity.
+3. Reconcile every result, sample definition, dependent variable, unit, cluster, and star convention.
+4. Replace hardcoded/divergent tables with authoritative generators and synchronize all `OUTPUT/` artifacts with the manuscript.
+5. Repair and regenerate tables and figures, including Table 9, Tables 18-20, Figure 22, and the CATE outputs.
+6. Rewrite the manuscript only after the empirical gates pass, then clean the bibliography and pagination.
+7. Run the full Python/R/LaTeX pipeline, render and inspect every page, close the tracker, update documentation, commit with Lore messages, and push `main`.
 
 ---
 
