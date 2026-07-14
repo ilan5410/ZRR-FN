@@ -1,35 +1,20 @@
-
-% Table created by stargazer v.5.2.3 by Marek Hlavac, Social Policy Institute. E-mail: marek.hlavac at gmail.com
-% Date and time: Tue, Jul 14, 2026 - 04:07:10
-\begin{table}[!htbp] \centering 
-  \caption{Border Municipalities: Regression Results (Matching)} 
-  \label{tab:border-results} 
-\begin{tabular}{@{\extracolsep{5pt}}lcccc} 
-\\[-1.8ex]\hline 
-\hline \\[-1.8ex] 
- & \multicolumn{4}{c}{\textit{Dependent variable:}} \\ 
-\cline{2-5} 
-\\[-1.8ex] & \multicolumn{4}{c}{The vote share for FN in 2002} \\ 
-\\[-1.8ex] & (1) & (2) & (3) & (4)\\ 
-\hline \\[-1.8ex] 
- treatmentZRR & $-$0.004$^{**}$ & $-$0.004$^{***}$ & $-$0.003$^{**}$ & $-$0.003 \\ 
-  & (0.002) & (0.001) & (0.001) & (0.002) \\ 
-  & & & & \\ 
- Constant & 0.169$^{***}$ & 0.010 & 0.414$^{***}$ & 0.221 \\ 
-  & (0.001) & (0.045) & (0.042) & (0.162) \\ 
-  & & & & \\ 
-\hline \\[-1.8ex] 
-Controls & No & Yes & Yes & Yes \\ 
-Department Fixed Effects & No & No & Yes & Yes \\ 
-Border Pair Fixed Effects & No & No & No & Yes \\ 
-Observations & 6,960 & 6,960 & 6,960 & 6,960 \\ 
-R$^{2}$ & 0.001 & 0.276 & 0.490 & 0.904 \\ 
-Adjusted R$^{2}$ & 0.001 & 0.273 & 0.482 & 0.560 \\ 
-Residual Std. Error & 0.065 (df = 6958) & 0.055 (df = 6929) & 0.047 (df = 6853) & 0.043 (df = 1521) \\ 
-F Statistic & 7.272$^{**}$ (df = 1; 6958) & 87.913$^{***}$ (df = 30; 6929) & 62.016$^{***}$ (df = 106; 6853) & 2.628$^{***}$ (df = 5438; 1521) \\ 
-\hline 
-\hline \\[-1.8ex] 
-\textit{Note:}  & \multicolumn{4}{r}{$^{*}$p$<$0.05; $^{**}$p$<$0.01; $^{***}$p$<$0.001} \\ 
- & \multicolumn{4}{r}{The table presents the regression results of the effect of the ZRR program on the vote share for fn in 2002 , using a sample of matched border municipalities. Specification (1) shows the simplest model with no controls. Specification (2) includes control variables. Specification (3) adds department fixed effects to the model. Specification (4) includes border pair fixed effects. Matching performed using nearest method with caliper = 0.001 .} \\ 
-\end{tabular} 
-\end{table} 
+\begin{table}[!htbp]
+\centering
+\footnotesize
+\caption{Border municipalities: matched regression results}
+\label{tab:border-results-matching}
+\begin{tabular}{lccc}
+\hline
+ & (1) & (2) & (3) \\
+\hline
+ZRR treatment & -0.009** & -0.007** & -0.006*** \\
+ & (0.004) & (0.003) & (0.002) \\
+\hline
+Controls & No & Yes & Yes \\
+Department fixed effects & No & No & Yes \\
+Observations & 8,442 & 8,442 & 8,442 \\
+R$^2$ & 0.005 & 0.311 & 0.509 \\
+\hline
+\end{tabular}
+\parbox{\textwidth}{\footnotesize \textit{Notes:} The dependent variable is the FN vote share in 2002. Nearest-neighbor matching uses a 0.2 caliper on the logit propensity score. Standard errors are HC1 and clustered by canton. The matched sample contains 8442 commune-pair observations (4274 unique communes across 5073 border pairs; 4221 treated and 4221 control observations). $^{*}$p$<$0.10; $^{**}$p$<$0.05; $^{***}$p$<$0.01.}
+\end{table}

@@ -163,6 +163,8 @@ fill_missing_from_alternative_year <- function(df, source_df, variable, alternat
 # EXECUTION
 # ==============================================================================
 
+if (!identical(Sys.getenv("RUN_PREPARE_DATA", "true"), "false")) {
+
 ## main.R
 source(paste0(path_code_prepare_data, "main.R"))
 
@@ -188,9 +190,17 @@ source(paste0(path_code_prepare_data, "eco_outcomes.R"))
 source(paste0(path_code_prepare_data, "check_commune_merges.R"))
 run_commune_merge_checks(processed_data_path)
 
+## Official commune-history audit and conservative exclusion sensitivity
+source(paste0(path_code_prepare_data, "audit_official_commune_history.R"))
+run_official_commune_history_audit(main_path)
+source(paste0(path_code_prepare_data, "commune_history_sensitivity.R"))
+run_commune_history_sensitivity(main_path)
+
 ## Cleaning
 source(paste0(main_path, "CODE/configurations.R"))
 
 cat("\n===============================================\n")
 cat("DATA LOADING AND PROCESSING COMPLETED SUCCESSFULLY\n")
 cat("===============================================\n")
+
+}

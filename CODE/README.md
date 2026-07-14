@@ -89,6 +89,22 @@ Executed by `prepare_data.R`:
 ### Stage 3: R Output Generation
 - `prepare_tables.R` → Generates `.tex` files in `OUTPUT/tables/`
 - `prepare_figures.R` → Generates `.png` files in `OUTPUT/figures/`
+- `publish_artifacts.R` → Synchronizes generated artifacts with the copies included
+  by LaTeX under `Latex/ZRR and populist vote/`.
+
+### Data-quality checks
+
+The data-preparation pipeline writes auditable merge and commune-history reports to
+`OUTPUT/data_quality/`. After changing a raw-data mapping or merge, run:
+
+```bash
+Rscript "CODE/prepare data/check_commune_merges.R"
+Rscript CODE/tests/run_data_quality_tests.R
+```
+
+The official commune-history sensitivity is an exclusion check for history-flagged
+codes. It does not replace a full value-level historical crosswalk; see
+`OUTPUT/data_quality/commune_history_estimate_sensitivity.md`.
 
 ## Dependencies
 
@@ -149,6 +165,7 @@ After running `master.R`:
 
 - **Tables**: 19 `.tex` files in `OUTPUT/tables/`
 - **Figures**: 25 `.png` files in `OUTPUT/figures/`
+- **Manuscript copies**: synchronized automatically by `publish_artifacts.R`
 
 ## Troubleshooting
 

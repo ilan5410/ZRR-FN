@@ -1,6 +1,6 @@
 \subsection{Spatial RDD}
 
-To complement the first-difference evidence of Section \ref{did-section}, we employ a spatial regression discontinuity design (RDD) that leverages geographic proximity to the program boundary. Whereas the primary design compares changes over time, the spatial approach compares levels across the program frontier at a point in time; agreement between two designs resting on different identifying assumptions strengthens the interpretation. Specifically, we use the distance from each locality's centroid to the nearest point on the program frontier as the running variable. This distance is negative for municipalities inside the program and positive for those outside, with the cutoff at zero. Figure \ref{fig:dist_distribution} shows the distribution of the running variable. The key assumption underpinning this strategy is that, conditional on county characteristics which affected the program eligibility, voting patterns change continuously around the border, allowing attributing any discontinuities in outcomes to the program effect. This assumption is plausible in this setting because treatment was assigned at the county (\textit{canton}) level, and counties contain only a small number of municipalities (6 to 10 on average, as shown below in Table \ref{tab:summary_stats_combined}): municipalities on opposite sides of the frontier therefore frequently belong to adjacent, demographically similar counties, and differ mainly in their county's eligibility status rather than in their own characteristics. Two caveats accompany this design, examined in detail in Section \ref{robustness-section}: the estimates require department fixed effects to be precise, reflecting the strong geographic clustering of both the ZRR frontier and the FN vote, and the discontinuity attenuates at very narrow bandwidths, suggesting the effect operates on treated areas broadly rather than sharply at the border line.
+To complement the first-difference evidence of Section \ref{did-section}, we estimate a spatial regression discontinuity (RDD) specification based on proximity to the program frontier. This is supporting evidence rather than the paper's primary design: its identifying continuity assumption is demanding and the results are sensitive to fixed effects and bandwidth. We use the distance from each commune's centroid to the nearest point on the program frontier as the running variable; it is negative inside the program and positive outside, with a cutoff at zero. Treatment was assigned at the canton level, and adjacent communes can still differ systematically in geography and socioeconomic conditions. The balance diagnostics below therefore qualify, rather than establish, the credibility of the spatial comparison.
 
 %% map and distribution of running VAR
 \begin{figure}
@@ -27,7 +27,7 @@ Where $FN2002_{id}$ is the dependent variable, representing the FN vote share in
 
 \subsection{Validation checks}
 
-Our main assumption is that, conditional on the county's characteristics that affected its eligibility to the ZRR program, absent the treatment the outcome would have changed continuously and linearly around the cutoff. Table \ref{tab:summary_stats_combined} shows that the closer we get to the program frontier, the more similar both groups are in terms of administrative and demographic characteristics, although differences remain. In Figure \ref{fig:RDD_balancing_combined}, we present the results from the balancing checks for each control variable. More specifically, we plot the residuals of the regression of each locality's characteristic on our set of controls and department fixed effects. We also report the coefficient of the treatment status at the top of each figure. It is mostly statistically insignificant. Our identification works if there is no discontinuity around the cutoff, which we mostly observe. The figures show that, conditionally on the aforementioned variables, there is no discontinuity around the cutoff, implying that the municipalities below and above the cutoff are similar enough. Importantly, as figure \ref{fig:FN1988_rdd} shows, there is no discontinuity in the vote share for FN in 1988.
+The spatial specification assumes that potential outcomes vary smoothly at the frontier after conditioning on the included covariates. Table \ref{tab:summary_stats_combined} and Figure \ref{fig:RDD_balancing_combined} provide mixed evidence. Several covariates, including area, altitude, population density, and distance to an agglomeration, display visible discontinuities or changes in slope near the cutoff. The 1988 FN placebo in Figure \ref{fig:FN1988_rdd} does not display a clear jump, but its uncertainty is substantial. These diagnostics motivate the controls and department effects used below, while also limiting the strength of any causal interpretation of the spatial estimates.
 
 
 %% Descriptive stat on counties and municipalities in sample
@@ -118,7 +118,7 @@ Figure \ref{fig:RDD_outcome_combined-2002} shows the plots of the residuals of t
 
 \vspace{1.5pt}
 
-We now estimate the main model as described in equation \ref{eq2}. Table \ref{tab:rdd_results_diffbandwidth} reports the estimates of the LATE (local average treatment effect) with different bandwidths. Municipalities benefiting from the ZRR program experienced a 0.3-0.5 percentage point reduction in National Front (FN) vote share in the 2002 presidential election. Since the average vote share for FN in 2002, among the municipalities located as far as 10 kilometers from the frontier, was 17\%, this result converts into a 1.8-3\% decrease on average. However, the effects become less pronounced at narrower bandwidths (5,000), where the sample is reduced and the standard errors are larger. 
+We now estimate the spatial model in equation \ref{eq2}. Table \ref{tab:rdd_results_diffbandwidth} reports estimated local discontinuities across bandwidths. Fully adjusted estimates for the 2002 FN vote are negative, generally between 0.3 and 0.5 percentage points in magnitude, but are less precise in narrow windows. Relative to a 17\% average FN vote share, this corresponds mechanically to roughly 2--3\%, subject to the spatial design limitations described above.
 
 
 %% Main results, different bandwidths
@@ -147,9 +147,8 @@ No matter the bandwidth we choose, we see no clear effect of the program on the 
     \caption{Effect of ZRR on FN vote share in later elections}
     \includegraphics[width=1\linewidth]{figures/later_elections.png}
 
-\parbox{\textwidth}{\footnotesize \textit{Notes:} we plot the coefficients of the effect of the ZRR program from the fully specified model (with controls and place fixed effects, and standard errors clustered at the county level) on the FN vote shares in the presidential elections of 2007, 2012, 2017 and 2022.}
+\parbox{\textwidth}{\footnotesize \textit{Notes:} We plot coefficients from the fully specified model with controls and department fixed effects. Standard errors are clustered at the canton level.}
 
     \label{fig:later_elections}
 \end{figure}
-
 

@@ -46,7 +46,7 @@ generate_rdd_multiple_outcomes <- function(processed_data_path, path_tables,
   cat("✓ Loaded script_sharp.RData\n")
   
   # Validate required objects exist
-  required_objects <- c("dfZRRControls", "bandwidths", "controls")
+  required_objects <- "dfZRRControls"
   missing_objects <- setdiff(required_objects, ls())
   if (length(missing_objects) > 0) {
     stop("Missing required objects: ", paste(missing_objects, collapse = ", "))
@@ -152,7 +152,7 @@ generate_rdd_multiple_outcomes <- function(processed_data_path, path_tables,
   # Fit models for each bandwidth and outcome
   for (i in seq_along(bandwidths)) {
     bw_m <- bandwidths[i]
-    bw_km <- bandwidths[i]
+    bw_km <- bandwidths[i] / 1000
     
     cat("  - Processing bandwidth:", bw_km, "km\n")
     
@@ -172,7 +172,7 @@ generate_rdd_multiple_outcomes <- function(processed_data_path, path_tables,
       model <- lm(as.formula(formulas[[outcome]]), data = filtered_data)
       
       # Calculate HC1 clustered standard errors at canton level
-      vcov_clustered <- vcovHC(model, type = "HC1", cluster = filtered_data$canton)
+      vcov_clustered <- sandwich::vcovCL(model, cluster = filtered_data$canton, type = "HC1")
       coefs <- coeftest(model, vcov = vcov_clustered)
       
       # Store results
@@ -224,8 +224,8 @@ generate_rdd_multiple_outcomes <- function(processed_data_path, path_tables,
   
   # Fill the summary table with coefficients for treatment variable "z"
   for (i in seq_along(bandwidths)) {
-    bw_km <- bandwidths[i]
-    column_name <- paste0("bw=", format(bw_km, scientific = FALSE, big.mark = ","))
+    bw_km <- bandwidths[i] / 1000
+    column_name <- paste0("bw=", bw_km, " km")
     
     for (j in seq_along(outcome_variables)) {
       outcome <- outcome_variables[j]
@@ -262,7 +262,7 @@ generate_rdd_multiple_outcomes <- function(processed_data_path, path_tables,
   )
   
   # Add header row
-  bw_labels <- sapply(bandwidths, function(x) paste0("bw=", format(x, scientific = FALSE, big.mark = ",")))
+  bw_labels <- sapply(bandwidths, function(x) paste0(x / 1000, " km"))
   header <- paste(c("Outcome", bw_labels), collapse = " & ")
   latex_lines <- c(latex_lines, paste0(header, "\\\\"))
   latex_lines <- c(latex_lines, "\\midrule")
@@ -301,7 +301,7 @@ generate_rdd_multiple_outcomes <- function(processed_data_path, path_tables,
                    "\\end{tabular}",
                    "\\label{tab:rdd_results_outcomes_later}",
                    "",
-                   "\\parbox{\\textwidth}{\\footnotesize \\textit{Notes:} While the effect of the ZRR program on the delta of the FN vote share between 1988 and 2002 is significant and positive, its effect on the vote share of the RPR, Jacques Chirac's party, is null. There is also no effect on the election turnout. We run the specification on different bandwidths, with controls and place fixed effects. The standard errors are clustered at the department level.}",
+                   "\\parbox{\\textwidth}{\\footnotesize \\textit{Notes:} Entries are coefficients on initial ZRR status. The estimated change in FN vote share between 1988 and 2002 is negative; the RPR, turnout, and 1988 placebo results provide outcome-specific checks. All models include controls and department fixed effects. Standard errors are HC1 and clustered at the canton level. $^{*}$p$<$0.10; $^{**}$p$<$0.05; $^{***}$p$<$0.01.}",
                    "",
                    "\\end{table}")
   

@@ -214,12 +214,6 @@ source(paste0(path_code_prepare_tables, "annex_no_epicenter.R"))
 ## annex_no_epicenter_diff_bd.R
 source(paste0(path_code_prepare_tables, "annex_no_epicenter_diff_bd.R"))
 
-## annex_border_pair_ttest.R
-source(paste0(path_code_prepare_tables, "annex_border_pair_ttest.R"))
-
-## annex_main_dif_bd_1995.R
-source(paste0(path_code_prepare_tables, "annex_main_dif_bd_1995.R"))
-
 ## annex_matching.R
 source(paste0(path_code_prepare_tables, "annex_matching.R"))
 

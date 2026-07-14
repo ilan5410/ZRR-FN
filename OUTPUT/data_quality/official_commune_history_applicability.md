@@ -1,6 +1,6 @@
 # Official INSEE Commune-History Applicability Audit
 
-Generated: 2026-07-14 14:47:49 CEST
+Generated: 2026-07-14 16:15:28 CEST
 
 ## Official Sources Checked
 

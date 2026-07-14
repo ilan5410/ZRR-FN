@@ -46,7 +46,7 @@
 | 2. Code Reorganization | Complete | 100% |
 | 3. GitHub Push | Complete | 100% |
 | 4. RDD Methodology Review | **COMPLETE** | 100% |
-| 5. Paper Finalization | In Progress | 75% |
+| 5. Paper Finalization | In Progress | 90% |
 
 ---
 
@@ -129,7 +129,7 @@ Repository: https://github.com/ilan5410/ZRR-FN
 
 ---
 
-## STAGE 5: Paper Finalization (75% - In Progress)
+## STAGE 5: Paper Finalization (90% - In Progress)
 
 **TODO tracking documents (created Session 6):**
 - `Latex/ZRR and populist vote/TODOs.md` - full inventory of TODOs + reviewer [YS:] comments
@@ -138,21 +138,21 @@ Repository: https://github.com/ilan5410/ZRR-FN
 **Tasks:**
 - [x] Verify all tables render correctly (all tables compile, 0 errors)
 - [x] Verify all figures render correctly (all figures load in PDF)
-- [x] Final PDF compilation (66 pages, clean build)
+- [x] Final PDF compilation (56 pages, clean build after page-by-page visual QA)
 - [x] Fix bibliography (biber 2.21 installed, references resolved)
 - [x] Fix remaining undefined reference (`tab:1988-2002` — appendix uncommented, resolves)
 - [x] Phase 1 quick fixes: 6 figure captions ("double title"), IGN2020 reference added
 - [x] Phase 2: Update DID.tex line 42 paragraph (parallel trends/timing caveat)
-- [ ] Phase 2: Update Discussion.tex line 26 paragraph (absolute_vote results changed with new sample)
-- [ ] Phase 3: Structural revisions per YS comments (heterogeneity conclusion, randomization discussion)
+- [x] Phase 2: Update Discussion.tex line 26 paragraph (absolute_vote results changed with new sample)
+- [x] Phase 3: Structural revisions per YS comments (heterogeneity conclusion, randomization discussion)
 - [x] Phase 4: Add ΔFN vs log-pop figure
-- [ ] Phase 4: Remaining figure enhancements (density plot on Fig 6, balancing test CIs)
-- [ ] Phase 5: Minor clarifications (DID.tex post-2004, Background.tex fence density)
+- [x] Phase 4: Remaining figure enhancements (density plot on Fig 6, balancing test CIs)
+- [x] Phase 5: Minor clarifications (DID.tex post-2004, Background.tex fence density)
 - [x] Phase 5: Spatial.tex canton size clarification/comment cleanup
 - [x] Add empirical contract, raw-data documentation note, model manifest, and referee-risk memo
-- [ ] Address remaining 9 [YS:] reviewer comments across 6 .tex files
-- [ ] Proofread all sections
-- [ ] Fix biber warnings (duplicate Fetzer2019 key at references.bib lines 465 & 507, month format warnings)
+- [x] Address substantive [YS:] reviewer comments; unresolved analyses are explicitly excluded pending redesign
+- [x] Proofread all sections and perform page-by-page visual QA
+- [x] Fix bibliography parsing and overflow issues; final build has no unresolved citations/references
 
 ---
 
@@ -190,6 +190,15 @@ Rscript CODE/master.R
 ---
 
 ## SESSION NOTES
+
+### Session 14 - 2026-07-14
+**PDF-review remediation implemented end to end**
+- Applied the approved remediation plan across the manuscript, empirical generators, data-quality checks, matching appendix, bibliography, and generated artifact synchronization.
+- Made the early-versus-later first-difference design primary; described the 1995 result as a timing diagnostic and retained RDD/border evidence as supporting, explicitly sensitivity-prone evidence.
+- Rebuilt matching tables from one 0.2-caliper MatchIt sample (8,442 commune-pair observations; 4,274 communes; 5,073 pairs); rebuilt the 1995 appendix table as an explicit placebo/timing diagnostic.
+- Added an official commune-history exclusion sensitivity: the adjusted estimate is -0.006717 (SE 0.001484) in full data and -0.006716 (SE 0.001486) after excluding 1,860 flagged codes.
+- Removed unauditable randomization and heterogeneity outputs from the manuscript pending redesign, repaired Table 9 escaping, corrected table inference/labels/notes, and synchronized all 48 generated manuscript artifacts.
+- Ran merge QA and focused R tests; built the final 56-page PDF with latexmk; inspected contact sheets for every page plus targeted pages for Tables 3, 10--11, 17--19 and the revised appendix figures. The final log has no unresolved citations/references, oversized floats, or material overflow.
 
 ### Session 13 - 2026-07-14
 **Comprehensive PDF-review remediation plan prepared (awaiting approval)**
@@ -337,19 +346,12 @@ Rscript CODE/master.R
 
 ---
 
-## NEXT ACTIONS — PDF REVIEW REMEDIATION (Session 13, 2026-07-14)
+## NEXT ACTIONS — PRE-SUBMISSION EVIDENCE (Session 14, 2026-07-14)
 
-**Approval status:** Awaiting Ilan's approval of `.omx/plans/pdf-review-remediation-plan.md`. Do not begin implementation before approval.
-
-After approval, execute the plan in this order:
-
-1. Recompile the current `33ca835` baseline and create a one-row-per-comment remediation tracker.
-2. Freeze chronology, terminology, design claims, and the official commune-history sensitivity.
-3. Reconcile every result, sample definition, dependent variable, unit, cluster, and star convention.
-4. Replace hardcoded/divergent tables with authoritative generators and synchronize all `OUTPUT/` artifacts with the manuscript.
-5. Repair and regenerate tables and figures, including Table 9, Tables 18-20, Figure 22, and the CATE outputs.
-6. Rewrite the manuscript only after the empirical gates pass, then clean the bibliography and pagination.
-7. Run the full Python/R/LaTeX pipeline, render and inspect every page, close the tracker, update documentation, commit with Lore messages, and push `main`.
+1. Obtain or construct an official value-level commune-history crosswalk and rerun the treatment/outcome harmonization; the current exclusion sensitivity is reassuring but not a substitute.
+2. Independently rebuild the randomization and heterogeneity analyses with reproducible assignment, finite-sample inference, and out-of-sample CATE estimation before considering their return to the appendix.
+3. Obtain external academic feedback on the now-primary first-difference design, particularly its single clean pre-election limitation and the selection of later ZRR entrants as the comparison group.
+4. Do a final submission pass on journal targeting, author affiliations, data/code archive requirements, and a clean-clone reproduction test.
 
 ---
 

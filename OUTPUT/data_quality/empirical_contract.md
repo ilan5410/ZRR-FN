@@ -28,6 +28,11 @@ The target coefficient is the association between initial ZRR entry and this cha
 - Communes with missing canton codes receive commune-specific missing-canton cluster IDs.
 - The 1999 canton bridge is verified as INSEE COG 1999 `france1999.dbf`. INSEE documents multi-canton communes as one row per canton fraction plus a `canton non precise` row, so canton clustering should still be described as an analysis convention for split/missing cases rather than as proof that every commune has a unique historical canton.
 - Split/missing canton exclusion sensitivities are required for any claim that depends materially on canton clustering.
+- The official commune-history exclusion sensitivity is stable: the full adjusted
+  first-difference estimate is -0.006717 (SE 0.001484), versus -0.006716
+  (SE 0.001486) after excluding 1,860 history-flagged codes. This demonstrates
+  robustness to the current flag rule; it is not a substitute for a full historical
+  value-level crosswalk.
 
 ## Evidence Status
 
@@ -36,6 +41,7 @@ The target coefficient is the association between initial ZRR entry and this cha
 - Merge/canton sensitivity: `OUTPUT/data_quality/commune_merge_sensitivity_summary.md`.
 - Raw-data provenance: `OUTPUT/data_quality/raw_data_provenance.csv` and `OUTPUT/data_quality/raw_data_external_documentation.md`.
 - Official commune-history applicability: `OUTPUT/data_quality/official_commune_history_applicability.md` and `OUTPUT/data_quality/commune_history_analysis_sample_audit.csv`.
+- Commune-history estimate sensitivity: `OUTPUT/data_quality/commune_history_estimate_sensitivity.csv` and `.md`.
 
 ## Claim Discipline
 

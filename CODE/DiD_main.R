@@ -144,7 +144,7 @@ p_es <- ggplot(es_df, aes(x = year, y = est)) +
   geom_hline(yintercept = 0, color = "grey70") +
   geom_pointrange(aes(ymin = lo, ymax = hi)) +
   geom_line() +
-  annotate("text", x = 1995, y = max(es_df$hi), label = "ZRR launch",
+  annotate("text", x = 1995, y = max(es_df$hi), label = "1995 law; 1996 decree",
            hjust = -0.1, size = 3, color = "grey40") +
   labs(x = "Election year", y = "Treatment effect on FN vote share\n(relative to 1988)") +
   theme_minimal(base_size = 12)
@@ -157,12 +157,12 @@ ggsave(file.path(figures_dir, "event_study.png"), p_es, width = 8, height = 5, d
 df_bins <- df_did %>%
   group_by(treated, bin = ntile(pop_log, 25)) %>%
   summarise(pop_log = mean(pop_log), delta_FN = mean(delta_FN), .groups = "drop") %>%
-  mutate(Group = ifelse(treated == 1, "Treated 1995", "Treated after 2004"))
+  mutate(Group = ifelse(treated == 1, "Initial ZRR wave (1995)", "Later ZRR entrants (from 2005)"))
 
 p_pop <- ggplot(df_bins, aes(x = pop_log, y = delta_FN, color = Group, shape = Group)) +
   geom_point(size = 2.5) +
   geom_smooth(method = "lm", se = TRUE, linewidth = 0.6) +
-  scale_color_manual(values = c("Treated 1995" = "#B2182B", "Treated after 2004" = "#2166AC")) +
+  scale_color_manual(values = c("Initial ZRR wave (1995)" = "#B2182B", "Later ZRR entrants (from 2005)" = "#2166AC")) +
   labs(x = "Log population (1990)", y = expression(Delta ~ "FN vote share (2002" - "1988)")) +
   theme_minimal(base_size = 12) +
   theme(legend.position = "bottom", legend.title = element_blank())
@@ -201,7 +201,7 @@ manifest <- data.frame(
   script = "CODE/DiD_main.R",
   input = "DATA/processed data/script_sharp.RData",
   sample = c(
-    "1995 ZRR entrants versus post-2004 entrants with FN1988 and FN2002 observed; 20 km and 5 km samples",
+    "Initial 1995 ZRR wave versus later entrants from 2005 with FN1988 and FN2002 observed; 20 km and 5 km samples",
     "Same commune sample reshaped across observed presidential election years; 1988 is reference year",
     "Same first-difference DiD sample binned by log 1990 population"
   ),

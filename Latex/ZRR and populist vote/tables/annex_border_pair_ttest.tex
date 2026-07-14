@@ -1,40 +1,35 @@
-
-% Table created by stargazer v.5.2.3 by Marek Hlavac, Social Policy Institute. E-mail: marek.hlavac at gmail.com
-% Date and time: Tue, Jul 14, 2026 - 04:02:56
-\begin{table}[!htbp] \centering 
-  \caption{Comparison of Residual Means between Control and Treatment Groups with T-Test Results, after matching} 
-  \label{tab:ttest-border} 
-\begin{tabular}{@{\extracolsep{5pt}} ccccc} 
-\\[-1.8ex]\hline 
-\hline \\[-1.8ex] 
-variable & Control (mean) & Treatment (mean) & p-value & Significance \\ 
-\hline \\[-1.8ex] 
-Unemployed (\%) & $$-$0.0002$ & $0.0002$ & $0.73$ &  \\ 
-Vote share for FN in 1988 & $0.0001$ & $$-$0.0001$ & $0.83$ &  \\ 
-Population change in p.p. 1980-1990 & $0.001$ & $$-$0.001$ & $0.52$ &  \\ 
-Population & $1.45$ & $$-$1.45$ & $0.71$ &  \\ 
-Ages 20-40 (\%), men & $0.0002$ & $$-$0.0002$ & $0.49$ &  \\ 
-Ages 20-40 (\%), women & $$-$0.0002$ & $0.0002$ & $0.54$ &  \\ 
-In the labor force (\%) & $0.0002$ & $$-$0.0002$ & $0.86$ &  \\ 
-Foreigners (\%) & $0$ & $0$ & $0.90$ &  \\ 
-Age ratio young/old (\%) & $0.002$ & $$-$0.002$ & $0.14$ &  \\ 
-OPI per 1,000 inhabitants & $$-$0.03$ & $0.03$ & $0.0000$ & \textasteriskcentered \textasteriskcentered \textasteriskcentered  \\ 
-No diploma (\%) & $$-$0.001$ & $0.001$ & $0.10$ &  \\ 
-Academic (\%) & $0$ & $0$ & $0.94$ &  \\ 
-Highschool (\%) & $0.0001$ & $$-$0.0001$ & $0.66$ &  \\ 
-Technical (\%) & $$-$0.0005$ & $0.0005$ & $0.21$ &  \\ 
-Agriculture (\%) & $0.0005$ & $$-$0.0005$ & $0.29$ &  \\ 
-Independant (\%) & $0.0004$ & $$-$0.0004$ & $0.32$ &  \\ 
-Intermediate occupations (\%) & $0.001$ & $$-$0.001$ & $0.03$ & \textasteriskcentered  \\ 
-Clerical (\%) & $0.001$ & $$-$0.001$ & $0.11$ &  \\ 
-Manual (\%) & $0.001$ & $$-$0.001$ & $0.05$ &  \\ 
-Altitude & $$-$0.01$ & $0.01$ & $0.0001$ & \textasteriskcentered \textasteriskcentered \textasteriskcentered  \\ 
-Area in km2 (log) & $$-$0.01$ & $0.01$ & $0.003$ & \textasteriskcentered \textasteriskcentered  \\ 
-Distance to closest agglomeration in meters (log) & $$-$0.001$ & $0.001$ & $0.70$ &  \\ 
-Vacant housing (\%) & $$-$0.0001$ & $0.0001$ & $0.76$ &  \\ 
-Taxable income per capita  (log) & $0.01$ & $$-$0.01$ & $0$ & \textasteriskcentered \textasteriskcentered \textasteriskcentered  \\ 
-Population density & $$-$0.002$ & $0.002$ & $0.26$ &  \\ 
-\hline \\[-1.8ex] 
-\multicolumn{5}{l}{The table displays the means of the residuals of the regression of the variable on the department fixed effects along with the other set of controls. The right columns show the significance of the t-test to compare both groups among the border municipalities. The sample corresponds to the matched municipalities. Significance levels: *** p<0.001, ** p<0.01, * p<0.05.} \\ 
-\end{tabular} 
-\end{table} 
+\begin{table}[!htbp]
+\centering
+\scriptsize
+\caption{Residual balance after propensity-score matching}
+\label{tab:ttest-border-matching}
+\begin{tabular}{lrrr}
+\hline
+Variable & Control & Treatment & p-value \\
+\hline
+Unemployed (\%) & -0.001 & 0.001 & 0.331 \\
+Vote share for FN in 1988 & 0.000 & -0.000 & 0.460 \\
+Population change in p.p. 1980-1990 & 0.003 & -0.003 & 0.041 \\
+Population & 11.004 & -11.004 & 0.063 \\
+In the labor force (\%) & 0.001 & -0.001 & 0.405 \\
+Foreigners (\%) & -0.000 & 0.000 & 0.571 \\
+OPI per 1,000 inhabitants & -0.026 & 0.026 & <0.001 \\
+No diploma (\%) & -0.000 & 0.000 & 0.947 \\
+Academic (\%) & 0.000 & -0.000 & 0.383 \\
+Highschool (\%) & 0.001 & -0.001 & 0.089 \\
+Technical (\%) & 0.001 & -0.001 & 0.175 \\
+Ages 20-40 (\%), men & 0.001 & -0.001 & 0.128 \\
+Ages 20-40 (\%), women & 0.000 & -0.000 & 0.521 \\
+Agriculture (\%) & -0.000 & 0.000 & 0.426 \\
+Independant (\%) & -0.000 & 0.000 & 0.851 \\
+Intermediate occupations (\%) & 0.001 & -0.001 & 0.158 \\
+Clerical (\%) & 0.000 & -0.000 & 0.900 \\
+Manual (\%) & 0.000 & -0.000 & 0.505 \\
+Altitude & -0.017 & 0.017 & <0.001 \\
+Area in km2 (log) & -0.020 & 0.020 & <0.001 \\
+Distance to closest agglomeration in meters (log) & -0.002 & 0.002 & 0.683 \\
+Vacant housing (\%) & -0.001 & 0.001 & 0.215 \\
+\hline
+\end{tabular}
+\parbox{\textwidth}{\footnotesize \textit{Notes:} Nearest-neighbor matching uses a 0.2 caliper on the logit propensity score. Residual means condition on department fixed effects and the remaining matching covariates. The matched sample contains 8442 commune-pair observations (4274 unique communes across 5073 border pairs; 4221 treated and 4221 control observations).}
+\end{table}

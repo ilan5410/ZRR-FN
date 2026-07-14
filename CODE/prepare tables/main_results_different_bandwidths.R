@@ -189,14 +189,14 @@ build_main_results_by_bandwidth <- function(processed_data_path,
   out_path <- file.path(path_tables, "main_results_different_bandwidths.tex")
   
   note_text <- paste0(
-    "$^{*}$p$<$0.05; $^{**}$p$<$0.01; $^{***}$p$<$0.001. ",
-    "Distance to frontier is defined as the distance between the locality centroid and the closest point on the frontier. ",
+    "$^{*}$p$<$0.10; $^{**}$p$<$0.05; $^{***}$p$<$0.01. ",
+    "Distance to frontier is defined as the distance between the commune centroid and the closest point on the frontier. ",
     "The regressions include controls and department fixed effects. ",
-    "Standard errors are clustered at the county level."
+    "Standard errors are HC1 and clustered at the canton level."
   )
   
   # Build column headers
-  col_names <- paste0("Bandwidth = ", format(bandwidths, big.mark = ","))
+  col_names <- paste0("Bandwidth = ", bandwidths / 1000, " km")
   col_numbers <- paste0("(", seq_along(bandwidths), ")")
   
   # Assemble complete table

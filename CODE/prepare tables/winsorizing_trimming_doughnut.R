@@ -174,19 +174,29 @@ generate_robustness_analysis <- function(processed_data_path, path_tables,
   output_file <- file.path(path_tables, "winsorizing_trimming_doughnut.tex")
   
   # Create descriptive notes
-  winsor_desc <- paste0("Winsorizing: outliers replaced with ", winsor_probs[1]*100, "th and ", winsor_probs[2]*100, "th percentile values")
-  trim_desc <- paste0("Trimming: observations outside ", trim_probs[1]*100, "th and ", trim_probs[2]*100, "th percentiles removed")
+  ordinal <- function(value) {
+    paste0(value, ifelse(value %% 10 == 1 && value %% 100 != 11, "st", ifelse(value %% 10 == 2 && value %% 100 != 12, "nd", ifelse(value %% 10 == 3 && value %% 100 != 13, "rd", "th"))))
+  }
+  winsor_desc <- paste0("Winsorizing: outliers replaced with ", ordinal(winsor_probs[1] * 100), " and ", ordinal(winsor_probs[2] * 100), " percentile values")
+  trim_desc <- paste0("Trimming: observations outside ", ordinal(trim_probs[1] * 100), " and ", ordinal(trim_probs[2] * 100), " percentiles removed")
   doughnut_desc <- paste0("Doughnut: observations within ", doughnut_radius, "km of the frontier border removed")
   
   # Build notes with parbox for proper text wrapping
   notes_text <- paste0("\\parbox{0.9\\textwidth}{\\footnotesize ",
                        winsor_desc, ". ", trim_desc, ". ", doughnut_desc, ". ",
                        "All specifications include control variables and department fixed effects. ",
-                       "Standard errors are heteroskedasticity-robust.}")
+                       "Standard errors are HC1 and clustered at the canton level.}")
+
+  model_data <- list(df_winsorized, df_trimmed, df_doughnut)
+  clustered_se <- Map(function(model, data) {
+    used_rows <- match(rownames(model.frame(model)), rownames(data))
+    sqrt(diag(sandwich::vcovCL(model, cluster = data$canton[used_rows], type = "HC1")))
+  }, models, model_data)
 
   stargazer(
     models,
     type = "latex",
+    se = clustered_se,
     title = "Winsorizing, trimming and doughnut: Estimation of Treatment Effect",
     column.labels = model_names,
     keep = c("z", "x"),  # Only show treatment and running variable
@@ -255,4 +265,3 @@ generate_robustness_analysis <- function(processed_data_path, path_tables,
 # ==============================================================================
 
 generate_robustness_analysis(processed_data_path, path_tables)
-

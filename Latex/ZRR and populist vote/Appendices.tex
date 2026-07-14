@@ -169,18 +169,18 @@ Figure \ref{fig:RDD_outcome_combined-noEpi} shows the main discontinuity results
 \begin{figure}[h!]
     \centering
     % First subfigure
-    \begin{subfigure}[b]{0.95\textwidth}
+    \begin{subfigure}[b]{0.78\textwidth}
         \centering
-        \includegraphics[width=\textwidth]{figures/RDD_outcomes_shortest_dist_20000.png}
+        \includegraphics[width=\textwidth,height=0.32\textheight,keepaspectratio]{figures/RDD_outcomes_shortest_dist_20000.png}
         \caption{Bandwidth of 20 kilometers}
     \end{subfigure}
     
-    \vspace{0.5cm} % Optional space between the subfigures
+    \vspace{0.25cm}
     
     % Second subfigure
-    \begin{subfigure}[b]{0.95\textwidth}
+    \begin{subfigure}[b]{0.78\textwidth}
         \centering
-        \includegraphics[width=\textwidth]{figures/RDD_outcomes_shortest_dist_10000.png}
+        \includegraphics[width=\textwidth,height=0.32\textheight,keepaspectratio]{figures/RDD_outcomes_shortest_dist_10000.png}
         \caption{Bandwidth of 10 kilometers}
     \end{subfigure}
     
@@ -271,18 +271,13 @@ R$^{2}$ & 0.027 & 0.031 & 0.339 & 0.283 & 0.464 \\
 \section{Matching Strategy for Border municipalities}
 \label{app:border-matching}
 
-To address the initial imbalance between the treated and control groups in our comparison of border municipalities, we employ propensity score matching (PSM). This method estimates the probability of each locality being included in the ZRR program based on observed covariates and then matches treated and control municipalities with similar propensity scores. To improve the quality of matches, we used a caliber parameter of 0.2, which restricts the maximum allowable difference in propensity scores between matched pairs to 0.2 standard deviations of the logit of the propensity scores. Using this procedure, we match 11,604 pairs of municipalities and remove 1,698 of them.
+To assess sensitivity to observed differences between municipalities, we estimate a nearest-neighbor propensity-score match within same-department border pairs. The matching specification uses a caliper of 0.2 on the logit propensity score. The resulting sample is reported in commune-pair observations because a commune can occur in more than one border pair. Tables \ref{tab:ttest-border-matching} and \ref{tab:border-results-matching} are generated from the same matched sample. Several covariates remain imbalanced, so this exercise is corroborative rather than a replacement for the main analysis.
 
+\input{tables/annex_border_pair_ttest.tex}
+\input{tables/annex_matching.tex}
 
-Table \ref{tab:ttest-border-matching}, similarly to Table \ref{tab:ttest-border}, displays the balancing tests. The main variables of interest are quite well balanced, although some imbalances remain. Table \ref{tab:border-results-matching} presents the main results (similarly to Table \ref{tab:border-results}. The estimated effect of the ZRR program is similar, although slightly stronger (0.6 p.p. instead of 0.5 p.p. without matching).
-
-Table \ref{tab:border-results-matching}, similarly to Table \ref{tab:border-results}, presents the regression results of the effect of the ZRR program on the vote share for the FN in 2002, using a matched sample of 9,906 pairs of border municipalities. In all specifications, the treatment coefficient is negative and statistically significant at the 1\% level. 
-
-
-
-
-
-% ttest
+\iffalse
+% Historical hard-coded matching tables retained only for source history.
 \begin{table}[!htbp] 
 \small
 \centering 
@@ -361,13 +356,15 @@ R$^{2}$ & 0.004 & 0.304 & 0.499 & 0.821 \\
 
 
 
+\fi
+
 %--- Section ---%
 \section{Signal effect: 1995 Elections}
 \label{app:1995signal}
 
 We do not need to perform the balancing checks again and we immediately jump to the estimation of the effect of the ZRR program on the results of the 1995 presidential elections.
 
-Similarly to Figure \ref{fig:RDD_outcome_combined-2002}, Figure \ref{fig:RDD_outcome_combined-1995} shows the plots of the residuals of the FN vote share in the 1995 presidential elections, after regressing on the control variables and the place fixed effects (department) against the distance to the program frontier. We now estimate the main model as described in equation \ref{eq2}, this time with FN1995 as the dependant variable. We report the estimates in Table \ref{tab:rdd_results_outcomes_10-1995} with different specifications.  Table \ref{tab:rdd_results_diffbandwidth-1995} reports the estimates with different bandwidths. 
+Figure \ref{fig:RDD_outcome_combined-1995} plots residualized FN vote shares in the 1995 presidential election against the program frontier. We estimate the same local specification with FN1995 as the outcome in Table \ref{tab:rdd_results_main_1995}. Because the 1995 discontinuity is not visually clear and treatment implementation followed the 1995 law, this is a timing diagnostic rather than evidence of a signaling effect.
 
 %% RDD figures, FN1995
 \begin{figure}[htbp]
@@ -380,6 +377,10 @@ Similarly to Figure \ref{fig:RDD_outcome_combined-2002}, Figure \ref{fig:RDD_out
 \end{figure}
 
 %% Main results, different specifications
+\input{tables/annex_main_results_1995.tex}
+
+\iffalse
+% Historical hard-coded 1995 tables retained only for source history.
 \begin{table}[!htbp]
 \centering
 \small
@@ -453,10 +454,14 @@ R$^{2}$ & 0.591 & 0.562 & 0.552 \\
 \end{threeparttable}
 \end{table}
 
+\fi
 
-Municipalities benefiting from the ZRR program seem to have experienced a 0.3-0.4 percentage point reduction in National Front (FN) vote share in the 1995 presidential election. However, the discontinuity is not visible on the graph, and the effects become less pronounced and statistically insignificant at narrower bandwidths (10,000 and 7,500). We conclude that there is no clear effect of the 1995 elections of the ZRR program, and that the "signaling effect", if it exists, is very small.
+The 1995 estimates should not be interpreted as a clean treatment effect: the program's implementation date is later than the law, the graph does not show a clear discontinuity, and precision deteriorates in narrower samples. We therefore find no reliable evidence for an immediate signaling channel.
 
 
+\iffalse
+% Randomization and heterogeneity analyses are excluded pending a redesigned,
+% independently auditable implementation.
 %--- Section ---%
 \section{Randomization of the ZRR boundary}
 \label{app:randomization}
@@ -534,4 +539,5 @@ Focusing on the Causal Forest CATEs, we identify two distinct sub-samples based 
 
 
 
+\fi
 \end{appendices}

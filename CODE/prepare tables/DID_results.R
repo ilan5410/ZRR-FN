@@ -215,11 +215,11 @@ generate_results_table <- function(models, controls, path_tables) {
   stargazer(
     models$models,
     type = "latex",
-    title = "Preliminary evidence: estimated effect of the ZRR program on FN Vote Share (2002)",
+    title = "Two-period panel interaction: FN vote share, 1988 and 2002",
     se = models$standard_errors,
     omit = c(controls, "factor\\(dep\\)", "factor\\(post\\)", "Constant"),
     add.lines = list(c("Controls", "No", "Yes")),
-    dep.var.labels = "Vote share for FN (2002)",
+    dep.var.labels = "FN vote share",
     dep.var.labels.include = TRUE,
     model.numbers = TRUE,
     label = "tab:did_result",
@@ -238,14 +238,14 @@ generate_results_table <- function(models, controls, path_tables) {
   note_text <- paste0(
     "\\parbox{\\textwidth}{\\footnotesize \\textit{Notes:} ",
     "$^{*}$p$<$0.1; $^{**}$p$<$0.05; $^{***}$p$<$0.01. ",
-    "All models are estimated using a first-difference approach between 1988 and 2002, ",
-    "comparing localities that entered the ZRR program in 1988 with the ones that entered after 2004. ",
+    "The table reports a two-period panel interaction between 1988 and 2002, ",
+    "comparing communes in the initial ZRR wave (coded in 1995) with later entrants first observed from 2005. ",
     "Control variables are unemployment rate, FN vote share in 1988, population size, association density, ",
     "educational attainment (share with no diploma, with higher education, with a baccalaureate, ",
     "and with a vocational diploma), number of men and women aged 20--40, agricultural employment, ",
     "independent workers, intermediate occupations, total employment, poverty rate, altitude, area, ",
     "housing vacancy rate (log), land use (fences and vines per km\\textsuperscript{2}), and typology ",
-    "of the municipality. Standard errors are clustered at the county (canton) level.}"
+    "of the municipality. Standard errors are clustered at the canton level.}"
   )
   # Insert the note between \end{tabular} and \end{table}
   idx_end_tabular <- grep("\\\\end\\{tabular\\}", lines)

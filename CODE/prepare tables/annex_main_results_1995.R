@@ -48,7 +48,7 @@ generate_rdd_main_results <- function(processed_data_path, path_tables,
   cat("✓ Loaded script_sharp.RData\n")
   
   # Validate required objects exist
-  required_objects <- c("dfZRRControls", "bandwidths", "controls")
+  required_objects <- "dfZRRControls"
   missing_objects <- setdiff(required_objects, ls())
   if (length(missing_objects) > 0) {
     stop("Missing required objects: ", paste(missing_objects, collapse = ", "))
@@ -78,8 +78,6 @@ generate_rdd_main_results <- function(processed_data_path, path_tables,
       popDensity = log(popDensity) # Log-transform population density
     ) %>%
     distinct(codecommune, .keep_all = TRUE)  # Remove duplicate communes
-  
-  df_rdd <- clean_data_variables(df_rdd, names(df_rdd))
   
   cat("✓ Prepared RDD dataset\n")
   cat("  - Observations after filtering:", nrow(df_rdd), "\n")
@@ -139,6 +137,11 @@ generate_rdd_main_results <- function(processed_data_path, path_tables,
   df_filtered <- df_rdd %>%
     filter(x >= -target_bandwidth & x <= target_bandwidth) %>% 
     mutate(x = x / 10000)  # Scale distance variable
+
+  numeric_columns <- names(df_filtered)[vapply(df_filtered, is.numeric, logical(1))]
+  df_filtered <- df_filtered %>%
+    filter(if_all(all_of(numeric_columns), ~ !is.na(.x) & is.finite(.x))) %>%
+    filter(!is.na(dep), !is.na(canton))
   
   cat("✓ Filtered data to", target_bandwidth, "m bandwidth\n")
   cat("  - Final observations:", nrow(df_filtered), "\n")
@@ -182,7 +185,7 @@ generate_rdd_main_results <- function(processed_data_path, path_tables,
     model_clustered <- lm(formula, data = model_data)
     
     # Compute clustered standard errors
-    vcov_clustered <- vcovHC(model_clustered, type = "HC1", cluster = model_data$canton)
+    vcov_clustered <- sandwich::vcovCL(model_clustered, cluster = model_data$canton, type = "HC1")
     robust_models[[group_name]] <- coeftest(model_clustered, vcov = vcov_clustered)
     
     cat("    ✓ Completed", group_name, "\n")
@@ -197,8 +200,8 @@ generate_rdd_main_results <- function(processed_data_path, path_tables,
   
   # Create lines indicating the inclusion of fixed effects and controls
   fe_lines <- list(
-    "Controls" = sapply(control_groups, function(x) ifelse(x$controls, "True", "False")),
-    "Dept FE" = sapply(control_groups, function(x) ifelse(x$dep, "True", "False"))
+    "Controls" = sapply(control_groups, function(x) ifelse(x$controls, "Yes", "No")),
+    "Dept FE" = sapply(control_groups, function(x) ifelse(x$dep, "Yes", "No"))
   )
   
   cat("✓ Prepared fixed effects and controls indicators\n")
@@ -211,31 +214,60 @@ generate_rdd_main_results <- function(processed_data_path, path_tables,
   # Prepare output file path
   output_file <- file.path(path_tables, "annex_main_results_1995.tex")
   
+  note_text <- paste(
+    "Standard errors are HC1 and clustered by canton.",
+    "The sample includes municipalities within", target_bandwidth / 1000,
+    "km of the program frontier.",
+    "$^{*}$p$<$0.10; $^{**}$p$<$0.05; $^{***}$p$<$0.01."
+  )
+
   # Generate the regression table using stargazer with clustered standard errors
   table_output <- stargazer(
     models, 
     se = lapply(robust_models, function(x) x[, "Std. Error"]),
     type = "latex",
-    title = paste("Main results when bandwidth is", target_bandwidth, "km, different specifications"),
-    dep.var.labels = "FN Vote Share 2002",
-    covariate.labels = c("ZRR Treatment", "Distance"),
+    title = paste("RDD placebo: FN vote share in 1995 within", target_bandwidth / 1000, "km"),
+    dep.var.labels = "FN vote share in 1995",
+    covariate.labels = c("ZRR treatment", "Distance to frontier (10 km)"),
     omit = c(setdiff(controls, "superficie"), "dep"),  # Omit control variables from display
     omit.stat = c("adj.rsq", "ser", "f"),
     add.lines = list(
       c("Controls", fe_lines$Controls),
       c("Dept FE", fe_lines$`Dept FE`)
     ),
-    star.cutoffs = c(0.05, 0.01, 0.001), 
-    column.sep.width = "3pt",
-    float = FALSE,
-    notes = paste("Standard errors clustered at canton level using HC1 estimator.",
-                  "Sample restricted to municipalities located", target_bandwidth, 
-                  "km at most from the program frontier."),
+    star.cutoffs = c(0.1, 0.05, 0.01),
+    column.sep.width = "2pt",
+    float = TRUE,
+    notes = note_text,
+    notes.append = FALSE,
     notes.align = "l",
     table.placement = "H",
     label = "tab:rdd_results_main_1995",
     out = output_file
   )
+  if (!exists("format_latex_table", mode = "function")) {
+    stop("format_latex_table() must be loaded before generating the 1995 appendix table.")
+  }
+  format_latex_table(
+    output_file,
+    use_resizebox = FALSE,
+    font_size = "scriptsize",
+    notes_width = 0.9
+  )
+  formatted_lines <- readLines(output_file, warn = FALSE)
+  note_line <- grep("^\\\\textit\\{Note:\\}", formatted_lines)
+  table_end <- grep("^\\\\end\\{tabular\\}", formatted_lines)
+  if (length(note_line) != 1L || length(table_end) != 1L) {
+    stop("The formatted 1995 appendix table has an unexpected note or tabular layout.")
+  }
+  formatted_lines <- formatted_lines[-note_line]
+  table_end <- grep("^\\\\end\\{tabular\\}", formatted_lines)
+  formatted_lines <- append(
+    formatted_lines,
+    paste0("\\par\\noindent\\parbox{\\textwidth}{\\scriptsize \\textit{Notes:} ", note_text, "}"),
+    after = table_end
+  )
+  writeLines(formatted_lines, output_file)
   
   cat("✓ Generated regression table\n")
   cat("  - Output file:", output_file, "\n")
@@ -272,9 +304,37 @@ generate_rdd_main_results <- function(processed_data_path, path_tables,
 }
 
 # ==============================================================================
-# EXECUTION EXAMPLE
+# EXECUTION
 # ==============================================================================
 
-generate_rdd_main_results(processed_data_path, path_tables, bandwidths, controls)
+run_annex_main_results_1995 <- function(project_root = getwd()) {
+  required_packages <- c("dplyr", "stargazer", "sandwich", "lmtest")
+  unavailable <- required_packages[!vapply(required_packages, requireNamespace, logical(1), quietly = TRUE)]
+  if (length(unavailable) > 0L) {
+    stop("Missing R packages for the 1995 appendix table: ", paste(unavailable, collapse = ", "))
+  }
+  invisible(lapply(required_packages, function(package) {
+    suppressPackageStartupMessages(library(package, character.only = TRUE))
+  }))
 
+  if (!exists("processed_data_path", inherits = TRUE) ||
+      !exists("path_tables", inherits = TRUE) ||
+      !exists("bandwidths", inherits = TRUE) ||
+      !exists("controls", inherits = TRUE)) {
+    config <- new.env(parent = globalenv())
+    config$main_path <- paste0(normalizePath(project_root), "/")
+    sys.source(file.path(config$main_path, "CODE", "configurations.R"), envir = config)
+    return(generate_rdd_main_results(
+      config$processed_data_path,
+      config$path_tables,
+      config$bandwidths,
+      config$controls
+    ))
+  }
 
+  generate_rdd_main_results(processed_data_path, path_tables, bandwidths, controls)
+}
+
+if (!identical(Sys.getenv("RUN_ANNEX_MAIN_1995", "true"), "false")) {
+  run_annex_main_results_1995()
+}

@@ -46,7 +46,7 @@ generate_rdd_main_results <- function(processed_data_path, path_tables,
   cat("✓ Loaded script_sharp.RData\n")
   
   # Validate required objects exist
-  required_objects <- c("dfZRRControls", "bandwidths", "controls")
+  required_objects <- "dfZRRControls"
   missing_objects <- setdiff(required_objects, ls())
   if (length(missing_objects) > 0) {
     stop("Missing required objects: ", paste(missing_objects, collapse = ", "))
@@ -180,7 +180,7 @@ generate_rdd_main_results <- function(processed_data_path, path_tables,
     model_clustered <- lm(formula, data = model_data)
     
     # Compute clustered standard errors
-    vcov_clustered <- vcovHC(model_clustered, type = "HC1", cluster = model_data$canton)
+    vcov_clustered <- sandwich::vcovCL(model_clustered, cluster = model_data$canton, type = "HC1")
     robust_models[[group_name]] <- coeftest(model_clustered, vcov = vcov_clustered)
     
     cat("    ✓ Completed", group_name, "\n")
@@ -195,8 +195,8 @@ generate_rdd_main_results <- function(processed_data_path, path_tables,
   
   # Create lines indicating the inclusion of fixed effects and controls
   fe_lines <- list(
-    "Controls" = sapply(control_groups, function(x) ifelse(x$controls, "True", "False")),
-    "Dept FE" = sapply(control_groups, function(x) ifelse(x$dep, "True", "False"))
+    "Controls" = sapply(control_groups, function(x) ifelse(x$controls, "Yes", "No")),
+    "Dept FE" = sapply(control_groups, function(x) ifelse(x$dep, "Yes", "No"))
   )
   
   cat("✓ Prepared fixed effects and controls indicators\n")
@@ -219,7 +219,7 @@ generate_rdd_main_results <- function(processed_data_path, path_tables,
     type = "latex",
     title = paste("Main results when bandwidth is", bandwidth_km, "km, different specifications"),
     dep.var.labels = "FN vote share in 2002",
-    covariate.labels = c("ZRR", "Distance to Frontier"),
+    covariate.labels = c("Initial ZRR wave", "Distance to frontier", "Initial wave $\\times$ distance", "Log population", "Area (log)"),
     omit = c(setdiff(controls, "superficie"), "dep"),  # Omit control variables from display
     omit.stat = c("adj.rsq", "ser", "f"),
     add.lines = list(
@@ -231,9 +231,9 @@ generate_rdd_main_results <- function(processed_data_path, path_tables,
     float = TRUE,
     table.placement = "!htbp",
     font.size = "small",
-    notes = paste0("\\parbox{\\textwidth}{\\footnotesize \\textit{Notes:} We restrict the sample to the municipalities located ",
-                   bandwidth_km, "km at most from the frontier program and run the specification with controls and place fixed effects. ",
-                   "The standard errors are clustered at the county level. $^{*}$p$<$0.1; $^{**}$p$<$0.05; $^{***}$p$<$0.01}"),
+    notes = paste0("\\parbox{\\textwidth}{\\footnotesize \\textit{Notes:} The sample is restricted to communes within ",
+                   bandwidth_km, " km of the program frontier. Standard errors are HC1 and clustered at the canton level. ",
+                   "$^{*}$p$<$0.10; $^{**}$p$<$0.05; $^{***}$p$<$0.01.}"),
     notes.append = FALSE,
     notes.align = "l",
     label = paste0("tab:rdd_results_", bandwidth_km),
@@ -288,4 +288,3 @@ generate_rdd_main_results <- function(processed_data_path, path_tables,
 # ==============================================================================
 
 generate_rdd_main_results(processed_data_path, path_tables, bandwidths, controls)
-
