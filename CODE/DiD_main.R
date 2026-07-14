@@ -40,6 +40,10 @@ load(file.path(processed_data_path, "script_sharp.RData"))
 
 tables_dir  <- file.path(main_path, "OUTPUT/tables/")
 figures_dir <- file.path(main_path, "OUTPUT/figures/")
+latex_dir   <- file.path(main_path, "Latex/ZRR and populist vote")
+latex_tables_dir <- file.path(latex_dir, "tables")
+latex_figures_dir <- file.path(latex_dir, "figures")
+manifest_path <- file.path(main_path, "OUTPUT/data_quality/model_manifest.csv")
 
 # ------------------------------------------------------------------------------
 # Data preparation (identical sample logic to alternative_identification.R)
@@ -98,7 +102,7 @@ stargazer(m1, m2, m3, m4,
   omit.stat = c("f", "ser"),
   title = "Effect of 1995 ZRR entry on the change in FN vote share, 1988--2002",
   label = "tab:did_main",
-  notes = "Standard errors are clustered at the canton level.",
+  notes = "Standard errors are clustered at the audited canton-cluster level.",
   font.size = "footnotesize",
   out = file.path(tables_dir, "DiD_main_results.tex")
 )
@@ -165,6 +169,61 @@ p_pop <- ggplot(df_bins, aes(x = pop_log, y = delta_FN, color = Group, shape = G
 
 ggsave(file.path(figures_dir, "dFN_vs_logpop.png"), p_pop, width = 8, height = 5, dpi = 300)
 
-cat("\nDone. Copy outputs to Latex folder:\n")
-cat("  cp 'OUTPUT/tables/DiD_main_results.tex' 'Latex/ZRR and populist vote/tables/'\n")
-cat("  cp 'OUTPUT/figures/event_study.png' 'OUTPUT/figures/dFN_vs_logpop.png' 'Latex/ZRR and populist vote/figures/'\n")
+if (dir.exists(latex_tables_dir)) {
+  file.copy(
+    file.path(tables_dir, "DiD_main_results.tex"),
+    file.path(latex_tables_dir, "DiD_main_results.tex"),
+    overwrite = TRUE
+  )
+}
+
+if (dir.exists(latex_figures_dir)) {
+  file.copy(
+    file.path(figures_dir, c("event_study.png", "dFN_vs_logpop.png")),
+    latex_figures_dir,
+    overwrite = TRUE
+  )
+}
+
+manifest <- data.frame(
+  artifact = c("DiD_main_results.tex", "event_study.png", "dFN_vs_logpop.png"),
+  artifact_type = c("table", "figure", "figure"),
+  output_path = c(
+    file.path("OUTPUT/tables", "DiD_main_results.tex"),
+    file.path("OUTPUT/figures", "event_study.png"),
+    file.path("OUTPUT/figures", "dFN_vs_logpop.png")
+  ),
+  latex_path = c(
+    file.path("Latex/ZRR and populist vote/tables", "DiD_main_results.tex"),
+    file.path("Latex/ZRR and populist vote/figures", "event_study.png"),
+    file.path("Latex/ZRR and populist vote/figures", "dFN_vs_logpop.png")
+  ),
+  script = "CODE/DiD_main.R",
+  input = "DATA/processed data/script_sharp.RData",
+  sample = c(
+    "1995 ZRR entrants versus post-2004 entrants with FN1988 and FN2002 observed; 20 km and 5 km samples",
+    "Same commune sample reshaped across observed presidential election years; 1988 is reference year",
+    "Same first-difference DiD sample binned by log 1990 population"
+  ),
+  formula_or_plot = c(
+    "delta_FN ~ treated + controls + optional department FE; audited canton-cluster SE",
+    "FN_vote ~ treated * year + department FE; audited canton-cluster intervals",
+    "Binned means of delta_FN by log(pop), separately by treatment group"
+  ),
+  main_quantity = c(
+    "Treatment ZRR (1995): -0.011 simple, -0.012 controls, -0.007 controls+department FE, -0.009 controls 5 km",
+    "Dynamic treatment-year contrasts relative to 1988; 1995 is not treated as definitive post-treatment evidence",
+    "Descriptive size-gradient diagnostic for 1988-2002 FN vote change"
+  ),
+  stringsAsFactors = FALSE
+)
+
+if (file.exists(manifest_path)) {
+  old_manifest <- read.csv(manifest_path, stringsAsFactors = FALSE)
+  old_manifest <- old_manifest[!old_manifest$artifact %in% manifest$artifact, , drop = FALSE]
+  manifest <- dplyr::bind_rows(old_manifest, manifest)
+}
+write.csv(manifest, manifest_path, row.names = FALSE)
+
+cat("\nDone. DiD outputs written to OUTPUT, mirrored to LaTeX folders, and recorded in:\n")
+cat("  ", manifest_path, "\n", sep = "")

@@ -46,7 +46,7 @@
 | 2. Code Reorganization | Complete | 100% |
 | 3. GitHub Push | Complete | 100% |
 | 4. RDD Methodology Review | **COMPLETE** | 100% |
-| 5. Paper Finalization | In Progress | 60% |
+| 5. Paper Finalization | In Progress | 75% |
 
 ---
 
@@ -129,7 +129,7 @@ Repository: https://github.com/ilan5410/ZRR-FN
 
 ---
 
-## STAGE 5: Paper Finalization (55% - In Progress)
+## STAGE 5: Paper Finalization (75% - In Progress)
 
 **TODO tracking documents (created Session 6):**
 - `Latex/ZRR and populist vote/TODOs.md` - full inventory of TODOs + reviewer [YS:] comments
@@ -138,15 +138,18 @@ Repository: https://github.com/ilan5410/ZRR-FN
 **Tasks:**
 - [x] Verify all tables render correctly (all tables compile, 0 errors)
 - [x] Verify all figures render correctly (all figures load in PDF)
-- [x] Final PDF compilation (62 pages, clean build)
+- [x] Final PDF compilation (66 pages, clean build)
 - [x] Fix bibliography (biber 2.21 installed, references resolved)
 - [x] Fix remaining undefined reference (`tab:1988-2002` — appendix uncommented, resolves)
 - [x] Phase 1 quick fixes: 6 figure captions ("double title"), IGN2020 reference added
-- [ ] Phase 2: Update DID.tex line 42 paragraph (parallel trends, new references)
+- [x] Phase 2: Update DID.tex line 42 paragraph (parallel trends/timing caveat)
 - [ ] Phase 2: Update Discussion.tex line 26 paragraph (absolute_vote results changed with new sample)
-- [ ] Phase 3: Structural revisions per YS comments (restructure DID section around Fig 7, heterogeneity conclusion, randomization discussion)
-- [ ] Phase 4: Figure enhancements (density plot on Fig 6, ΔFN vs log-pop figure, balancing test CIs)
-- [ ] Phase 5: Minor clarifications (Spatial.tex canton size, DID.tex post-2004, Background.tex fence density)
+- [ ] Phase 3: Structural revisions per YS comments (heterogeneity conclusion, randomization discussion)
+- [x] Phase 4: Add ΔFN vs log-pop figure
+- [ ] Phase 4: Remaining figure enhancements (density plot on Fig 6, balancing test CIs)
+- [ ] Phase 5: Minor clarifications (DID.tex post-2004, Background.tex fence density)
+- [x] Phase 5: Spatial.tex canton size clarification/comment cleanup
+- [x] Add empirical contract, raw-data documentation note, model manifest, and referee-risk memo
 - [ ] Address remaining 9 [YS:] reviewer comments across 6 .tex files
 - [ ] Proofread all sections
 - [ ] Fix biber warnings (duplicate Fetzer2019 key at references.bib lines 465 & 507, month format warnings)
@@ -186,6 +189,17 @@ Rscript CODE/master.R
 ---
 
 ## SESSION NOTES
+
+### Session 11 - 2026-07-14
+**Publication-readiness implementation and full verified rebuild**
+- Integrated the audited post-merge reproduction foundation into `codex/publication-readiness` after preserving the prior manuscript baseline in a separate commit.
+- Wired `CODE/DiD_main.R` into `CODE/master.R` so the publication DiD table and two DiD figures are regenerated with the main R pipeline and mirrored to the LaTeX folders.
+- Added `OUTPUT/data_quality/empirical_contract.md`, `model_manifest.csv`, `raw_data_external_documentation.md`, and `referee_risk_memo.md` to document the estimand, source assumptions, model artifacts, and referee-facing weaknesses.
+- Checked official documentation anchors for INSEE COG/canton conventions, ZRR legal timing, and election data sources. Key implication: the 1995 coefficient is a timing/selection diagnostic, not clean post-treatment evidence, because the ZRR law dates to 1995 but the defining decree dates to 1996.
+- Rewrote the abstract, introduction, DID section, data note, spatial-RDD framing, and border-municipality interpretation so the first-difference design is primary and spatial/RDD evidence is supporting.
+- Fixed the FN1988 placebo plotting scripts so the placebo outcome is no longer included as its own control, then regenerated the standard and shortest-distance placebo figures.
+- Verification completed: `.venv/bin/python "CODE/Python code/master.py"` passed 4/4 scripts; `Rscript CODE/master.R` completed; `Rscript "CODE/tests/run_data_quality_tests.R"` passed; `Rscript "CODE/prepare data/check_commune_merges.R"` passed; `latexmk -pdf -interaction=nonstopmode main.tex` produced a 66-page PDF.
+- Remaining risks: exact original raw-data download URLs are still incomplete, official commune-history crosswalk validation is not yet applied, and the RDD placebo/signal diagnostics show 1995 differences.
 
 ### Session 10 - 2026-07-14
 **Commune-level merge audit, raw-data provenance, and full reproduction build**
@@ -304,59 +318,28 @@ Rscript CODE/master.R
 
 ---
 
-## NEXT ACTIONS — NEW PLAN (Session 8, 2026-07-13)
+## NEXT ACTIONS — PUBLICATION READINESS (Session 11, 2026-07-14)
 
-**Strategy decision (made after full re-read of paper + RDD review):** Reframe the paper around
-DiD (ΔFN specification + event study) as the PRIMARY identification strategy, with the spatial
-RDD/border analysis as supporting evidence. Rationale: (a) the RDD review showed the RDD effect
-depends entirely on dept FE and vanishes at 1km (no true spatial discontinuity), while DiD is
-robust (0.7–1.2 pp, timing matches 1995 launch); (b) YS's comments already push this way
-("start by presenting Figure 7", requests for ΔFN figures); (c) the Intro's contribution section
-already describes the paper as DiD-first ("We further enhance robustness... spatial RDD").
-**Status:** Ilan approved the overnight implementation plan. Session 10 completed the
-commune-level merge/provenance foundation; the larger manuscript reframing remains the
-next writing phase.
+**Current status:** The draft now uses the early-versus-later treated first-difference design as the primary evidence, with spatial/RDD estimates as supporting evidence. The full Python/R/LaTeX reproduction path runs, and the empirical caveats are documented. The paper is closer to publishable, but not yet submission-ready.
 
-### Workstream A — Reframe identification (core, ~2-3 sessions)
-1. Promote `alternative_identification.R` exploratory DiD into a formal script producing
-   publication-quality tables (ΔFN spec, canton-clustered SEs) + event study figure
-2. Restructure Results: DID subsection opens with Figure 7 (YS), add ΔFN vs log(pop) figure
-   (YS, DID.tex:25), then present spatial RDD honestly (dept FE dependence acknowledged)
-3. Address the buried comment in DID.tex ("why is the difference negative and so strong?
-   selection should bias the other way") — needs an explicit paragraph
-4. Update Introduction/abstract: main finding becomes DiD-based (~1 pp), RDD supporting
-   (currently claims 0.3–0.5 pp RDD as main result)
+### Workstream A — Source and geography validation
+1. Recover exact original download URLs/vintages for every raw election, census, ZRR, JOAFE, income, and geography file.
+2. Replace the current inferred 1999 canton bridge assumption with an official INSEE COG archive citation and extraction rule.
+3. Apply or document an official commune-history crosswalk across election/control years, then rerun `check_commune_merges.R`.
 
-### Workstream B — Stale paragraphs (quick, independent)
-5. DID.tex:42 — rewrite parallel-trends paragraph (tab:1988-2002 now resolves)
-6. Discussion.tex:26 — check current absolute_vote.tex results, rewrite numerator/denominator
-   conclusion to match
+### Workstream B — Identification hardening
+4. Investigate the 1995 placebo/signal results directly; the current manuscript correctly treats 1995 as a warning, but the diagnostics need a referee-ready appendix explanation.
+5. Explore whether additional pre-treatment presidential/legislative data can create a real pre-trend check; otherwise keep the one-pre-period caveat prominent.
 
-### Workstream C — Remaining YS comments
-7. Heterogeneity → move to appendix (YS: "at best belongs in appendix"; IP note in tex agrees:
-   "I suggest removing this part"), leave 1-paragraph pointer in main text
-8. Randomization exercise → move to appendix + acknowledge (i) 33% arbitrary (ii) placebo lacks
-   ZRR spatial correlation (robustness.tex:42)
-9. Spatial.tex:5 canton-size comment — text above it already says "6 to 10 on average";
-   verify sufficient, then delete comment
-10. Background.tex:129 fence density — add footnote acknowledging limitation (per-agricultural-land
-    version deemed too costly)
-11. DID.tex post-2004 question ("did any qualify under earlier criteria?") — check in data
-    (CODE/prepare data), answer in text
-12. EvolutionFN.tex:37 — add treated-municipality density to Fig 6 (FN_versus_pop.R)
-13. Spatial.tex:45 — investigate non-linear CIs in balancing figure (check R code)
+### Workstream C — Manuscript finishing
+6. Rewrite the remaining stale `Discussion.tex` absolute-vote paragraph using the regenerated `absolute_vote.tex` results.
+7. Finish YS comment cleanup: heterogeneity and randomization should likely be appendix-first, with modest main-text interpretation.
+8. Add the remaining minor clarifications: post-2004 eligibility wording, fence-density limitation, balancing-test CI/nonlinearity note.
+9. Standardize voice (`I` vs `we`) and do a full proofread for causal overclaiming.
 
-### Workstream D — Polish & housekeeping
-14. Fix duplicate Fetzer2019 (references.bib:465,507), month-format biber warnings
-15. Full proofread (note: mixed "I"/"we" throughout — standardize)
-16. Git hygiene: commit/discard 19 modified figure PNGs, gitignore main.pdf
-17. Optional: regenerate border_muni_results.R (very slow, 7K+ pair FEs)
-
-**Suggested order:** B (quick wins) → A (core, after Ilan confirms) → C → D
-
-**Completed prerequisite (Session 10):** commune-level merge QA is now in place. Before
-interpreting new estimates, check `OUTPUT/data_quality/raw_commune_key_audit.csv` and run
-`Rscript "CODE/prepare data/check_commune_merges.R"` after any data-prep change.
+### Workstream D — Submission polish
+10. Fix bibliography warnings (duplicate `Fetzer2019`, month formatting) and remaining layout warnings, especially the oversized appendix float.
+11. Rebuild from a clean worktree immediately before submission and record the exact verification commands in the replication README.
 
 ---
 

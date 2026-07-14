@@ -76,6 +76,11 @@ source(paste0(path_code_prepare_tables, "prepare_tables.R"))
 
 source(paste0(path_code_prepare_figures, "prepare_figures.R"))
 
+# Produce the publication DiD table and figures used by the current manuscript.
+# This script writes to OUTPUT and mirrors the three generated artifacts into
+# the LaTeX tables/figures folders.
+source(paste0(raw_code_path, "DiD_main.R"))
+
 cat("\n===============================================\n")
 cat("ALL FINAL OUTPUTS PRODUCED SUCCESSFULLY\n")
 cat("===============================================\n")

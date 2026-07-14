@@ -77,8 +77,8 @@ generate_rdd_placebo_analysis <- function(processed_data_path, path_figures,
   # --------------------------------------------------------------------------
   cat("\n2. Defining control variables...\n")
   
-  # Define comprehensive set of control variables
-  controls_to_use <- controls
+  # Do not residualize the placebo outcome on itself.
+  controls_to_use <- setdiff(controls, outcome_variable)
   
   # Verify control variables exist
   available_controls <- intersect(controls_to_use, names(dfZRRControls))
