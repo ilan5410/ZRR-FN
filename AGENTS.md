@@ -1,7 +1,7 @@
 # THESIS REPRODUCTION PROJECT - AGENTS.md
 **Project:** ZRR and Populist Vote - Academic Paper
 **GitHub Repository:** https://github.com/ilan5410/ZRR-FN
-**Last Updated:** 2026-07-13
+**Last Updated:** 2026-07-14
 
 ---
 
@@ -46,7 +46,7 @@
 | 2. Code Reorganization | Complete | 100% |
 | 3. GitHub Push | Complete | 100% |
 | 4. RDD Methodology Review | **COMPLETE** | 100% |
-| 5. Paper Finalization | In Progress | 55% |
+| 5. Paper Finalization | In Progress | 60% |
 
 ---
 
@@ -60,7 +60,7 @@
 | Table 3 (DID_results) | Horizontal overflow + `\times` outside math mode | `$\times$` in math mode + notes in `\parbox` + removed duplicate column labels |
 | Table 6 (main_results_diff_specifications) | Horizontal overflow | `format_latex_table()` with resizebox |
 | Table 8 (balancing_tests) | Variable names overflow | `p{5.5cm}` column + resizebox |
-| Table 9 (border_muni_results) | Too wide for portrait | Landscape mode |
+| Table 9 (border_muni_results) | Too wide for portrait | Rotated `sidewaystable` output |
 | Table 10 (winsorizing_trimming_doughnut) | Horizontal overflow | Parbox notes + `format_latex_table()` |
 | Table 11 (heterogeneity_causal) | `\\%` breaking table parsing | Fixed `\\\\%` to `\\%` in R notes string |
 | effect_on_1999_socioeco | 7.5pt overflow | Added `font_size = 9` + notes parbox |
@@ -187,14 +187,14 @@ Rscript CODE/master.R
 
 ## SESSION NOTES
 
-### Session 10 - 2026-07-13
-**Overnight post-merge reproduction plan prepared (awaiting approval)**
-- Wrote `.omx/plans/overnight-post-merge-reproduction.md`
-- Scoped an isolated A/B rebuild from the pre-fix parent and corrected merge branch
-- Identified the next data-quality gap: the raw audit counts duplicate keys but does not yet distinguish exact duplicates from conflicting values
-- Identified a substantive remaining issue: `main.R` prevents row multiplication by selecting the first sorted canton for 342 multi-canton communes; 150 of these enter the 20 km sharp sample, so canton clustering needs explicit sensitivity analysis
-- Identified a DiD claim risk: the current draft describes the dynamic figure as validating parallel trends despite apparently having only one pre-treatment presidential election
-- Confirmed the overnight run will preserve the current dirty manuscript, regenerate all evidence, compile, commit with Lore messages, and push a dedicated branch only after Ilan approves the plan
+### Session 10 - 2026-07-14
+**Commune-level merge audit, raw-data provenance, and full reproduction build**
+- Implemented `CODE/prepare data/data_quality_helpers.R` and `CODE/tests/run_data_quality_tests.R` for commune-code normalization, duplicate classification, audited joins, merge ledgers, and conflict-aware duplicate collapse.
+- Reworked `CODE/prepare data/main.R`, `eco_outcomes.R`, `script_sharp.R`, and `script_sharp_noEpicenter.R` so split/missing canton bridge cases no longer silently select the first canton; split/missing cases receive conservative commune-specific cluster IDs and audit flags.
+- Added raw-data documentation/provenance checks in `document_raw_data_provenance.R`; current finding: local inventory identifies files/purposes/consumers, but original download URLs and source vintages are missing, so commune-code/canton-bridge documentation still needs external recovery before final causal wording.
+- Added sensitivity outputs in `summarize_commune_merge_sensitivity.R`: split-canton exclusion does not materially move the main RDD coefficient in the quick check, but the manuscript should still describe canton clustering as an analysis convention.
+- Rebuilt Python geographic inputs, R processed data, tables, figures, and LaTeX manuscript. Final `latexmk` build: 62 pages, zero fatal errors; remaining warnings are layout-only (appendix float too tall, bibliography URL overfull boxes).
+- Fixed table-generation compatibility issues exposed by the rebuild: explicit numeric selection for `effect_on_1999_socioeco.R`, modern `if_all()` use in `annex_var_evolution.R`, direct `modelsummary()` output for no-epicenter annex tables, `sidewaystable` rotation for `border_muni_results.tex`, and biblatex aliases for `\citep`/`\citet`.
 
 ### Session 9 - 2026-07-13
 **Commune-level data merge audit and fixes**
@@ -304,25 +304,18 @@ Rscript CODE/master.R
 
 ---
 
-## NEXT ACTIONS — OVERNIGHT REPRODUCTION (Session 10, 2026-07-13)
+## NEXT ACTIONS — NEW PLAN (Session 8, 2026-07-13)
 
-**Approval status:** Awaiting Ilan's approval of
-`.omx/plans/overnight-post-merge-reproduction.md`. Once approved, execute the full
-data audit, multi-canton sensitivity analysis, Python/R rebuild, result comparison,
-DiD validation, manuscript reconciliation, LaTeX compilation, Lore commits, and push.
-
-The workstreams below remain the paper-finalization direction, but numerical and
-causal wording must follow the regenerated evidence. In particular, DiD-first framing
-is provisional until the sample, controls, timing, clustering, and sensitivity checks
-in the overnight plan pass.
-
-**Provisional strategy after full re-read of paper + RDD review:** Reframe the paper around
+**Strategy decision (made after full re-read of paper + RDD review):** Reframe the paper around
 DiD (ΔFN specification + event study) as the PRIMARY identification strategy, with the spatial
 RDD/border analysis as supporting evidence. Rationale: (a) the RDD review showed the RDD effect
 depends entirely on dept FE and vanishes at 1km (no true spatial discontinuity), while DiD is
 robust (0.7–1.2 pp, timing matches 1995 launch); (b) YS's comments already push this way
 ("start by presenting Figure 7", requests for ΔFN figures); (c) the Intro's contribution section
 already describes the paper as DiD-first ("We further enhance robustness... spatial RDD").
+**Status:** Ilan approved the overnight implementation plan. Session 10 completed the
+commune-level merge/provenance foundation; the larger manuscript reframing remains the
+next writing phase.
 
 ### Workstream A — Reframe identification (core, ~2-3 sessions)
 1. Promote `alternative_identification.R` exploratory DiD into a formal script producing
@@ -361,7 +354,7 @@ already describes the paper as DiD-first ("We further enhance robustness... spat
 
 **Suggested order:** B (quick wins) → A (core, after Ilan confirms) → C → D
 
-**Completed prerequisite (Session 9):** commune-level merge QA is now in place. Before
+**Completed prerequisite (Session 10):** commune-level merge QA is now in place. Before
 interpreting new estimates, check `OUTPUT/data_quality/raw_commune_key_audit.csv` and run
 `Rscript "CODE/prepare data/check_commune_merges.R"` after any data-prep change.
 

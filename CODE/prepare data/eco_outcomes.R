@@ -110,9 +110,33 @@ process_eco_outcomes_data <- function(processed_data_path, raw_data_path,
     dfCanton <- st_read(canton_file, quiet = TRUE) %>%
       mutate(
         codecommune = standardize_commune_codes(paste0(as.character(DEP), as.character(COM))),
-        codecanton = paste0(as.character(DEP), as.character(CT))
+        canton_fragment = trimws(as.character(CT)),
+        canton_fragment = dplyr::na_if(canton_fragment, ""),
+        codecanton = dplyr::if_else(
+          is.na(canton_fragment) | canton_fragment == "NA",
+          NA_character_,
+          paste0(as.character(DEP), canton_fragment)
+        )
       ) %>%
-      select(codecommune, codecanton)
+      st_drop_geometry() %>%
+      select(codecommune, codecanton) %>%
+      drop_identical_rows("eco_outcomes canton bridge") %>%
+      group_by(codecommune) %>%
+      summarise(
+        n_cantons = n_distinct(codecanton, na.rm = TRUE),
+        has_missing_canton = any(is.na(codecanton)),
+        codecanton_list = collapse_non_missing_sorted(codecanton),
+        codecanton_primary_audit = first_non_missing_sorted(codecanton),
+        .groups = "drop"
+      ) %>%
+      mutate(
+        is_multi_canton = n_cantons > 1,
+        codecanton = case_when(
+          has_missing_canton ~ paste0("missing_canton_", codecommune),
+          is_multi_canton ~ paste0("split_", codecommune),
+          TRUE ~ codecanton_primary_audit
+        )
+      )
     
     cat("✓ Loaded canton data\n")
     cat("  - Canton mappings:", nrow(dfCanton), "\n")
@@ -127,11 +151,10 @@ process_eco_outcomes_data <- function(processed_data_path, raw_data_path,
   if (!is.null(dfCanton)) {
     initial_rows <- nrow(df_eco)
     
-    # Drop duplicates (keep first row per codecommune) and assert uniqueness
-    dfCanton <- dfCanton %>% dplyr::distinct(codecommune, .keep_all = TRUE)
+    assert_unique_key(dfCanton, "codecommune", "eco_outcomes canton bridge")
     
     df_eco <- df_eco %>%
-      left_join(dfCanton, by = "codecommune", relationship = "many-to-one")
+      audited_left_join(dfCanton, by = "codecommune", relationship = "many-to-one", join_name = "eco outcomes + canton bridge")
     
     final_rows <- nrow(df_eco)
     cat("✓ Merged with canton data\n")

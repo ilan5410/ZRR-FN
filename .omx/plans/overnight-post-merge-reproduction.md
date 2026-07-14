@@ -1,6 +1,6 @@
 # Overnight Post-Merge Reproduction Plan
 
-**Status:** Awaiting Ilan's approval  
+**Status:** Implemented through merge/provenance QA and full reproduction build  
 **Prepared:** 2026-07-13  
 **Starting point:** `codex/commune-merge-audit` at `d8a42d6`
 
@@ -11,12 +11,13 @@ reproduction of the empirical results and paper. It will:
 
 1. preserve the current dirty manuscript work without overwriting or committing it accidentally;
 2. strengthen the raw-data audit beyond row counts by detecting conflicting duplicate values and measuring merge coverage;
-3. resolve the substantively important multi-canton mapping problem;
-4. rebuild Python geographic inputs, R processed data, tables, and figures;
-5. compare corrected results with the pre-fix baseline at the sample and coefficient level;
-6. formalize and validate the DiD specification before retaining causal claims;
-7. update only claims supported by regenerated evidence;
-8. compile the paper, commit with Lore messages, and push a dedicated branch.
+3. document raw-data provenance and verify whether commune-canton mappings and commune codes are historically stable enough for the analysis;
+4. resolve the substantively important multi-canton mapping problem;
+5. rebuild Python geographic inputs, R processed data, tables, and figures;
+6. compare corrected results with the pre-fix baseline at the sample and coefficient level;
+7. formalize and validate the DiD specification before retaining causal claims;
+8. update only claims supported by regenerated evidence;
+9. compile the paper, commit with Lore messages, and push a dedicated branch.
 
 No new dependency will be added. R 4.4.0, `latexmk` 4.85, and Biber 2.21 are
 already installed. The slow randomization generator remains out of the standard
@@ -54,26 +55,31 @@ Python master by design (`CODE/Python code/master.py:17-18`).
 3. **Duplicate handling:** no production transformation silently applies `first()`
    to conflicting non-key values. Exact duplicates may be removed; conflicting
    records require a documented aggregation, source rule, exclusion, or failure.
-4. **Canton handling:** the primary analysis does not use arbitrary first-canton
+4. **Raw-data provenance:** the report identifies where key raw inputs were
+   downloaded or documents that provenance is missing. In particular, it checks
+   the commune-canton source documentation, whether the 1999 canton-commune bridge
+   is valid for the paper's election/control years, and whether commune codes
+   changed over time in a way that can affect joins.
+5. **Canton handling:** the primary analysis does not use arbitrary first-canton
    assignment. It reports sensitivity for at least: multi-canton exclusion,
    commune-specific cluster IDs for split communes, and department clustering.
-5. **Processed keys:** all assertions in `check_commune_merges.R` pass, including
+6. **Processed keys:** all assertions in `check_commune_merges.R` pass, including
    one row per commune-year or commune-pair at each declared analytical grain.
-6. **A/B evidence:** a comparison report gives pre-fix versus corrected sample N,
+7. **A/B evidence:** a comparison report gives pre-fix versus corrected sample N,
    treated/control N, key coefficients, standard errors, confidence intervals,
    p-values, and bandwidth-specific changes for every main result used in the paper.
-7. **DiD contract:** the main DiD uses the same documented early-versus-late entrant
+8. **DiD contract:** the main DiD uses the same documented early-versus-late entrant
    sample across table and figures, a 1988-to-2002 outcome change, only defensible
    pre-treatment controls, department fixed effects where specified, and explicit
    clustering/sensitivity choices.
-8. **Claim discipline:** no text claims a verified pre-trend without at least two
+9. **Claim discipline:** no text claims a verified pre-trend without at least two
    pre-treatment periods. The legal and electoral timing around 1995 is verified
    before describing the 1995 coefficient as post-treatment.
-9. **Reproduction:** Python master completes 4/4 scripts; the R data, table, and
+10. **Reproduction:** Python master completes 4/4 scripts; the R data, table, and
    figure pipelines complete; all generated outputs are inventoried with hashes.
-10. **Paper QA:** `latexmk`/Biber produce the PDF with zero LaTeX errors, zero
+11. **Paper QA:** `latexmk`/Biber produce the PDF with zero LaTeX errors, zero
     undefined references, and zero undefined citations. Remaining warnings are listed.
-11. **Git hygiene:** pre-existing dirty files are preserved byte-for-byte in the
+12. **Git hygiene:** pre-existing dirty files are preserved byte-for-byte in the
     original worktree. Only reviewed overnight changes are committed and pushed on
     a new `codex/` branch using Lore commit messages.
 
@@ -100,11 +106,21 @@ Python master by design (`CODE/Python code/master.py:17-18`).
 - Extend `CODE/prepare data/audit_commune_keys.R` to inspect non-key values inside
   duplicate key groups and classify duplicates as exact, compatible/complementary,
   or conflicting.
+- Add a raw-data provenance ledger for the datasets used by `prepare_data`. Search
+  repository notes, `DATA/raw_data_files_used.xlsx`, raw-file metadata, and script
+  comments for download/source clues. The report must explicitly flag missing
+  provenance rather than inferring it.
+- Check documentation for the 1999 commune-canton bridge before treating it as
+  authoritative: where `france1999.dbf` came from, what year/geography it encodes,
+  whether canton fragments represent administrative reality or GIS artifacts, and
+  whether commune-code changes over time could create false matches or misses.
 - Add a merge ledger helper near the existing key assertions in
   `CODE/prepare data/prepare_data.R:36-78`. Each production join in
   `CODE/prepare data/main.R` will emit coverage and row-cardinality diagnostics.
 - Produce:
   - `OUTPUT/data_quality/raw_source_profile.csv`
+  - `OUTPUT/data_quality/raw_data_provenance.csv`
+  - `OUTPUT/data_quality/commune_code_stability_review.md`
   - `OUTPUT/data_quality/raw_key_conflicts.csv`
   - `OUTPUT/data_quality/merge_ledger.csv`
   - `OUTPUT/data_quality/unmatched_commune_codes.csv`
@@ -116,7 +132,8 @@ Python master by design (`CODE/Python code/master.py:17-18`).
 
 **Proof:** synthetic tests fail on conflicting duplicates before the fix and pass
 afterward; production audit has zero unresolved conflicts in variables used by an
-analysis.
+analysis; provenance gaps and commune-code/canton-bridge assumptions are documented
+before final causal wording is updated.
 
 ### 3. Resolve Multi-Canton Communes Defensibly
 
@@ -257,7 +274,30 @@ to its source table, figure, model, or documented limitation.
 4. Model integration: structured coefficient and sample manifests for all main models.
 5. A/B validation: parent versus corrected result report and sensitivity thresholds.
 6. End-to-end: full `CODE/master.R` run and complete LaTeX/Biber build.
-7. Repository proof: scoped diff review, dirty-file hash comparison, Lore commits, push.
+7. Provenance review: raw-source ledger, commune-code stability note, and canton
+   bridge documentation status are checked against the empirical claims.
+8. Repository proof: scoped diff review, dirty-file hash comparison, Lore commits, push.
+
+## Implementation Notes - 2026-07-14
+
+- Added raw-data provenance/stability review to the plan and implementation. The
+  generated report documents that `DATA/raw_data_files_used.xlsx` lists local files
+  and consumers but not original download URLs or source vintages, so external
+  documentation recovery remains required before treating the canton bridge as
+  authoritative.
+- Replaced arbitrary first-canton assignment with conservative commune-specific
+  cluster IDs for split or missing canton bridge cases, and generated explicit
+  audits for 342 split-canton communes and 2,471 missing-canton communes.
+- Added merge-ledger and duplicate-resolution helpers, focused R tests, raw-key
+  conflict reports, education duplicate resolution, and commune merge sensitivity
+  summaries under `OUTPUT/data_quality/`.
+- Rebuilt Python geographic inputs, R processed data, tables, figures, and the
+  LaTeX manuscript. `main.pdf` compiles to 62 pages with no LaTeX errors; remaining
+  warnings are layout-only, notably one appendix float too tall and bibliography URL
+  overfull boxes.
+- The broader DiD-first manuscript reframing and full claim rewrite remain the next
+  paper-writing phase; this run made the commune-level merge foundation auditable
+  and reproducible.
 
 ## Overnight Completion Deliverables
 
